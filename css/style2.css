@@ -1,0 +1,133 @@
+﻿body .custom-item {
+    padding-left: 7px;
+    padding-right: 7px;
+}
+
+.custom-item > img {
+    height: 30px;
+    width: 40px;
+    float: left;
+    margin-top: 2px;
+}
+
+body .custom-item input {
+    background-color: transparent;
+}
+
+body .dx-popup-content .custom-item {
+    padding-top: 7px;
+    padding-bottom: 8px;
+}
+
+.dx-popup-content .custom-item > div {
+    padding-left: 8px;
+    text-indent: 0;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.v-field-label {
+    font-family: 'Segoe UI Light', 'Helvetica Neue Light', 'Segoe UI', 'Helvetica Neue', 'Trebuchet MS', Verdana;
+    font-weight: 200;
+    font-size: 16px;
+    text-align: left;
+    float: left;
+    width: 150px;
+    padding: 0 10px 10px 0;
+}
+
+.v-field-label2 {
+    font-family: 'Segoe UI Light', 'Helvetica Neue Light', 'Segoe UI', 'Helvetica Neue', 'Trebuchet MS', Verdana;
+    font-weight: 200;
+    font-size: 16px;
+    text-align: left;
+    float: left;
+    width: 140px;
+    padding: 0 10px 10px 0;
+    margin-left: 10px;
+}
+
+.v-field-value {
+    float: right;
+    width: calc(100% - 150px);
+}
+
+.v-field-value2 {
+    float: left;
+    width: calc(100% - 165px);
+}
+
+.v-field-value-full-width {
+    float: left;
+    width: calc(100% - 10px);
+    margin: 5px;
+}
+
+.v-odoo-input {
+    float: left;
+    width: 100%;
+}
+
+.v-field-grp-date {
+    float: left;
+    width: 100%;
+    display: none;
+}
+
+.v-filterGrp {
+    display: none;
+}
+
+.v-title h1{
+    font-family: 'Segoe UI Light', 'Helvetica Neue Light', 'Segoe UI', 'Helvetica Neue', 'Trebuchet MS', Verdana;
+    font-weight: bold;
+    font-size: 20px;
+    text-align: left;
+    margin: 0px;
+    width: 100%;
+    float: left;
+    margin: 5px 0 5px 0;
+}
+
+.v-selection {
+    background-color: rgba(191, 191, 191, 0.25);
+    padding: 5px 0 1px 10px;
+}
+
+.v-visibility {
+    background-color: rgba(0, 128, 200, 0.25);
+    padding: 5px 0 1px 10px;
+}
+
+.v-showExtra {
+    background-color: rgba(255, 0, 0, 0.25);
+    padding: 5px 0 1px 10px;
+    display:none;
+}
+
+.v-labels {
+    background-color: rgba(255, 255, 0, 0.15);
+    padding: 5px 0 1px 10px;
+}
+
+.v-odooData {
+    background-color: rgba(135, 90, 123, 0.25);
+    padding: 5px 0 1px 10px;
+}
+
+.v-legend {
+    display: none;
+    width: 100%;
+}
+
+.v-legendLine {
+    color: black;
+    padding: 2px;
+}
+
+.v-refDate {
+    font-family: 'Segoe UI Light', 'Helvetica Neue Light', 'Segoe UI', 'Helvetica Neue', 'Trebuchet MS', Verdana;
+    font-weight: 200;
+    font-size: 16px;
+    padding: 0 10px 10px 10px;
+}
