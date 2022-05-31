@@ -90,12 +90,17 @@ body .dx-popup-content .custom-item {
 }
 
 .v-selection {
-    background-color: rgba(191, 191, 191, 0.15);
+    background-color: rgba(191, 191, 191, 0.25);
+    padding: 5px 0 1px 10px;
+}
+
+.v-visibility {
+    background-color: rgba(0, 128, 200, 0.25);
     padding: 5px 0 1px 10px;
 }
 
 .v-showExtra {
-    background-color: rgba(255, 0, 0, 0.15);
+    background-color: rgba(255, 0, 0, 0.25);
     padding: 5px 0 1px 10px;
     display:none;
 }
@@ -106,7 +111,7 @@ body .dx-popup-content .custom-item {
 }
 
 .v-odooData {
-    background-color: rgba(135, 90, 123, 0.15);
+    background-color: rgba(135, 90, 123, 0.25);
     padding: 5px 0 1px 10px;
 }
 

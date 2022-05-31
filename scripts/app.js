@@ -133,6 +133,7 @@ var referenceDatePicker = $('#date').dxDateBox({
     value: Date.now(),
 });
 
+var colorExisting = { r: 80, g: 56, b: 48 };
 var colorModelled = { r: 211, g: 211, b: 211 };
 var guidsOnHold = [];
 var colorOnHold = { r: 255, g: 0, b: 0 };
@@ -228,6 +229,7 @@ $(function () {
             data.component.option('text', 'Bezig met inkleuren volgens status');
             buttonIndicator.option('visible', true);
             document.getElementById("legend").style.display = 'block';
+            document.getElementById("legendExisting").style.backgroundColor = getColorString(colorExisting);
             document.getElementById("legendModelled").style.backgroundColor = getColorString(colorModelled);
             document.getElementById("legendOnHold").style.backgroundColor = getColorString(colorOnHold);
             document.getElementById("legendDrawn").style.backgroundColor = getColorString(colorDrawn);
@@ -420,7 +422,16 @@ $(function () {
                     await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: productionEndedRuntimeIds }] }, { color: colorProductionEnded });
                     await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: availableForTransportRuntimeIds }] }, { color: colorAvailableForTransport });
                     await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: guidsTransportedRuntimeIds }] }, { color: colorTransported });
+
                 }
+
+                const mobjectsExisting = await API.viewer.getObjects({ parameter: { properties: { 'Default.MERKPREFIX': 'BESTAAND' } } });
+                for (const mobjects of mobjectsExisting) {
+                    var modelId = mobjects.modelId;
+                    const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: colorExisting });
+                }
+
 
             //debugInfo = debugInfo.concat("<br />Colored according to status");
             //$(debug).html(debugInfo);
@@ -652,6 +663,51 @@ const prefixSelectionTagBox = $('#prefixSelection').dxTagBox({
     //onValueChanged: function () {
     //    DevExpress.ui.notify("The button was clicked");
     //},
+});
+
+$(function () {
+    $("#btnShowKnownPrefixes").dxButton({
+        stylingMode: "outlined",
+        text: "Toon enkel gekende prefixen",
+        type: "success",
+        template(data, container) {
+            $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+            buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+                visible: false,
+            }).dxLoadIndicator('instance');
+        },
+        onClick: async function (data) {
+            data.component.option('text', 'Bezig met elementen te filteren');
+            buttonIndicator.option('visible', true);
+            try {
+                const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
+                for (const mobjects of mobjectsArr) {
+                    var modelId = mobjects.modelId;
+                    const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
+                }
+
+                var objectRuntimeIds = [];
+                var modelIds = [];
+                for (let i = 0; i < prefixes.length; i++) {
+                    const mobjectsExistingArr = await API.viewer.getObjects({ parameter: { properties: { 'Default.MERKPREFIX': prefixes[i] } } });
+                    for (const mobjectsExisting of mobjectsExistingArr) {
+                        if (!modelIds.includes(mobjectsExisting.modelId))
+                            modelIds.push(mobjectsExisting.modelId);
+                        objectRuntimeIds = objectRuntimeIds.concat(mobjectsExisting.objects.map(o => o.id));
+                    }
+                }
+                for (const modelId of modelIds) {
+                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectRuntimeIds }] }, { visible: true });
+                }
+            }
+            catch (e) {
+                DevExpress.ui.notify(e);
+            }
+            buttonIndicator.option('visible', false);
+            data.component.option('text', 'Toon enkel gekende prefixen');
+        },
+    });
 });
 
 $(function () {

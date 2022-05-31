@@ -11,7 +11,7 @@
     <!-- DevExtreme theme -->
     <link rel="stylesheet" type="text/css" href="https://cdn3.devexpress.com/jslib/21.2.5/css/dx.common.css" />
     <link rel="stylesheet" type="text/css" href="https://cdn3.devexpress.com/jslib/21.2.5/css/dx.dark.compact.css" />
-    <link rel="stylesheet" type="text/css" href="./css/style.css">
+    <link rel="stylesheet" type="text/css" href="./css/style2.css">
     <!-- DevExtreme library -->
     <script type="text/javascript" src="https://cdn3.devexpress.com/jslib/21.2.5/js/dx.all.js"></script>
     <!-- <script type="text/javascript" src="https://cdn3.devexpress.com/jslib/21.2.4/js/dx.web.js"></script> -->
@@ -28,7 +28,12 @@
     </script>
     <div class="demo-container">
         <div class="form">
-
+            <div class="v-visibility">
+                <div class="v-title"><h1>Zichtbaarheid onderdelen</h1></div>
+                <div class="dx-fieldset">
+                    <div id="btnShowKnownPrefixes"></div>
+                </div>
+            </div>
             <div class="v-selection">
                 <div class="v-title"><h1>Selecteren met filters</h1></div>
                 <div class="v-grp">
@@ -125,6 +130,7 @@
                     <div id="setColorFromStatus"></div>
                     <div id="legend" class="v-legend">
                         <div><h5>Legende: </h5></div>
+                        <div id="legendExisting" class="v-legendLine">Bestaand: het element was reeds aanwezig voor de aanvang van het project</div>
                         <div id="legendModelled" class="v-legendLine">Gemodelleerd: het element is nog niet doorgegeven aan productie</div>
                         <div id="legendOnHold" class="v-legendLine">On hold: element staat tijdelijk 'on hold'</div>
                         <div id="legendDrawn" class="v-legendLine">Getekend: tekeningen beschikbaar productie</div>
