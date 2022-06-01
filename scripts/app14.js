@@ -13,7 +13,7 @@ window.onload = async function () {
         }
     });
 
-    setInterval(getRecentOdooData, 1000);
+    setInterval(getRecentOdooData, 5000);
 }
 
 const prefixes = [
@@ -255,7 +255,6 @@ async function getRecentOdooData() {
                         else if (status === StatusDrawn) {
                             color = colorDrawn;
                         }
-
 
                         const mobjectsArr = await API.viewer.getObjects({ parameter: { properties: { 'Default.GUID': record.name } } });
 
