@@ -12,6 +12,8 @@ window.onload = async function () {
             selectionChanged(data.data);
         }
     });
+
+    setInterval(getRecentOdooData, 5000);
 }
 
 const prefixes = [
@@ -154,6 +156,136 @@ function getColorString(color) {
     return "rgb(" + color.r + ", " + color.g + ", " + color.b + ")";
 }
 
+var lastUpdate = "";
+var modelIsColored = false;
+async function getRecentOdooData() {
+    if (!modelIsColored)
+        return;
+
+    //Authenticate with MUK API
+    var token = await getToken();
+
+    //var debugInfo = "";
+    //Get project name
+    var regexProjectName = /^[TV]\d+_\w+/;
+    var project = { name: "V8597_VDL" };//await API.project.getProject();
+    //debugInfo = debugInfo.concat("<br />Project name: " + project.name);
+    //$(debug).html(debugInfo);
+    if (!regexProjectName.test(project.name))
+        return;
+    var projectNumber = project.name.split("_")[0];
+
+    //Get project ID
+    var id = -1;
+    await $.ajax({
+        type: "GET",
+        url: odooURL + "/api/read",
+        data: {
+            token: token,
+            model: "project.project",
+            domain: '[["proj_unique_id", "=", "' + projectNumber + '"]]',
+            fields: '["id", "proj_unique_id"]',
+        },
+        success: function (data) {
+            id = data[0].id;
+        }
+    });
+
+    if (lastUpdate === "") {
+        await $.ajax({
+            type: "GET",
+            url: odooURL + "/api/read",
+            data: {
+                token: token,
+                model: "trimble.connect.main",
+                domain: '[["project_id.id", "=", "' + id + '"]]',
+                order: 'write_date desc',
+                fields: '["id", "write_date"]'
+            },
+            success: function (data) {
+                lastUpdate = data[0].write_date;
+                lastUpdate = addASecond(lastUpdate);
+                console.log("Last update: " + lastUpdate);
+            }
+        });
+    }
+    else {
+        await $.ajax({
+            type: "GET",
+            url: odooURL + "/api/read",
+            data: {
+                token: token,
+                model: "trimble.connect.main",
+                domain: '[["project_id.id", "=", "' + id + '"],["write_date",">=","' + lastUpdate + '"]]',
+                order: 'write_date desc',
+                fields: '["id", "write_date", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "state", "mark_available"]',
+            },
+            success: async function (data) {
+                var date = GetStringFromDate(new Date());
+                if (data.length > 0) {
+                    console.log(date + ": " + data.length + " updated records found.");
+                    lastUpdate = data[0].write_date;
+                    lastUpdate = addASecond(lastUpdate);
+
+                    var referenceDate = new Date();
+                    referenceDate.setHours(23);
+                    referenceDate.setMinutes(59);
+                    referenceDate.setSeconds(59);
+                    for (const record of data) {
+                        var color;
+                        var status = getStatus(record, referenceDate);
+                        if (status === StatusOnHold) {
+                            color = colorOnHold;
+                        }
+                        else if (status === StatusTransported) {
+                            color = colorTransported;
+                        }
+                        else if (status === StatusAvailableForTransport) {
+                            color = colorAvailableForTransport;
+                        }
+                        else if (status === StatusProductionEnded) {
+                            color = colorProductionEnded;
+                        }
+                        else if (status === StatusDemoulded) {
+                            color = colorDemoulded;
+                        }
+                        else if (status === StatusPlanned) {
+                            color = colorPlanned;
+                        }
+                        else if (status === StatusDrawn) {
+                            color = colorDrawn;
+                        }
+
+                        const mobjectsArr = await API.viewer.getObjects({ parameter: { properties: { 'Default.GUID': record.name } } });
+                        console.log("mobjectsArr length: " + mobjectsArr.length);
+
+                        for (const mobjects of mobjectsArr) {
+                            var modelId = mobjects.modelId;
+                            console.log("modelId: " + modelId);
+                            var compressedIfcGuids = [];
+                            console.log("record.name: " + record.name);
+                            var compressedIfcGuid = Guid.fromFullToCompressed(record.name);
+                            console.log("compressedIfcGuid: " + compressedIfcGuid);
+                            compressedIfcGuids.push(compressedIfcGuid);
+                            var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedIfcGuids);
+                            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: color });
+                        }
+                    }
+                }
+                else {
+                    console.log(date + ": no updated records found.");
+                }
+            }
+        });
+    }
+}
+
+function addASecond(s) {
+    var dateS = GetDateAndTimeFromString(s);
+    dateS = new Date(dateS.setSeconds(dateS.getSeconds() + 1));
+    return GetStringFromDate(dateS);
+}
+
 var token = "";
 async function getToken() {
     if (token !== "") {
@@ -212,6 +344,40 @@ async function getToken() {
         });
     }
     return token;
+}
+
+const StatusOnHold = "OnHold";
+const StatusTransported = "Transported";
+const StatusAvailableForTransport = "AvailableForTransport";
+const StatusProductionEnded = "ProductionEnded";
+const StatusDemoulded = "Demoulded";
+const StatusPlanned = "Planned";
+const StatusDrawn = "Drawn";
+
+function getStatus(record, referenceDate) {
+    if (typeof record.state === 'string' && record.state === 'onhold') {
+        return StatusOnHold;
+    }
+    else if (typeof record.date_transported === 'string' && GetDateFromString(record.date_fab_dem) <= referenceDate) {
+        return StatusTransported;
+    }
+    else if (typeof record.date_fab_end === 'string' && GetDateFromString(record.date_fab_end) <= referenceDate) {
+        if (record.mark_available) {
+            return StatusAvailableForTransport;
+        }
+        else {
+            return StatusProductionEnded;
+        }
+    }
+    else if (typeof record.date_fab_dem === 'string' && GetDateFromString(record.date_fab_dem) <= referenceDate) {
+        return StatusDemoulded;
+    }
+    else if (typeof record.date_fab_planned === 'string' && GetDateFromString(record.date_fab_planned) <= referenceDate) {
+        return StatusPlanned;
+    }
+    else if (typeof record.date_drawn === 'string' && GetDateFromString(record.date_drawn) <= referenceDate) {
+        return StatusDrawn;
+    }
 }
 
 $(function () {
@@ -310,27 +476,26 @@ $(function () {
                             for (const record of data) {
                                 //i++;
                                 lastId = record.id;
-                                if (typeof record.state === 'string' && record.state === 'onhold') {
+                                var status = getStatus(record, referenceDate);
+                                if (status === StatusOnHold) {
                                     guidsOnHold.push(record.name);
                                 }
-                                else if (typeof record.date_transported === 'string' && GetDateFromString(record.date_fab_dem) <= referenceDate) {
+                                else if (status === StatusTransported) {
                                     guidsTransported.push(record.name);
                                 }
-                                else if (typeof record.date_fab_end === 'string' && GetDateFromString(record.date_fab_end) <= referenceDate) {
-                                    if (record.mark_available) {
-                                        guidsAvailableForTransport.push(record.name);
-                                    }
-                                    else {
-                                        guidsProductionEnded.push(record.name);
-                                    }
+                                else if (status === StatusAvailableForTransport) {
+                                    guidsAvailableForTransport.push(record.name);
                                 }
-                                else if (typeof record.date_fab_dem === 'string' && GetDateFromString(record.date_fab_dem) <= referenceDate) {
+                                else if (status === StatusProductionEnded) {
+                                    guidsProductionEnded.push(record.name);
+                                }
+                                else if (status === StatusDemoulded) {
                                     guidsDemoulded.push(record.name);
                                 }
-                                else if (typeof record.date_fab_planned === 'string' && GetDateFromString(record.date_fab_planned) <= referenceDate) {
+                                else if (status === StatusPlanned) {
                                     guidsPlanned.push(record.name);
                                 }
-                                else if (typeof record.date_drawn === 'string' && GetDateFromString(record.date_drawn) <= referenceDate) {
+                                else if (status === StatusDrawn) {
                                     guidsDrawn.push(record.name);
                                 }
                             }
@@ -422,7 +587,6 @@ $(function () {
                     await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: productionEndedRuntimeIds }] }, { color: colorProductionEnded });
                     await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: availableForTransportRuntimeIds }] }, { color: colorAvailableForTransport });
                     await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: guidsTransportedRuntimeIds }] }, { color: colorTransported });
-
                 }
 
                 const mobjectsExisting = await API.viewer.getObjects({ parameter: { properties: { 'Default.MERKPREFIX': 'BESTAAND' } } });
@@ -432,9 +596,7 @@ $(function () {
                     await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: colorExisting });
                 }
 
-
-            //debugInfo = debugInfo.concat("<br />Colored according to status");
-            //$(debug).html(debugInfo);
+                modelIsColored = true;
             }
             catch (e) {
                 DevExpress.ui.notify(e);
@@ -642,6 +804,42 @@ function GetDateFromString(s) {
         date = new Date(year, month - 1, day);
     }
     return date;
+}
+
+var regexDateAndTime = /[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}/;
+function GetDateAndTimeFromString(s) {
+    var date = null;
+    var resultDate = s.match(regexDateAndTime);
+    if (resultDate != null) {
+        var splitDateTime = resultDate[0].split(" ");
+        var splitDate = splitDateTime[0].split("-");
+        var splitTime = splitDateTime[1].split(":");
+        var year = splitDate[0];
+        var month = splitDate[1];
+        var day = splitDate[2];
+        var hours = splitTime[0];
+        var minutes = splitTime[1];
+        var seconds = splitTime[2];
+        date = new Date(year, month - 1, day, hours, minutes, seconds);
+    }
+    return date;
+}
+
+function GetStringFromDate(d) {
+    var year = d.getFullYear();
+    var month = pad("00", d.getMonth() + 1);
+    var day = pad("00", d.getDate());
+    var hours = pad("00", d.getHours());
+    var minutes = pad("00", d.getMinutes());
+    var seconds = pad("00", d.getSeconds());
+    var returnstr = year + "-" + month + "-" + day + " " + hours + ":" + minutes + ":" + seconds;
+    return returnstr;
+}
+
+function pad(pad, str) {
+    if (typeof str === 'undefined')
+        return pad;
+    return (pad + str).slice(-pad.length);
 }
 
 const assemblyTextBox = $('#placeholder').dxTextBox({
