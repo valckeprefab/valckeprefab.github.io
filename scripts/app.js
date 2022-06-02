@@ -200,6 +200,7 @@ async function getRecentOdooData() {
                 model: "trimble.connect.main",
                 domain: '[["project_id.id", "=", "' + id + '"]]',
                 order: 'write_date desc',
+                limit: 1,
                 fields: '["id", "write_date"]'
             },
             success: function (data) {
