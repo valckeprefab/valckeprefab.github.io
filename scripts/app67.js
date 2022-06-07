@@ -867,20 +867,24 @@ $(function () {
             data.component.option('text', 'Bezig met elementen te filteren');
             buttonIndicator.option('visible', true);
             try {
+                console.log("1");
                 const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
                 var spliceLength = 5000;
                 for (const mobjects of mobjectsArr) {
+                    console.log("2");
                     var modelId = mobjects.modelId;
                     if (idsPerPrefixPerModelId.find(o => o.ModelId === modelId) !== undefined)
                         continue;
                     const objectsRuntimeIds = mobjects.objects.map(o => o.id);
                     var idsPerPrefix = [];
                     for (var i = 0; i < objectsRuntimeIds.length; i += spliceLength) {
+                        console.log("3");
                         var objectsRuntimeIdsSpliced = objectsRuntimeIds.slice(i, i + spliceLength);
                         const objectPropertiesArr = await API.viewer.getObjectProperties(modelId, objectsRuntimeIdsSpliced);
                         //console.log("objectPropertiesArr: " + objectPropertiesArr);
                         //console.log("objectPropertiesArr.length: " + objectPropertiesArr.length);
                         for (const objproperties of objectPropertiesArr) {
+                            console.log("4");
                             //objproperties type: ObjectProperties, heeft id van object en array met propertysets
                             //objproperties.properties : PropertySet[]
                             //PropertySet.set is not included in the query
@@ -906,9 +910,11 @@ $(function () {
                                 );
                             }
                         }
+                        console.log("5");
                         await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
                     }
                     //console.log("new ids pushed for model " + modelId + " (#: " + idsPerPrefix.length + " )");
+                    console.log("6");
                     idsPerPrefixPerModelId.push({ ModelId: modelId, IdsPerPrefix: idsPerPrefix });
                 }
 
@@ -919,17 +925,25 @@ $(function () {
                 //    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
                 //}
 
+                console.log("7");
                 //show only known prefixes
                 for (const modelIdDict of idsPerPrefixPerModelId) {
+                    console.log("8");
                     var modelId = modelIdDict.ModelId;
-                    //console.log("Showing objects of model " + modelId);
+                    console.log("Showing objects of model " + modelId);
+                    var runtimeIdsToShow = [];
                     for (const idsPerPrefix of modelIdDict.IdsPerPrefix) {
-                        if (idsPerPrefix.ObjectRuntimeIds.length > 0) {
-                            //console.log("change to visible");
-                            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: idsPerPrefix.ObjectRuntimeIds }] }, { visible: true });
-                        }
+                        runtimeIdsToShow = runtimeIdsToShow.concat(idsPerPrefix.ObjectRuntimeIds);
+                    }
+                    console.log("runtimeIdsToShow.length " + runtimeIdsToShow.length);
+                    if (runtimeIdsToShow.length > 0) {
+                        console.log("change to visible");
+                        console.log("runtimeIdsToShow[0]" + runtimeIdsToShow[0]);
+                        console.log("9");
+                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsToShow }] }, { visible: true });
                     }
                 }
+                console.log("10");
             }
             catch (e) {
                 console.log(e);
