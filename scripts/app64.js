@@ -885,11 +885,11 @@ $(function () {
                             //objproperties.properties : PropertySet[]
                             //PropertySet.set is not included in the query
                             //console.log("objproperties.properties.length: " + objproperties.properties.length);
-                            var psetDefault = objproperties.properties.find(s => s.name === "Default");
-                            if (psetDefault === undefined) continue;
+                            //var psetDefault = objproperties.properties.find(s => s.name === "Default");
+                            //if (psetDefault === undefined) continue;
                             //console.log("psetDefault: " + psetDefault.name);
-                            var propPrefix = psetDefault.properties.find(p => p.name === "MERKPREFIX");
-                            //var propPrefix = objproperties.properties.flatMap(p => p.properties).find(p => p.name === "MERKPREFIX");
+                            //var propPrefix = psetDefault.properties.find(p => p.name === "MERKPREFIX");
+                            var propPrefix = objproperties.properties.flatMap(p => p.properties).find(p => p.name === "MERKPREFIX");
                             if (propPrefix === undefined) continue;
                             //console.log("propPrefix: " + propPrefix.name + " " + propPrefix.value);
                             if (!prefixes.includes(propPrefix.value)) continue;
