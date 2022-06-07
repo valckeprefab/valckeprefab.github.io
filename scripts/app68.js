@@ -878,6 +878,7 @@ $(function () {
                     }
                     var idsPerPrefix = [];
                     for (var i = 0; i < objectsRuntimeIds.length; i += spliceLength) {
+                        var cntr = 0;
                         var objectsRuntimeIdsSpliced = objectsRuntimeIds.slice(i, i + spliceLength);
                         const objectPropertiesArr = await API.viewer.getObjectProperties(modelId, objectsRuntimeIdsSpliced);
                         //console.log("objectPropertiesArr: " + objectPropertiesArr);
@@ -898,6 +899,7 @@ $(function () {
                             var prefixArr = idsPerPrefix.find(p => p.Prefix === propPrefix.value);
                             if (prefixArr !== undefined) {
                                 prefixArr.ObjectRuntimeIds.push(objproperties.id);
+                                cntr++;
                             }
                             else {
                                 idsPerPrefix.push(
@@ -906,8 +908,10 @@ $(function () {
                                         ObjectRuntimeIds: [objproperties.id]
                                     }
                                 );
+                                cntr++;
                             }
                         }
+                        console.log("i: " + i + " - cntr: " + cntr);
                     }
                     //console.log("new ids pushed for model " + modelId + " (#: " + idsPerPrefix.length + " )");
                     idsPerPrefixPerModelId.push({ ModelId: modelId, IdsPerPrefix: idsPerPrefix });
