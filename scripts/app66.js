@@ -874,10 +874,10 @@ $(function () {
                     if (idsPerPrefixPerModelId.find(o => o.ModelId === modelId) !== undefined)
                         continue;
                     const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+                    var idsPerPrefix = [];
                     for (var i = 0; i < objectsRuntimeIds.length; i += spliceLength) {
                         var objectsRuntimeIdsSpliced = objectsRuntimeIds.slice(i, i + spliceLength);
                         const objectPropertiesArr = await API.viewer.getObjectProperties(modelId, objectsRuntimeIdsSpliced);
-                        var idsPerPrefix = [];
                         //console.log("objectPropertiesArr: " + objectPropertiesArr);
                         //console.log("objectPropertiesArr.length: " + objectPropertiesArr.length);
                         for (const objproperties of objectPropertiesArr) {
@@ -906,9 +906,10 @@ $(function () {
                                 );
                             }
                         }
-                        idsPerPrefixPerModelId.push({ ModelId: modelId, IdsPerPrefix: idsPerPrefix });
                         await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
                     }
+                    console.log("new ids pushed for model " + modelId + " (#: " + idsPerPrefix.length + " )");
+                    idsPerPrefixPerModelId.push({ ModelId: modelId, IdsPerPrefix: idsPerPrefix });
                 }
 
                 //set all objects invisible
@@ -922,15 +923,11 @@ $(function () {
                 for (const modelIdDict of idsPerPrefixPerModelId) {
                     var modelId = modelIdDict.ModelId;
                     console.log("Showing objects of model " + modelId);
-                    var runtimeIdsToShow = [];
                     for (const idsPerPrefix of modelIdDict.IdsPerPrefix) {
-                        runtimeIdsToShow = runtimeIdsToShow.concat(idsPerPrefix.ObjectRuntimeIds);
-                    }
-                    console.log("runtimeIdsToShow.length " + runtimeIdsToShow.length);
-                    if (runtimeIdsToShow.length > 0) {
-                        console.log("change to visible");
-                        console.log("runtimeIdsToShow[0]" + runtimeIdsToShow[0]);
-                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsToShow }] }, { visible: true });
+                        if (idsPerPrefix.ObjectRuntimeIds.length > 0) {
+                            console.log("change to visible");
+                            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: idsPerPrefix.ObjectRuntimeIds }] }, { visible: true });
+                        }
                     }
                 }
             }
