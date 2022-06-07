@@ -867,53 +867,40 @@ $(function () {
             data.component.option('text', 'Bezig met elementen te filteren');
             buttonIndicator.option('visible', true);
             try {
-                var models = await API.viewer.getModels();
-                var modelIds = models.map(m => m.id);
+                const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
 
-                //add objects with known prefixes to an array (so we can skip this step next time)
-                for (const modelId of modelIds)
-                {
-                    console.log("Checking modelId: " + modelId);
-                    console.log("value: " + idsPerPrefixPerModelId.find(m => m.ModelId === modelId));
-                    if (idsPerPrefixPerModelId.find(m => m.ModelId === modelId) === undefined) {
-                        console.log("New modelId found: " + modelId);
-                        var idsPerPrefix = [];
-                        for (let i = 0; i < prefixes.length; i++) {
-                            const mobjectsArr = await API.viewer.getObjects(
-                                {
-                                    //onderstaande lijnen worden niet uitgevoerd als && filter
-                                    modelObjectIds: [{ modelId, objectRuntimeIds: []}],
-                                    parameter: { properties: { 'Default.MERKPREFIX': prefixes[i] } }
-                                });
-                            console.log("mobjectsArr: " + mobjectsArr);
-                            console.log("mobjectsArr.modelId: " + mobjectsArr.modelId);
-                            console.log("mobjectsArr.length: " + mobjectsArr.length);
-                            for (const mobjects of mobjectsArr) {
-                                console.log("mobjects: " + mobjects);
-                                console.log("mobjects.objects: " + mobjects.objects);
-                                console.log("mobjects.objects.length: " + mobjects.objects.length);
-                                if (mobjects.objects !== undefined && mobjects.objects !== 'undefined' && mobjects.objects.length > 0) {
-                                    console.log("trying to push new record (" + mobjects.objects.length + " objects)");
-                                    idsPerPrefix.push(
-                                        {
-                                            Prefix: prefixes[i],
-                                            ObjectRuntimeIds: mobjects.objects.map(o => o.id)
-                                        }
-                                    );
-                                    console.log("objects added");
-                                }
-                                else
-                                    console.log("no objects with that prefix (" + prefixes[i] + ") found in model " + modelId);
-                            }
+                for (const mobjects of mobjectsArr) {
+                    var modelId = mobjects.modelId;
+                    if (idsPerPrefixPerModelId.find(o => o.ModelId === modelId) !== undefined)
+                        continue;
+                    const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+                    const objectPropertiesArr = await API.viewer.getObjectProperties(modelId, objectsRuntimeIds);
+                    var idsPerPrefix = [];
+                    for (const objproperties of objectPropertiesArr) {
+                        //objproperties type: ObjectProperties
+                        var psetDefault = objproperties.properties.find(s => s.set === "Default");
+                        if (psetDefault === undefined) continue;
+                        var propPrefix = psetDefault.properties.find(p => p.name === "MERKPREFIX");
+                        if (propPrefix === undefined) continue;
+                        if (!prefixes.includes(propPrefix)) continue;
+                        var prefixArr = idsPerPrefix.find(p => p.Prefix === propPrefix);
+                        if (prefixArr !== undefined) {
+                            prefixArr.ObjectRuntimeIds.push(objproperties.id);
                         }
-                        idsPerPrefixPerModelId.push({ ModelId: modelId, IdsPerPrefix: idsPerPrefix })
+                        else {
+                            prefixArr.push(
+                                {
+                                    Prefix: propPrefix,
+                                    ObjectRuntimeIds: [objproperties.id]
+                                }
+                            );
+                        }
                     }
-                    else
-                        console.log("model was already added");
+                    idsPerPrefixPerModelId.push({ ModelId: modelId, IdsPerPrefix: idsPerPrefix });
+                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
                 }
 
                 //set all objects invisible
-                const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
                 for (const mobjects of mobjectsArr) {
                     var modelId = mobjects.modelId;
                     const objectsRuntimeIds = mobjects.objects.map(o => o.id);
