@@ -872,6 +872,7 @@ $(function () {
                 for (const modelId of modelIds)
                 {
                     if (idsPerPrefixPerModelId.find(m => m.ModelId === modelId) === "undefined") {
+                        console.log("New modelId found: " + modelId);
                         var idsPerPrefix = [];
                         for (let i = 0; i < prefixes.length; i++) {
                             const mobjectsArr = await API.viewer.getObjects(
