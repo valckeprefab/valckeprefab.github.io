@@ -889,7 +889,7 @@ $(function () {
                 var objectRuntimeIds = [];
                 var modelIds = [];
                 for (let i = 0; i < prefixes.length; i++) {
-                    const mobjectsExistingArr = await API.viewer.getObjects({ parameter: { properties: { 'Default.MERKPREFIX': prefixes[i] } } });
+                    const mobjectsExistingArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY", properties: { 'Default.MERKPREFIX': prefixes[i] } } });
                     for (const mobjectsExisting of mobjectsExistingArr) {
                         if (!modelIds.includes(mobjectsExisting.modelId))
                             modelIds.push(mobjectsExisting.modelId);
@@ -1092,6 +1092,7 @@ function getPropSelector() {
 
 function getPropSelectorByPropnameAndValue(propNameFilter, propValueFilter) {
     return {
+        class: "IFCELEMENTASSEMBLY",
         parameter: {
             properties: {
                 [propNameFilter]: propValueFilter
