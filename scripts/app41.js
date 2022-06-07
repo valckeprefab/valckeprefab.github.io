@@ -881,7 +881,6 @@ $(function () {
                         for (let i = 0; i < prefixes.length; i++) {
                             const mobjectsArr = await API.viewer.getObjects(
                                 {
-                                    modelObjectIds: [{ modelId }],
                                     parameter: { class: "IFCELEMENTASSEMBLY", properties: { 'Default.MERKPREFIX': prefixes[i] } }
                                 });
                             console.log("mobjectsArr: " + mobjectsArr);

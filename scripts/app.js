@@ -1092,8 +1092,8 @@ function getPropSelector() {
 
 function getPropSelectorByPropnameAndValue(propNameFilter, propValueFilter) {
     return {
-        class: "IFCELEMENTASSEMBLY",
         parameter: {
+            class: "IFCELEMENTASSEMBLY",
             properties: {
                 [propNameFilter]: propValueFilter
             }
