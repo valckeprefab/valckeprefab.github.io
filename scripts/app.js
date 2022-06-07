@@ -13,6 +13,7 @@ window.onload = async function () {
         }
     });
 
+    fillObjectStatuses();
     setInterval(getRecentOdooData, 5000);
 }
 
@@ -135,22 +136,96 @@ var referenceDatePicker = $('#date').dxDateBox({
     value: Date.now(),
 });
 
-var colorExisting = { r: 80, g: 56, b: 48 };
-var colorModelled = { r: 211, g: 211, b: 211 };
-var guidsOnHold = [];
-var colorOnHold = { r: 255, g: 0, b: 0 };
-var guidsDrawn = [];
-var colorDrawn = { r: 221, g: 160, b: 221 };
-var guidsPlanned = [];
-var colorPlanned = { r: 255, g: 140, b: 0 };
-var guidsDemoulded = [];
-var colorDemoulded = { r: 128, g: 128, b: 0 };
-var guidsProductionEnded = [];
-var colorProductionEnded = { r: 255, g: 255, b: 0 };
-var guidsAvailableForTransport = [];
-var colorAvailableForTransport = { r: 0, g: 128, b: 255 };
-var guidsTransported = [];
-var colorTransported = { r: 34, g: 177, b: 76 };
+const StatusModelled = "Modelled";
+const StatusExisting = "Existing";
+const StatusDrawn = "Drawn";
+const StatusOnHold = "OnHold";
+const StatusPlanned = "Planned";
+const StatusDemoulded = "Demoulded";
+const StatusProductionEnded = "ProductionEnded";
+const StatusAvailableForTransport = "AvailableForTransport";
+const StatusTransported = "Transported";
+var ObjectStatuses = [];
+function fillObjectStatuses() {
+    var modelled = {
+        Status: StatusModelled,
+        Color: { r: 211, g: 211, b: 211 },
+        Guids: [],
+        CompressedIfcGuids: []
+    };
+    ObjectStatuses.push(modelled);
+
+    var existing = {
+        Status: StatusExisting,
+        Color: { r: 80, g: 56, b: 48 },
+        Guids: [],
+        CompressedIfcGuids: []
+    };
+    ObjectStatuses.push(existing);
+
+    var drawn = {
+        Status: StatusDrawn,
+        Color: { r: 221, g: 160, b: 221 },
+        Guids: [],
+        CompressedIfcGuids: []
+    };
+    ObjectStatuses.push(drawn);
+
+    var onHold = {
+        Status: StatusOnHold,
+        Color: { r: 255, g: 0, b: 0 },
+        Guids: [],
+        CompressedIfcGuids: []
+    };
+    ObjectStatuses.push(onHold);
+
+    var planned = {
+        Status: StatusPlanned,
+        Color: { r: 255, g: 140, b: 0 },
+        Guids: [],
+        CompressedIfcGuids: []
+    };
+    ObjectStatuses.push(planned);
+
+    var demoulded = {
+        Status: StatusDemoulded,
+        Color: { r: 128, g: 128, b: 0 },
+        Guids: [],
+        CompressedIfcGuids: []
+    };
+    ObjectStatuses.push(demoulded);
+
+    var prodEnded = {
+        Status: StatusProductionEnded,
+        Color: { r: 255, g: 255, b: 0 },
+        Guids: [],
+        CompressedIfcGuids: []
+    };
+    ObjectStatuses.push(prodEnded);
+
+    var availForTransport = {
+        Status: StatusAvailableForTransport,
+        Color: { r: 0, g: 128, b: 255 },
+        Guids: [],
+        CompressedIfcGuids: []
+    };
+    ObjectStatuses.push(availForTransport);
+
+    var transported = {
+        Status: StatusTransported,
+        Color: { r: 34, g: 177, b: 76 },
+        Guids: [],
+        CompressedIfcGuids: []
+    };
+    ObjectStatuses.push(transported);
+}
+
+function ClearObjectStatusesGuids() {
+    for (var os in ObjectStatuses) {
+        os.Guids = [];
+        os.CompressedIfcGuids = [];
+    }
+}
 
 function getColorString(color) {
     return "rgb(" + color.r + ", " + color.g + ", " + color.b + ")";
@@ -176,20 +251,7 @@ async function getRecentOdooData() {
     var projectNumber = project.name.split("_")[0];
 
     //Get project ID
-    var id = -1;
-    await $.ajax({
-        type: "GET",
-        url: odooURL + "/api/read",
-        data: {
-            token: token,
-            model: "project.project",
-            domain: '[["proj_unique_id", "=", "' + projectNumber + '"]]',
-            fields: '["id", "proj_unique_id"]',
-        },
-        success: function (data) {
-            id = data[0].id;
-        }
-    });
+    var id = await GetProjectId(projectNumber);
 
     if (lastUpdate === "") {
         await $.ajax({
@@ -233,29 +295,8 @@ async function getRecentOdooData() {
                     referenceDate.setMinutes(59);
                     referenceDate.setSeconds(59);
                     for (const record of data) {
-                        var color;
                         var status = getStatus(record, referenceDate);
-                        if (status === StatusOnHold) {
-                            color = colorOnHold;
-                        }
-                        else if (status === StatusTransported) {
-                            color = colorTransported;
-                        }
-                        else if (status === StatusAvailableForTransport) {
-                            color = colorAvailableForTransport;
-                        }
-                        else if (status === StatusProductionEnded) {
-                            color = colorProductionEnded;
-                        }
-                        else if (status === StatusDemoulded) {
-                            color = colorDemoulded;
-                        }
-                        else if (status === StatusPlanned) {
-                            color = colorPlanned;
-                        }
-                        else if (status === StatusDrawn) {
-                            color = colorDrawn;
-                        }
+                        var color = getColorByStatus(status);
 
                         const mobjectsArr = await API.viewer.getObjects({ parameter: { properties: { 'Default.GUID': record.name } } });
                         console.log("mobjectsArr length: " + mobjectsArr.length);
@@ -347,14 +388,6 @@ async function getToken() {
     return token;
 }
 
-const StatusOnHold = "OnHold";
-const StatusTransported = "Transported";
-const StatusAvailableForTransport = "AvailableForTransport";
-const StatusProductionEnded = "ProductionEnded";
-const StatusDemoulded = "Demoulded";
-const StatusPlanned = "Planned";
-const StatusDrawn = "Drawn";
-
 function getStatus(record, referenceDate) {
     if (typeof record.state === 'string' && record.state === 'onhold') {
         return StatusOnHold;
@@ -379,6 +412,53 @@ function getStatus(record, referenceDate) {
     else if (typeof record.date_drawn === 'string' && GetDateFromString(record.date_drawn) <= referenceDate) {
         return StatusDrawn;
     }
+    else {
+        return StatusModelled;
+    }
+}
+
+function getColorByStatus(status) {
+    var color = colorModelled;
+    if (status === StatusOnHold) {
+        color = colorOnHold;
+    }
+    else if (status === StatusTransported) {
+        color = colorTransported;
+    }
+    else if (status === StatusAvailableForTransport) {
+        color = colorAvailableForTransport;
+    }
+    else if (status === StatusProductionEnded) {
+        color = colorProductionEnded;
+    }
+    else if (status === StatusDemoulded) {
+        color = colorDemoulded;
+    }
+    else if (status === StatusPlanned) {
+        color = colorPlanned;
+    }
+    else if (status === StatusDrawn) {
+        color = colorDrawn;
+    }
+    return color;
+}
+
+async function GetProjectId(projectNumber) {
+    var id = -1;
+    await $.ajax({
+        type: "GET",
+        url: odooURL + "/api/read",
+        data: {
+            token: token,
+            model: "project.project",
+            domain: '[["proj_unique_id", "=", "' + projectNumber + '"]]',
+            fields: '["id", "proj_unique_id"]',
+        },
+        success: function (data) {
+            id = data[0].id;
+        }
+    });
+    return id;
 }
 
 $(function () {
@@ -396,15 +476,15 @@ $(function () {
             data.component.option('text', 'Bezig met inkleuren volgens status');
             buttonIndicator.option('visible', true);
             document.getElementById("legend").style.display = 'block';
-            document.getElementById("legendExisting").style.backgroundColor = getColorString(colorExisting);
-            document.getElementById("legendModelled").style.backgroundColor = getColorString(colorModelled);
-            document.getElementById("legendOnHold").style.backgroundColor = getColorString(colorOnHold);
-            document.getElementById("legendDrawn").style.backgroundColor = getColorString(colorDrawn);
-            document.getElementById("legendPlanned").style.backgroundColor = getColorString(colorPlanned);
-            document.getElementById("legendDemoulded").style.backgroundColor = getColorString(colorDemoulded);
-            document.getElementById("legendProductionEnded").style.backgroundColor = getColorString(colorProductionEnded);
-            document.getElementById("legendAvailableForTransport").style.backgroundColor = getColorString(colorAvailableForTransport);
-            document.getElementById("legendTransported").style.backgroundColor = getColorString(colorTransported);
+            document.getElementById("legendExisting").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusExisting).Color);
+            document.getElementById("legendModelled").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusModelled).Color);
+            document.getElementById("legendOnHold").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusOnHold).Color);
+            document.getElementById("legendDrawn").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusDrawn).Color);
+            document.getElementById("legendPlanned").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusPlanned).Color);
+            document.getElementById("legendDemoulded").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusDemoulded).Color);
+            document.getElementById("legendProductionEnded").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusProductionEnded).Color);
+            document.getElementById("legendAvailableForTransport").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusAvailableForTransport).Color);
+            document.getElementById("legendTransported").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusTransported).Color);
             try {
 
                 //var debugInfo = "";
@@ -424,21 +504,9 @@ $(function () {
                 var token = await getToken();
 
                 //Get project ID
-                var id = -1;
-                await $.ajax({
-                    type: "GET",
-                    url: odooURL + "/api/read",
-                    data: {
-                        token: token,
-                        model: "project.project",
-                        domain: '[["proj_unique_id", "=", "' + projectNumber + '"]]',
-                        fields: '["id", "proj_unique_id"]',
-                    },
-                    success: function (data) {
-                        id = data[0].id;
-                    }
-                });
+                var id = await GetProjectId(projectNumber);
 
+                ClearObjectStatusesGuids();
                 var referenceDate = new Date();
                 referenceDate.setHours(23);
                 referenceDate.setMinutes(59);
@@ -451,14 +519,7 @@ $(function () {
                 }
                 var ended = 0;
                 var lastId = -1;
-                guidsOnHold = [];
-                guidsDrawn = [];
-                guidsPlanned = [];
-                guidsDemoulded = [];
-                guidsProductionEnded = [];
-                guidsAvailableForTransport = [];
-                guidsTransported = [];
-                while (ended != 1) {
+                while (ended != 1) { //loop cuz only 80 records get fetched at a time
                     await $.ajax({
                         type: "GET",
                         url: odooURL + "/api/read",
@@ -470,7 +531,7 @@ $(function () {
                         },
                         success: function (data) {
                             //var i = -1;
-                            if (data.length == 0) {
+                            if (data.length == 0) { //no more records
                                 ended = 1;
                                 return;
                             }
@@ -478,75 +539,14 @@ $(function () {
                                 //i++;
                                 lastId = record.id;
                                 var status = getStatus(record, referenceDate);
-                                if (status === StatusOnHold) {
-                                    guidsOnHold.push(record.name);
-                                }
-                                else if (status === StatusTransported) {
-                                    guidsTransported.push(record.name);
-                                }
-                                else if (status === StatusAvailableForTransport) {
-                                    guidsAvailableForTransport.push(record.name);
-                                }
-                                else if (status === StatusProductionEnded) {
-                                    guidsProductionEnded.push(record.name);
-                                }
-                                else if (status === StatusDemoulded) {
-                                    guidsDemoulded.push(record.name);
-                                }
-                                else if (status === StatusPlanned) {
-                                    guidsPlanned.push(record.name);
-                                }
-                                else if (status === StatusDrawn) {
-                                    guidsDrawn.push(record.name);
-                                }
+                                var guidArr = ObjectStatuses.find(o => o.Status === status);
+                                guidArr.Guids.push(record.name);
+                                guidArr.CompressedIfcGuids.push(Guid.fromFullToCompressed(record.name));
                             }
                             //debugInfo = debugInfo.concat("<br />Records iterated: " + i);
                             //$(debug).html(debugInfo);
                         }
                     });
-                }
-
-                console.log("guidsOnHold.length: " + guidsOnHold.length);
-                console.log("guidsTransported.length: " + guidsTransported.length);
-                console.log("guidsAvailableForTransport.length: " + guidsAvailableForTransport.length);
-                console.log("guidsProductionEnded.length: " + guidsProductionEnded.length);
-                console.log("guidsDemoulded.length: " + guidsDemoulded.length);
-                console.log("guidsPlanned.length: " + guidsPlanned.length);
-                console.log("guidsDrawn.length: " + guidsDrawn.length);
-                
-                var compressedIfcGuidsOnHold = [];
-                for (var guidFull of guidsOnHold) {
-                    compressedIfcGuidsOnHold.push(Guid.fromFullToCompressed(guidFull));
-                }
-
-                var compressedIfcGuidsDrawn = [];
-                for (var guidFull of guidsDrawn) {
-                    compressedIfcGuidsDrawn.push(Guid.fromFullToCompressed(guidFull));
-                }
-
-                var compressedIfcGuidsPlanned = [];
-                for (var guidFull of guidsPlanned) {
-                    compressedIfcGuidsPlanned.push(Guid.fromFullToCompressed(guidFull));
-                }
-
-                var compressedIfcGuidsDemoulded = [];
-                for (var guidFull of guidsDemoulded) {
-                    compressedIfcGuidsDemoulded.push(Guid.fromFullToCompressed(guidFull));
-                }
-
-                var compressedIfcGuidsProductionEnded = [];
-                for (var guidFull of guidsProductionEnded) {
-                    compressedIfcGuidsProductionEnded.push(Guid.fromFullToCompressed(guidFull));
-                }
-
-                var compressedIfcGuidsAvailableForTransport = [];
-                for (var guidFull of guidsAvailableForTransport) {
-                    compressedIfcGuidsAvailableForTransport.push(Guid.fromFullToCompressed(guidFull));
-                }
-
-                var compressedIfcGuidsTransported = [];
-                for (var guidFull of guidsTransported) {
-                    compressedIfcGuidsTransported.push(Guid.fromFullToCompressed(guidFull));
                 }
 
                 const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
@@ -555,46 +555,33 @@ $(function () {
                     var modelId = mobjects.modelId;
                     const objectsRuntimeIds = mobjects.objects.map(o => o.id);
                     const objectsIfcIds = await API.viewer.convertToObjectIds(modelId, objectsRuntimeIds);
-                    const compressedIfcGuidsOnHoldSet = new Set(compressedIfcGuidsOnHold);
-                    const compressedIfcGuidsDrawnSet = new Set(compressedIfcGuidsDrawn);
-                    const compressedIfcGuidsPlannedSet = new Set(compressedIfcGuidsPlanned);
-                    const compressedIfcGuidsDemouldedSet = new Set(compressedIfcGuidsDemoulded);
-                    const compressedIfcGuidsProductionEndedSet = new Set(compressedIfcGuidsProductionEnded);
-                    const compressedIfcGuidsAvailableForTransportSet = new Set(compressedIfcGuidsAvailableForTransport);
-                    const compressedIfcGuidsTransportedSet = new Set(compressedIfcGuidsTransported);
 
-                    const unplannedIfcIds = objectsIfcIds.filter(x => !compressedIfcGuidsTransportedSet.has(x)
-                        && !compressedIfcGuidsAvailableForTransportSet.has(x)
-                        && !compressedIfcGuidsProductionEndedSet.has(x)
-                        && !compressedIfcGuidsDemouldedSet.has(x)
-                        && !compressedIfcGuidsPlannedSet.has(x)
-                        && !compressedIfcGuidsDrawnSet.has(x)
-                        && !compressedIfcGuidsOnHoldSet.has(x));
-                    const unplannedRuntimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, unplannedIfcIds);
+                    var compressedIfcGuidsWithKnownStatus = [];
+                    for (const objStatus of ObjectStatuses) {
+                        compressedIfcGuidsWithKnownStatus = compressedIfcGuidsWithKnownStatus.concat(objStatus.CompressedIfcGuids);
+                    }
+                    var compressedIfcGuidsWithKnownStatusSet = new Set(compressedIfcGuidsWithKnownStatus);
 
-                    var onHoldRuntimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedIfcGuidsOnHold);
-                    var drawnRuntimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedIfcGuidsDrawn);
-                    var plannedRuntimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedIfcGuidsPlanned);
-                    var demouldedRuntimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedIfcGuidsDemoulded);
-                    var productionEndedRuntimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedIfcGuidsProductionEnded);
-                    var availableForTransportRuntimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedIfcGuidsAvailableForTransport);
-                    var guidsTransportedRuntimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedIfcGuidsTransported);
+                    const unplannedIfcIds = objectsIfcIds.filter(x => !compressedIfcGuidsWithKnownStatusSet.has(x));
 
-                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: unplannedRuntimeIds }] }, { color: colorModelled });
-                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: onHoldRuntimeIds }] }, { color: colorOnHold });
-                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: plannedRuntimeIds }] }, { color: colorPlanned });
-                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: drawnRuntimeIds }] }, { color: colorDrawn });
-                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: demouldedRuntimeIds }] }, { color: colorDemoulded });
-                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: productionEndedRuntimeIds }] }, { color: colorProductionEnded });
-                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: availableForTransportRuntimeIds }] }, { color: colorAvailableForTransport });
-                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: guidsTransportedRuntimeIds }] }, { color: colorTransported });
+                    var objectStatusModelled = ObjectStatuses.find(o => o.Status === StatusModelled);
+                    objectStatusModelled.CompressedIfcGuids = Array.from(unplannedIfcIds);
+                    objectStatusModelled.Guids = objectStatusModelled.CompressedIfcGuids.map(c => Guid.fromCompressedToFull(c));
+
+                    for (const objStatus of ObjectStatuses) {
+                        var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, objStatus.CompressedIfcGuids);
+                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: objStatus.Color });
+                    }
                 }
 
                 const mobjectsExisting = await API.viewer.getObjects({ parameter: { properties: { 'Default.MERKPREFIX': 'BESTAAND' } } });
                 for (const mobjects of mobjectsExisting) {
                     var modelId = mobjects.modelId;
                     const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: colorExisting });
+                    var objectStatusExisting = ObjectStatuses.find(o => o.Status === StatusExisting);
+                    objectStatusExisting.CompressedIfcGuids = await API.viewer.convertToObjectIds(modelId, objectsRuntimeIds);
+                    objectStatusExisting.Guids = objectStatusExisting.CompressedIfcGuids.map(i => Guid.fromCompressedToFull(i));
+                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: objectStatusExisting.Color });
                 }
 
                 modelIsColored = true;
@@ -864,6 +851,7 @@ const prefixSelectionTagBox = $('#prefixSelection').dxTagBox({
     //},
 });
 
+var idsPerPrefixPerModelId = [];
 $(function () {
     $("#btnShowKnownPrefixes").dxButton({
         stylingMode: "outlined",
@@ -880,27 +868,80 @@ $(function () {
             buttonIndicator.option('visible', true);
             try {
                 const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
+                var spliceLength = 5000;
                 for (const mobjects of mobjectsArr) {
                     var modelId = mobjects.modelId;
                     const objectsRuntimeIds = mobjects.objects.map(o => o.id);
                     await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
+                    if (idsPerPrefixPerModelId.find(o => o.ModelId === modelId) !== undefined) {
+                        continue;
+                    }
+                    var idsPerPrefix = [];
+                    for (var i = 0; i < objectsRuntimeIds.length; i += spliceLength) {
+                        //var cntr = 0;
+                        var objectsRuntimeIdsSpliced = objectsRuntimeIds.slice(i, i + spliceLength);
+                        const objectPropertiesArr = await API.viewer.getObjectProperties(modelId, objectsRuntimeIdsSpliced);
+                        //console.log("objectPropertiesArr: " + objectPropertiesArr);
+                        //console.log("objectPropertiesArr.length: " + objectPropertiesArr.length);
+                        for (const objproperties of objectPropertiesArr) {
+                            //objproperties type: ObjectProperties, heeft id van object en array met propertysets
+                            //objproperties.properties : PropertySet[]
+                            //PropertySet.set is not included in the query
+                            //console.log("objproperties.properties.length: " + objproperties.properties.length);
+                            //var psetDefault = objproperties.properties.find(s => s.name === "Default");
+                            //if (psetDefault === undefined) continue;
+                            //console.log("psetDefault: " + psetDefault.name);
+                            //var propPrefix = psetDefault.properties.find(p => p.name === "MERKPREFIX");
+                            var propPrefix = objproperties.properties.flatMap(p => p.properties).find(p => p.name === "MERKPREFIX");
+                            if (propPrefix === undefined) continue;
+                            //console.log("propPrefix: " + propPrefix.name + " " + propPrefix.value);
+                            if (!prefixes.includes(propPrefix.value)) continue;
+                            var prefixArr = idsPerPrefix.find(p => p.Prefix === propPrefix.value);
+                            if (prefixArr !== undefined) {
+                                prefixArr.ObjectRuntimeIds.push(objproperties.id);
+                                //cntr++;
+                            }
+                            else {
+                                idsPerPrefix.push(
+                                    {
+                                        Prefix: propPrefix.value,
+                                        ObjectRuntimeIds: [objproperties.id]
+                                    }
+                                );
+                                //cntr++;
+                            }
+                        }
+                        //console.log("i: " + i + " - cntr: " + cntr);
+                    }
+                    //console.log("new ids pushed for model " + modelId + " (#: " + idsPerPrefix.length + " )");
+                    idsPerPrefixPerModelId.push({ ModelId: modelId, IdsPerPrefix: idsPerPrefix });
                 }
 
-                var objectRuntimeIds = [];
-                var modelIds = [];
-                for (let i = 0; i < prefixes.length; i++) {
-                    const mobjectsExistingArr = await API.viewer.getObjects({ parameter: { properties: { 'Default.MERKPREFIX': prefixes[i] } } });
-                    for (const mobjectsExisting of mobjectsExistingArr) {
-                        if (!modelIds.includes(mobjectsExisting.modelId))
-                            modelIds.push(mobjectsExisting.modelId);
-                        objectRuntimeIds = objectRuntimeIds.concat(mobjectsExisting.objects.map(o => o.id));
+                //set all objects invisible
+                //for (const mobjects of mobjectsArr) {
+                //    var modelId = mobjects.modelId;
+                //    const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+                //    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
+                //}
+
+                //show only known prefixes
+                for (const modelIdDict of idsPerPrefixPerModelId) {
+                    var modelId = modelIdDict.ModelId;
+                    //console.log("Showing objects of model " + modelId);
+                    var runtimeIdsToShow = [];
+                    for (const idsPerPrefix of modelIdDict.IdsPerPrefix) {
+                        runtimeIdsToShow = runtimeIdsToShow.concat(idsPerPrefix.ObjectRuntimeIds);
                     }
-                }
-                for (const modelId of modelIds) {
-                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectRuntimeIds }] }, { visible: true });
+                    //console.log("runtimeIdsToShow.length " + runtimeIdsToShow.length);
+                    if (runtimeIdsToShow.length > 0) {
+                        //console.log("change to visible");
+                        //console.log("runtimeIdsToShow[0]" + runtimeIdsToShow[0]);
+                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsToShow }] }, { visible: true });
+                    }
                 }
             }
             catch (e) {
+                console.log(e);
                 DevExpress.ui.notify(e);
             }
             buttonIndicator.option('visible', false);
