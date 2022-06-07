@@ -886,7 +886,7 @@ $(function () {
                             console.log("mobjectsArr: " + mobjectsArr);
                             for (const mobjects of mobjectsArr) {
                                 console.log("mobjects: " + mobjects);
-                                if (mobjects.objects === 'undefined' || mobjects.objects.length > 0) {
+                                if (mobjects.objects !== 'undefined' && mobjects.objects.length > 0) {
                                     idsPerPrefix.push(
                                         {
                                             Prefix: prefixes[i],
