@@ -890,15 +890,15 @@ $(function () {
                         //var propPrefix = objproperties.properties.flatMap(p => p.properties).find(p => p.name === "MERKPREFIX");
                         if (propPrefix === undefined) continue;
                         console.log("propPrefix: " + propPrefix);
-                        if (!prefixes.includes(propPrefix)) continue;
-                        var prefixArr = idsPerPrefix.find(p => p.Prefix === propPrefix);
+                        if (!prefixes.includes(propPrefix.name)) continue;
+                        var prefixArr = idsPerPrefix.find(p => p.Prefix === propPrefix.name);
                         if (prefixArr !== undefined) {
                             prefixArr.ObjectRuntimeIds.push(objproperties.id);
                         }
                         else {
                             prefixArr.push(
                                 {
-                                    Prefix: propPrefix,
+                                    Prefix: propPrefix.name,
                                     ObjectRuntimeIds: [objproperties.id]
                                 }
                             );
