@@ -882,12 +882,15 @@ $(function () {
                             const mobjectsArr = await API.viewer.getObjects(
                                 {
                                     //onderstaande lijnen worden niet uitgevoerd als && filter
-                                    modelObjectIds: [{ modelId, objectRuntimeIds: [8396]}],
+                                    modelObjectIds: [{ modelId, objectRuntimeIds: []}],
                                     parameter: { properties: { 'Default.MERKPREFIX': prefixes[i] } }
                                 });
                             console.log("mobjectsArr: " + mobjectsArr);
+                            console.log("mobjectsArr.length: " + mobjectsArr.length);
                             for (const mobjects of mobjectsArr) {
                                 console.log("mobjects: " + mobjects);
+                                console.log("mobjects.objects: " + mobjects.objects);
+                                console.log("mobjects.objects.length: " + mobjects.objects.length);
                                 if (mobjects.objects !== undefined && mobjects.objects !== 'undefined' && mobjects.objects.length > 0) {
                                     console.log("trying to push new record (" + mobjects.objects.length + " objects)");
                                     idsPerPrefix.push(
