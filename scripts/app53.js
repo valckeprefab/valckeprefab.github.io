@@ -888,6 +888,7 @@ $(function () {
                             for (const prop of propset.properties) {
                                 console.log("prop.name: " + prop.name);
                                 console.log("prop.value: " + prop.value);
+                                console.log("prop.set: " + prop.set);
                             }
                         }
                         var psetDefault = objproperties.properties.find(s => s.set === "Default");
