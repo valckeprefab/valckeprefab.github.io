@@ -418,28 +418,10 @@ function getStatus(record, referenceDate) {
 }
 
 function getColorByStatus(status) {
-    var color = colorModelled;
-    if (status === StatusOnHold) {
-        color = colorOnHold;
-    }
-    else if (status === StatusTransported) {
-        color = colorTransported;
-    }
-    else if (status === StatusAvailableForTransport) {
-        color = colorAvailableForTransport;
-    }
-    else if (status === StatusProductionEnded) {
-        color = colorProductionEnded;
-    }
-    else if (status === StatusDemoulded) {
-        color = colorDemoulded;
-    }
-    else if (status === StatusPlanned) {
-        color = colorPlanned;
-    }
-    else if (status === StatusDrawn) {
-        color = colorDrawn;
-    }
+    var color = { r: 211, g: 211, b: 211 };
+    var ostat = ObjectStatuses.find(o => o.Status === status);
+    if (ostat !== undefined)
+        color = ostat.Color;
     return color;
 }
 
