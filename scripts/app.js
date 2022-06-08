@@ -604,19 +604,7 @@ $(function () {
                 }
 
                 //Authenticate with MUK API
-                var token = "";
-                await $.ajax({
-                    type: "POST",
-                    url: odooURL + "/api/authenticate",
-                    data: {
-                        db: odooDatabase,
-                        login: username,
-                        password: password,
-                    },
-                    success: function (data) {
-                        token = data.token;
-                    }
-                });
+                var token = await getToken();
 
                 let jsonArray = "[";
                 const selection = await API.viewer.getSelection();
