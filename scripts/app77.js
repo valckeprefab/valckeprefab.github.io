@@ -331,28 +331,28 @@ function addASecond(s) {
 var token = "";
 var tokenExpiretime;
 async function getToken() {
-    if (token !== "" && tokenExpiretime.getTime() > Date.now() - 60000) {
-        console.log("Refreshing token");
-        var refreshSuccesful = false;
-        await $.ajax({
-            type: "POST",
-            url: odooURL + "/api/v1/authentication/oauth2/token",
-            data: {
-                client_id: "ugyGuyda9deTRxOampZj3BBKUufD7UNwQG1pTlHY",
-                client_secret: "7jmHZDnOsLPMLsLRvA8FlUk2FLUZ6KiBsGLoOlHV",
-                grant_type: "refresh_token",
-                refresh_token: token
-            },
-            success: function () {
-                refreshSuccesful = true;
-            },
-        });
-        if (!refreshSuccesful) {
-            token = "";
-        }
-        console.log("End refresh token");
-    }
-    if (token === "") {
+    //if (token !== "" && tokenExpiretime.getTime() > Date.now() - 60000) {
+    //    console.log("Refreshing token");
+    //    var refreshSuccesful = false;
+    //    await $.ajax({
+    //        type: "POST",
+    //        url: odooURL + "/api/v1/authentication/oauth2/token",
+    //        data: {
+    //            client_id: "ugyGuyda9deTRxOampZj3BBKUufD7UNwQG1pTlHY",
+    //            client_secret: "7jmHZDnOsLPMLsLRvA8FlUk2FLUZ6KiBsGLoOlHV",
+    //            grant_type: "refresh_token",
+    //            refresh_token: token
+    //        },
+    //        success: function () {
+    //            refreshSuccesful = true;
+    //        },
+    //    });
+    //    if (!refreshSuccesful) {
+    //        token = "";
+    //    }
+    //    console.log("End refresh token");
+    //}
+    //if (token === "") {
         console.log("Fetching token");
         var username = odooUsernameTextbox.dxTextBox("instance").option("value");
         var password = odooPasswordTextbox.dxTextBox("instance").option("value");
@@ -360,18 +360,18 @@ async function getToken() {
             console.log("no username and/or password found");
             throw "Gelieve gebruikersnaam en/of paswoord in te vullen.";
         }
-        //console.log("Start db name fetch");
-        //await $.ajax({
-        //    type: "GET",
-        //    url: odooURL + "/api/v1/database",
-        //    data: {
-        //        db: odooDatabase
-        //    },
-        //    success: function (data) {
-        //        console.log(data); 
-        //    },
-        //});
-        //console.log("Einde db name fetch");
+        console.log("Start db name fetch");
+        await $.ajax({
+            type: "GET",
+            url: odooURL + "/api/v1/database",
+            data: {
+                db: odooDatabase
+            },
+            success: function (data) {
+                console.log(data); 
+            },
+        });
+        console.log("Einde db name fetch");
         await $.ajax({
             type: "POST",
             url: odooURL + "/api/v1/authentication/oauth2/token",
@@ -391,7 +391,7 @@ async function getToken() {
             }
         });
         console.log("Token received");
-    }
+    //}
     return token;
 }
 
