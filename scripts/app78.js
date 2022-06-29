@@ -28,7 +28,6 @@ const prefixes = [
     'DG',
     'DORPEL',
     'DORPELBA',
-    'DRUKLAAG',
     'FCITERNE',
     'FLIFT',
     'FM',
