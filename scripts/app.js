@@ -1,5 +1,5 @@
 var API = null;
-var odooURL = "https://192.168.1.194";
+var odooURL = "https://odoo.valcke-prefab.be";
 var odooDatabase = "erp_prd"
 
 window.onload = async function () {
@@ -28,7 +28,6 @@ const prefixes = [
     'DG',
     'DORPEL',
     'DORPELBA',
-    'DRUKLAAG',
     'FCITERNE',
     'FLIFT',
     'FM',
@@ -256,9 +255,9 @@ async function getRecentOdooData() {
     if (lastUpdate === "") {
         await $.ajax({
             type: "GET",
-            url: odooURL + "/api/read",
+            url: odooURL + "/api/v1/search_read",
+            headers: { "Authorization": "Bearer " + token },
             data: {
-                token: token,
                 model: "trimble.connect.main",
                 domain: '[["project_id.id", "=", "' + id + '"]]',
                 order: 'write_date desc',
@@ -275,9 +274,9 @@ async function getRecentOdooData() {
     else {
         await $.ajax({
             type: "GET",
-            url: odooURL + "/api/read",
+            url: odooURL + "/api/v1/search_read",
+            headers: { "Authorization": "Bearer " + token },
             data: {
-                token: token,
                 model: "trimble.connect.main",
                 domain: '[["project_id.id", "=", "' + id + '"],["write_date",">=","' + lastUpdate + '"]]',
                 order: 'write_date desc',
@@ -329,61 +328,72 @@ function addASecond(s) {
 }
 
 var token = "";
+var refresh_token = "";
+var tokenExpiretime;
+var client_id = "3oVDFZt2EVPhAOfQRgsRDYI9pIcdcdTGYR7rUSST";
+var client_secret = "PXthv4zShfW5NORk4bKFgr6O1dlYTxqD8KwFlx1S";
 async function getToken() {
-    if (token !== "") {
-        var refresh = false;
+    if (token !== "" && refresh_token !== "" && tokenExpiretime.getTime() > Date.now() - 60000) {
+        console.log("Refreshing token");
+        var refreshSuccesful = false;
         await $.ajax({
-            type: "GET",
-            url: odooURL + "/api/life",
+            type: "POST",
+            url: odooURL + "/api/v1/authentication/oauth2/token",
             data: {
-                token: token,
+                client_id: client_id,
+                client_secret: client_secret,
+                grant_type: "refresh_token",
+                refresh_token: refresh_token
             },
-            success: function (lifetime) {
-                //console.log("Token lifetime: " + lifetime); //lifetime in seconds
-                if (lifetime < 60) {
-                    refresh = true;
-                }
+            success: function () {
+                refreshSuccesful = true;
             },
         });
-
-        if (refresh) {
-            var refreshSuccesful = false;
-            await $.ajax({
-                type: "POST",
-                url: odooURL + "/api/refresh",
-                data: {
-                    token: token,
-                },
-                success: function () {
-                    refreshSuccesful = true;
-                },
-            });
-            if (!refreshSuccesful) {
-                token = "";
-            }
+        if (!refreshSuccesful) {
+            token = "";
         }
+        console.log("End refresh token");
     }
-
     if (token === "") {
+        console.log("Fetching token");
         var username = odooUsernameTextbox.dxTextBox("instance").option("value");
         var password = odooPasswordTextbox.dxTextBox("instance").option("value");
         if (typeof username !== 'string' || typeof password !== 'string' || username === "" || password === "") {
             console.log("no username and/or password found");
             throw "Gelieve gebruikersnaam en/of paswoord in te vullen.";
         }
+        //console.log("Start db name fetch1");
+        //await $.ajax({
+        //    type: "GET",
+        //    url: odooURL + "/api/v1/database",
+        //    data: {
+        //        db: odooDatabase
+        //    },
+        //    success: function (data) {
+        //        console.log(data); 
+        //    },
+        //});
+        //console.log("Einde db name fetch");
         await $.ajax({
             type: "POST",
-            url: odooURL + "/api/authenticate",
+            url: odooURL + "/api/v1/authentication/oauth2/token",
             data: {
                 db: odooDatabase,
-                login: username,
+                username: username,
                 password: password,
+                client_id: client_id,
+                client_secret: client_secret,
+                grant_type: "password"
             },
             success: function (data) {
-                
-                token = data.token;
+                token = data.access_token;
+                refresh_token = data.refresh_token;
+                console.log(data);
+                tokenExpiretime = new Date(Date.now() + data.expires_in * 1000);
+                console.log(tokenExpiretime);
             }
         });
+        console.log("Token received");
     }
     return token;
 }
@@ -427,19 +437,24 @@ function getColorByStatus(status) {
 
 async function GetProjectId(projectNumber) {
     var id = -1;
+    //console.log("Start get project Id");
+    //console.log("Odoo URL: " + odooURL + "/api/v1/search_read");
+    //console.log("using token: " + token);
     await $.ajax({
         type: "GET",
-        url: odooURL + "/api/read",
+        url: odooURL + "/api/v1/search_read",
+        headers: { "Authorization": "Bearer " + token },
         data: {
-            token: token,
             model: "project.project",
-            domain: '[["proj_unique_id", "=", "' + projectNumber + '"]]',
-            fields: '["id", "proj_unique_id"]',
+            domain: '[["project_identifier", "=", "' + projectNumber + '"]]',
+            fields: '["id", "project_identifier"]',
         },
         success: function (data) {
+            //console.log(data);
             id = data[0].id;
         }
     });
+    //console.log("End get project Id");
     return id;
 }
 
@@ -472,7 +487,7 @@ $(function () {
                 //var debugInfo = "";
                 //Get project name
                 var regexProjectName = /^[TV]\d+_\w+/;
-                var project = await API.project.getProject(); //{ name: "V8597_VDL" };
+                var project = { name: "V8597_VDL" }; //await API.project.getProject(); 
                 //debugInfo = debugInfo.concat("<br />Project name: " + project.name);
                 //$(debug).html(debugInfo);
                 if (!regexProjectName.test(project.name))
@@ -480,7 +495,7 @@ $(function () {
                 var projectNumber = project.name.split("_")[0];
 
                 //debugInfo = debugInfo.concat("<br />Project number: " + projectNumber);
-                //$(debug).html(debugInfo);
+                //console.log(debugInfo);
 
                 //Authenticate with MUK API
                 var token = await getToken();
@@ -504,29 +519,26 @@ $(function () {
                 while (ended != 1) { //loop cuz only 80 records get fetched at a time
                     await $.ajax({
                         type: "GET",
-                        url: odooURL + "/api/read",
+                        url: odooURL + "/api/v1/search_read",
+                        headers: { "Authorization": "Bearer " + token },
                         data: {
-                            token: token,
                             model: "trimble.connect.main",
                             domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"]]',
                             fields: '["id", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "state", "mark_available"]',
                         },
                         success: function (data) {
-                            //var i = -1;
                             if (data.length == 0) { //no more records
                                 ended = 1;
                                 return;
                             }
                             for (const record of data) {
-                                //i++;
                                 lastId = record.id;
                                 var status = getStatus(record, referenceDate);
                                 var guidArr = ObjectStatuses.find(o => o.Status === status);
                                 guidArr.Guids.push(record.name);
                                 guidArr.CompressedIfcGuids.push(Guid.fromFullToCompressed(record.name));
                             }
-                            //debugInfo = debugInfo.concat("<br />Records iterated: " + i);
-                            //$(debug).html(debugInfo);
+                            console.log("records fetched");
                         }
                     });
                 }
@@ -654,9 +666,9 @@ $(function () {
                         var assemblyPos = "";
                         await $.ajax({
                             type: "GET",
-                            url: odooURL + "/api/read",
+                            url: odooURL + "/api/v1/search_read",
+                            headers: { "Authorization": "Bearer " + token },
                             data: {
-                                token: token,
                                 model: "trimble.connect.main",
                                 domain: '[["name", "=", "' + guid + '"]]',
                                 fields: '["id", "mark_id", "rank"]',
@@ -675,9 +687,9 @@ $(function () {
 
                         await $.ajax({
                             type: "GET",
-                            url: odooURL + "/api/read",
+                            url: odooURL + "/api/v1/read",
+                            headers: { "Authorization": "Bearer " + token },
                             data: {
-                                token: token,
                                 model: "project.master_marks",
                                 domain: '[["id", "=", "' + markId + '"]]',
                                 fields: '["id", "mark_ref"]',
