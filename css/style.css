@@ -131,3 +131,7 @@ body .dx-popup-content .custom-item {
     font-size: 16px;
     padding: 0 10px 10px 10px;
 }
+
+table th, table td {
+    white-space: nowrap;
+}
