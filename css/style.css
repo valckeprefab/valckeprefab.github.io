@@ -130,6 +130,7 @@ body .dx-popup-content .custom-item {
     font-weight: 200;
     font-size: 16px;
     padding: 0 10px 10px 10px;
+    display: inline-block;
 }
 
 table th, table td {
