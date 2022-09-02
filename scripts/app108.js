@@ -656,6 +656,7 @@ $(function () {
                         }
                     }
 
+                    console.log("1");
                     if (tempPlannedObjectsRuntimeIds.length > 0) {
                         console.log(tempPlannedObjectsRuntimeIds);
                         const tempPlannedObjectsIfcIds = await API.viewer.convertToObjectIds(modelId, tempPlannedObjectsRuntimeIds);
@@ -663,6 +664,7 @@ $(function () {
                         var objectStatusPlanned = ObjectStatuses.find(o => o.Status === StatusPlanned);
                         objectStatusPlanned.Guids.push(tempPlannedObjectsIfcIds.map(c => Guid.fromCompressedToFull(c)));
                         objectStatusPlanned.CompressedIfcGuids.push(tempPlannedObjectsIfcIds);
+                        console.log("2");
                     }
                     if (tempProdEndedObjectsRuntimeIds.length > 0) {
                         console.log(tempProdEndedObjectsRuntimeIds);
@@ -674,6 +676,7 @@ $(function () {
                     }
                 }
 
+                console.log("3");
                 var objectStatusModelled = ObjectStatuses.find(o => o.Status === StatusModelled);
                 var unplannedIfcIds = [];
                 for (const mobjects of mobjectsArr) {
@@ -699,6 +702,7 @@ $(function () {
                 objectStatusModelled.CompressedIfcGuids = Array.from(unplannedIfcIds);
                 objectStatusModelled.Guids = objectStatusModelled.CompressedIfcGuids.map(c => Guid.fromCompressedToFull(c));
 
+                console.log("4");
                 const mobjectsExisting = await API.viewer.getObjects({ parameter: { properties: { 'Default.MERKPREFIX': 'BESTAAND' } } });
                 for (const mobjects of mobjectsExisting) {
                     var modelId = mobjects.modelId;
@@ -716,6 +720,7 @@ $(function () {
                     await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: objectStatusExisting.Color });
                 }
 
+                console.log("5");
                 for (const mobjects of mobjectsArr) {
                     var modelId = mobjects.modelId;
                     const objectsRuntimeIds = mobjects.objects.map(o => o.id);
@@ -723,7 +728,9 @@ $(function () {
                     var runtimeIdsModelled = await API.viewer.convertToObjectRuntimeIds(modelId, objectStatusModelled.CompressedIfcGuids);
                     const filteredRuntimeIds = objectsRuntimeIds.filter(i => runtimeIdsModelled.includes(i));
 
+                    console.log("6");
                     await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: filteredRuntimeIds }] }, { color: objectStatusModelled.Color });
+                    console.log("7");
                 }
 
                 modelIsColored = true;
