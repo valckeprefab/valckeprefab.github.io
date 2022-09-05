@@ -548,10 +548,10 @@ $(function () {
                 ClearObjectStatusesGuids();
                 var referenceDate = new Date();
                 var referenceToday = checkBoxToday.dxCheckBox("instance").option("value");
-                console.log("referenceToday: " + referenceToday);
+                //console.log("referenceToday: " + referenceToday);
                 if (!Boolean(referenceToday)) {
                     referenceDate = new Date(referenceDatePicker.dxDateBox("instance").option("value"));
-                    console.log("referenceDate: " + referenceDate);
+                    //console.log("referenceDate: " + referenceDate);
                 }
                 referenceDate.setHours(23);
                 referenceDate.setMinutes(59);
@@ -625,6 +625,9 @@ $(function () {
 
                 const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
 
+                //runtimeIds = [17062, 17065, ...] = ids used by viewer
+                //objectIds = compressed IFC guids = ['28DCGNPlH98vcQNyNhB4sQ', '0fKOmd_6PFgOiexu4H1vtU', ...] = can be used to map runtimeId to original IFC
+
                 //find objects by assemblypos and add to status objects
                 var sliceLength = 5000;
                 for (const mobjects of mobjectsArr) {
@@ -656,27 +659,20 @@ $(function () {
                         }
                     }
 
-                    console.log("1");
                     if (tempPlannedObjectsRuntimeIds.length > 0) {
-                        console.log(tempPlannedObjectsRuntimeIds);
                         const tempPlannedObjectsIfcIds = await API.viewer.convertToObjectIds(modelId, tempPlannedObjectsRuntimeIds);
-                        console.log(tempPlannedObjectsIfcIds);
                         var objectStatusPlanned = ObjectStatuses.find(o => o.Status === StatusPlanned);
-                        objectStatusPlanned.Guids.push(tempPlannedObjectsIfcIds.map(c => Guid.fromCompressedToFull(c)));
-                        objectStatusPlanned.CompressedIfcGuids.push(tempPlannedObjectsIfcIds);
-                        console.log("2");
+                        objectStatusPlanned.Guids = objectStatusPlanned.Guids.concat(tempPlannedObjectsIfcIds.map(c => Guid.fromCompressedToFull(c)));
+                        objectStatusPlanned.CompressedIfcGuids = objectStatusPlanned.CompressedIfcGuids.concat(tempPlannedObjectsIfcIds);
                     }
                     if (tempProdEndedObjectsRuntimeIds.length > 0) {
-                        console.log(tempProdEndedObjectsRuntimeIds);
                         const tempProdEndedObjectsIfcIds = await API.viewer.convertToObjectIds(modelId, tempProdEndedObjectsRuntimeIds);
-                        console.log(tempProdEndedObjectsIfcIds);
                         var objectStatusProdEnded = ObjectStatuses.find(o => o.Status === StatusProductionEnded);
-                        objectStatusProdEnded.Guids.push(tempProdEndedObjectsIfcIds.map(c => Guid.fromCompressedToFull(c)));
-                        objectStatusProdEnded.CompressedIfcGuids.push(tempProdEndedObjectsIfcIds);
+                        objectStatusProdEnded.Guids = objectStatusProdEnded.Guids.concat(tempProdEndedObjectsIfcIds.map(c => Guid.fromCompressedToFull(c)));
+                        objectStatusProdEnded.CompressedIfcGuids = objectStatusProdEnded.CompressedIfcGuids.concat(tempProdEndedObjectsIfcIds);
                     }
                 }
 
-                console.log("3");
                 var objectStatusModelled = ObjectStatuses.find(o => o.Status === StatusModelled);
                 var unplannedIfcIds = [];
                 for (const mobjects of mobjectsArr) {
@@ -702,7 +698,6 @@ $(function () {
                 objectStatusModelled.CompressedIfcGuids = Array.from(unplannedIfcIds);
                 objectStatusModelled.Guids = objectStatusModelled.CompressedIfcGuids.map(c => Guid.fromCompressedToFull(c));
 
-                console.log("4");
                 const mobjectsExisting = await API.viewer.getObjects({ parameter: { properties: { 'Default.MERKPREFIX': 'BESTAAND' } } });
                 for (const mobjects of mobjectsExisting) {
                     var modelId = mobjects.modelId;
@@ -720,7 +715,6 @@ $(function () {
                     await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: objectStatusExisting.Color });
                 }
 
-                console.log("5");
                 for (const mobjects of mobjectsArr) {
                     var modelId = mobjects.modelId;
                     const objectsRuntimeIds = mobjects.objects.map(o => o.id);
@@ -728,9 +722,7 @@ $(function () {
                     var runtimeIdsModelled = await API.viewer.convertToObjectRuntimeIds(modelId, objectStatusModelled.CompressedIfcGuids);
                     const filteredRuntimeIds = objectsRuntimeIds.filter(i => runtimeIdsModelled.includes(i));
 
-                    console.log("6");
                     await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: filteredRuntimeIds }] }, { color: objectStatusModelled.Color });
-                    console.log("7");
                 }
 
                 modelIsColored = true;

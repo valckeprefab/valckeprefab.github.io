@@ -18,7 +18,7 @@ window.onload = async function () {
     setTextByLanguage();
 }
 
-//#region data containers
+//#region collections
 
 const prefixes = [
     'BD',
@@ -358,15 +358,7 @@ const filterTypes = {
 
 //#endregion
 
-function getFilterTypes() {
-    var userLang = getUserLang();
-    if (filterTypes[userLang] !== undefined) {
-        return filterTypes[userLang];
-    }
-    else {
-        return filterTypes.en;
-    }
-}
+//#region language related functions
 
 function getUserLang() {
     var userLang = navigator.language || navigator.userLanguage;
@@ -398,6 +390,20 @@ function getTextById(id) {
     }
 }
 
+//#endregion
+
+function getFilterTypes() {
+    var userLang = getUserLang();
+    if (filterTypes[userLang] !== undefined) {
+        return filterTypes[userLang];
+    }
+    else {
+        return filterTypes.en;
+    }
+}
+
+//#region controls
+
 var filterTypeSelectBox = $('#filterTypeSelection').dxSelectBox({
     items: getFilterTypes(),
     onValueChanged: function (e) {
@@ -424,15 +430,6 @@ var filterTypeSelectBox = $('#filterTypeSelection').dxSelectBox({
     },
 });
 
-var odooUsernameTextbox = $('#placeholderOdooUsername').dxTextBox({
-    placeholder: getTextById("phOdooUsername"),
-});
-
-var odooPasswordTextbox = $('#placeholderOdooPassword').dxTextBox({
-    mode: 'password',
-    placeholder: getTextById("phOdooPassword"),
-});
-
 var checkBoxToday = $('#checked').dxCheckBox({
     value: true,
     onValueChanged: function (e) {
@@ -454,382 +451,16 @@ var referenceDatePicker = $('#date').dxDateBox({
     value: Date.now(),
 });
 
-const StatusModelled = "Modelled";
-const StatusExisting = "Existing";
-const StatusDrawn = "Drawn";
-const StatusOnHold = "OnHold";
-const StatusPlanned = "Planned";
-const StatusDemoulded = "Demoulded";
-const StatusProductionEnded = "ProductionEnded";
-const StatusAvailableForTransport = "AvailableForTransport";
-const StatusTransported = "Transported";
-var ObjectStatuses = [];
-function fillObjectStatuses() {
-    var modelled = {
-        Status: StatusModelled,
-        Color: { r: 211, g: 211, b: 211 },
-        Guids: [],
-        CompressedIfcGuids: []
-    };
-    ObjectStatuses.push(modelled);
+//#region textboxes
 
-    var existing = {
-        Status: StatusExisting,
-        Color: { r: 130, g: 92, b: 79 },
-        Guids: [],
-        CompressedIfcGuids: []
-    };
-    ObjectStatuses.push(existing);
+var odooUsernameTextbox = $('#placeholderOdooUsername').dxTextBox({
+    placeholder: getTextById("phOdooUsername"),
+});
 
-    var drawn = {
-        Status: StatusDrawn,
-        Color: { r: 221, g: 160, b: 221 },
-        Guids: [],
-        CompressedIfcGuids: []
-    };
-    ObjectStatuses.push(drawn);
-
-    var onHold = {
-        Status: StatusOnHold,
-        Color: { r: 255, g: 0, b: 0 },
-        Guids: [],
-        CompressedIfcGuids: []
-    };
-    ObjectStatuses.push(onHold);
-
-    var planned = {
-        Status: StatusPlanned,
-        Color: { r: 255, g: 140, b: 0 },
-        Guids: [],
-        CompressedIfcGuids: []
-    };
-    ObjectStatuses.push(planned);
-
-    var demoulded = {
-        Status: StatusDemoulded,
-        Color: { r: 128, g: 128, b: 0 },
-        Guids: [],
-        CompressedIfcGuids: []
-    };
-    ObjectStatuses.push(demoulded);
-
-    var prodEnded = {
-        Status: StatusProductionEnded,
-        Color: { r: 255, g: 255, b: 0 },
-        Guids: [],
-        CompressedIfcGuids: []
-    };
-    ObjectStatuses.push(prodEnded);
-
-    var availForTransport = {
-        Status: StatusAvailableForTransport,
-        Color: { r: 0, g: 128, b: 255 },
-        Guids: [],
-        CompressedIfcGuids: []
-    };
-    ObjectStatuses.push(availForTransport);
-
-    var transported = {
-        Status: StatusTransported,
-        Color: { r: 34, g: 177, b: 76 },
-        Guids: [],
-        CompressedIfcGuids: []
-    };
-    ObjectStatuses.push(transported);
-}
-
-function ClearObjectStatusesGuids() {
-    for (var os of ObjectStatuses) {
-        os.Guids = [];
-        os.CompressedIfcGuids = [];
-    }
-}
-
-function getColorString(color) {
-    return "rgb(" + color.r + ", " + color.g + ", " + color.b + ")";
-}
-
-var lastUpdate = "";
-var modelIsColored = false;
-async function getRecentOdooData() {
-    if (!modelIsColored)
-        return;
-
-    //Authenticate with MUK API
-    var token = await getToken();
-
-    //var debugInfo = "";
-    //Get project name
-    var regexProjectName = /^[TV]\d+_\w+/;
-    var project = await API.project.getProject();//{ name: "V8597_VDL" };//
-    //debugInfo = debugInfo.concat("<br />Project name: " + project.name);
-    //$(debug).html(debugInfo);
-    if (!regexProjectName.test(project.name))
-        return;
-    var projectNumber = project.name.split("_")[0];
-
-    //Get project ID
-    var id = await GetProjectId(projectNumber);
-
-    if (lastUpdate === "") {
-        await $.ajax({
-            type: "GET",
-            url: odooURL + "/api/v1/search_read",
-            headers: { "Authorization": "Bearer " + token },
-            data: {
-                model: "trimble.connect.main",
-                domain: '[["project_id.id", "=", "' + id + '"]]',
-                order: 'write_date desc',
-                limit: 1,
-                fields: '["id", "write_date"]'
-            },
-            success: function (data) {
-                lastUpdate = data[0].write_date;
-                lastUpdate = addASecond(lastUpdate);
-                console.log("Last update: " + lastUpdate);
-            }
-        });
-    }
-    else {
-        await $.ajax({
-            type: "GET",
-            url: odooURL + "/api/v1/search_read",
-            headers: { "Authorization": "Bearer " + token },
-            data: {
-                model: "trimble.connect.main",
-                domain: '[["project_id.id", "=", "' + id + '"],["write_date",">=","' + lastUpdate + '"]]',
-                order: 'write_date desc',
-                fields: '["id", "write_date", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "state", "mark_available"]',
-            },
-            success: async function (data) {
-                var date = GetStringFromDate(new Date());
-                if (data.length > 0) {
-                    console.log(date + ": " + data.length + " updated records found.");
-                    lastUpdate = data[0].write_date;
-                    lastUpdate = addASecond(lastUpdate);
-
-                    var referenceDate = new Date();
-                    referenceDate.setHours(23);
-                    referenceDate.setMinutes(59);
-                    referenceDate.setSeconds(59);
-                    for (const record of data) {
-                        var status = getStatus(record, referenceDate);
-                        var color = getColorByStatus(status);
-
-                        const mobjectsArr = await API.viewer.getObjects({ parameter: { properties: { 'Default.GUID': record.name } } });
-                        console.log("mobjectsArr length: " + mobjectsArr.length);
-
-                        for (const mobjects of mobjectsArr) {
-                            var modelId = mobjects.modelId;
-                            console.log("modelId: " + modelId);
-                            var compressedIfcGuids = [];
-                            console.log("record.name: " + record.name);
-                            var compressedIfcGuid = Guid.fromFullToCompressed(record.name);
-                            console.log("compressedIfcGuid: " + compressedIfcGuid);
-                            compressedIfcGuids.push(compressedIfcGuid);
-                            var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedIfcGuids);
-                            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: color });
-                        }
-                    }
-                }
-                else {
-                    console.log(date + ": no updated records found.");
-                }
-            }
-        });
-    }
-}
-
-function addASecond(s) {
-    var dateS = GetDateAndTimeFromString(s);
-    dateS = new Date(dateS.setSeconds(dateS.getSeconds() + 1));
-    return GetStringFromDate(dateS);
-}
-
-var token = "";
-var refresh_token = "";
-var tokenExpiretime;
-var client_id = "3oVDFZt2EVPhAOfQRgsRDYI9pIcdcdTGYR7rUSST";
-var client_secret = "PXthv4zShfW5NORk4bKFgr6O1dlYTxqD8KwFlx1S";
-async function getToken() {
-    if (token !== "" && refresh_token !== "" && tokenExpiretime.getTime() > Date.now() - 60000) {
-        console.log("Refreshing token");
-        var refreshSuccesful = false;
-        await $.ajax({
-            type: "POST",
-            url: odooURL + "/api/v1/authentication/oauth2/token",
-            data: {
-                client_id: client_id,
-                client_secret: client_secret,
-                grant_type: "refresh_token",
-                refresh_token: refresh_token
-            },
-            success: function () {
-                refreshSuccesful = true;
-            },
-        });
-        if (!refreshSuccesful) {
-            token = "";
-        }
-        console.log("End refresh token");
-    }
-    if (token === "") {
-        console.log("Fetching token");
-        var username = odooUsernameTextbox.dxTextBox("instance").option("value");
-        var password = odooPasswordTextbox.dxTextBox("instance").option("value");
-        if (typeof username !== 'string' || typeof password !== 'string' || username === "" || password === "") {
-            console.log("no username and/or password found");
-            throw "Gelieve gebruikersnaam en/of paswoord in te vullen.";
-        }
-        //console.log("Start db name fetch1");
-        //await $.ajax({
-        //    type: "GET",
-        //    url: odooURL + "/api/v1/database",
-        //    data: {
-        //        db: odooDatabase
-        //    },
-        //    success: function (data) {
-        //        console.log(data); 
-        //    },
-        //});
-        //console.log("Einde db name fetch");
-        await $.ajax({
-            type: "POST",
-            url: odooURL + "/api/v1/authentication/oauth2/token",
-            data: {
-                db: odooDatabase,
-                username: username,
-                password: password,
-                client_id: client_id,
-                client_secret: client_secret,
-                grant_type: "password"
-            },
-            success: function (data) {
-                token = data.access_token;
-                refresh_token = data.refresh_token;
-                console.log(data);
-                tokenExpiretime = new Date(Date.now() + data.expires_in * 1000);
-                console.log(tokenExpiretime);
-            }
-        });
-        console.log("Token received");
-    }
-    return token;
-}
-
-function getStatus(record, referenceDate) {
-    if (typeof record.state === 'string' && record.state === 'onhold') {
-        return StatusOnHold;
-    }
-    else if (typeof record.date_transported === 'string' && GetDateFromString(record.date_fab_dem) <= referenceDate) {
-        return StatusTransported;
-    }
-    else if (typeof record.date_fab_end === 'string' && GetDateFromString(record.date_fab_end) <= referenceDate) {
-        if (record.mark_available) {
-            return StatusAvailableForTransport;
-        }
-        else {
-            return StatusProductionEnded;
-        }
-    }
-    else if (typeof record.date_fab_dem === 'string' && GetDateFromString(record.date_fab_dem) <= referenceDate) {
-        return StatusDemoulded;
-    }
-    else if (typeof record.date_fab_planned === 'string' && GetDateFromString(record.date_fab_planned) <= referenceDate) {
-        return StatusPlanned;
-    }
-    else if (typeof record.date_drawn === 'string' && GetDateFromString(record.date_drawn) <= referenceDate) {
-        return StatusDrawn;
-    }
-    else {
-        return StatusModelled;
-    }
-}
-
-function getColorByStatus(status) {
-    var color = { r: 211, g: 211, b: 211 };
-    var ostat = ObjectStatuses.find(o => o.Status === status);
-    if (ostat !== undefined)
-        color = ostat.Color;
-    return color;
-}
-
-async function GetProjectId(projectNumber) {
-    var id = -1;
-    //console.log("Start get project Id");
-    //console.log("Odoo URL: " + odooURL + "/api/v1/search_read");
-    //console.log("using token: " + token);
-    await $.ajax({
-        type: "GET",
-        url: odooURL + "/api/v1/search_read",
-        headers: { "Authorization": "Bearer " + token },
-        data: {
-            model: "project.project",
-            domain: '[["project_identifier", "=", "' + projectNumber + '"]]',
-            fields: '["id", "project_identifier"]',
-        },
-        success: function (data) {
-            //console.log(data);
-            id = data[0].id;
-        }
-    });
-    //console.log("End get project Id");
-    return id;
-}
-
-function selectionChanged(data) {
-
-}
-
-var regexDate = /[0-9]{4}-[0-9]{2}-[0-9]{2}/;
-function GetDateFromString(s) {
-    var date = null;
-    var resultDate = s.match(regexDate);
-    if (resultDate != null) {
-        var splitDate = resultDate[0].split("-");
-        var year = splitDate[0];
-        var month = splitDate[1];
-        var day = splitDate[2];
-        date = new Date(year, month - 1, day);
-    }
-    return date;
-}
-
-var regexDateAndTime = /[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}/;
-function GetDateAndTimeFromString(s) {
-    var date = null;
-    var resultDate = s.match(regexDateAndTime);
-    if (resultDate != null) {
-        var splitDateTime = resultDate[0].split(" ");
-        var splitDate = splitDateTime[0].split("-");
-        var splitTime = splitDateTime[1].split(":");
-        var year = splitDate[0];
-        var month = splitDate[1];
-        var day = splitDate[2];
-        var hours = splitTime[0];
-        var minutes = splitTime[1];
-        var seconds = splitTime[2];
-        date = new Date(year, month - 1, day, hours, minutes, seconds);
-    }
-    return date;
-}
-
-function GetStringFromDate(d) {
-    var year = d.getFullYear();
-    var month = pad("00", d.getMonth() + 1);
-    var day = pad("00", d.getDate());
-    var hours = pad("00", d.getHours());
-    var minutes = pad("00", d.getMinutes());
-    var seconds = pad("00", d.getSeconds());
-    var returnstr = year + "-" + month + "-" + day + " " + hours + ":" + minutes + ":" + seconds;
-    return returnstr;
-}
-
-function pad(pad, str) {
-    if (typeof str === 'undefined')
-        return pad;
-    return (pad + str).slice(-pad.length);
-}
+var odooPasswordTextbox = $('#placeholderOdooPassword').dxTextBox({
+    mode: 'password',
+    placeholder: getTextById("phOdooPassword"),
+});
 
 const assemblyTextBox = $('#placeholderAssemblyname').dxTextBox({
     placeholder: getTextById("phAssemblyname"),
@@ -852,217 +483,23 @@ const prefixSelectionTagBox = $('#prefixSelection').dxTagBox({
     //},
 });
 
-function SetSelectionByFilter()
-{
-    var filterTypes = getFilterTypes();
-    var selectedItem = filterTypeSelectBox.dxSelectBox("instance").option("selectedItem");
-    if (selectedItem === filterTypes[0]) {
-        var selected = prefixSelectionTagBox.dxTagBox("instance").option("selectedItems");
-        for (let i = 0; i < selected.length; i++) {
-            var actionType = i == 0 ? "set" : "add";
-            setObjectSelectionByPropnameAndValue("Default.MERKPREFIX", selected[i], actionType);
-        }
-    }
-    else if (selectedItem === filterTypes[1]) {
-        var text = assemblyTextBox.dxTextBox("instance").option("value");
-        setObjectSelectionByPropnameAndValue("Default.MERKNUMMER", text, "set");
-    }
-    else if (selectedItem === filterTypes[2]) {
-        var propertyName = propertyNameTextBox.dxTextBox("instance").option("value");
-        var propertyValue = propertyValueTextBox.dxTextBox("instance").option("value");
-        setObjectSelectionByPropnameAndValue(propertyName, propertyValue, "set");
-    }
-
-    setObjectSelectionByPropnameAndValue("Tekla Common.Finish", "MONTAGE", "add");
-}
-
-async function setObjectsByProp() {
-	return doObjectsFilter(async () => API.viewer.setSelection(getPropSelector(), "set"));
-}
-
-async function setObjectsByProp2() {
-    await API.viewer.setSelection(getPropSelector(), "set");
-}
-
-async function setObjectSelectionByPropnameAndValue(propNameFilter, propValueFilter, selectionType) {
-    await API.viewer.setSelection(getPropSelectorByPropnameAndValue(propNameFilter, propValueFilter), selectionType);
-}
-
-async function doObjectsFilter(action) {
-    return doWorkRes("#objectsResult", "#objectsLoading", action);
-}
-
-async function doWorkRes(selResult, selLoading, action) {
-    return doWorkSafe(() => { //preaction
-        $(selResult).html(""); //inhoud van selResult leegmaken
-        $(selLoading).show(); //selLoading zichtbaar maken
-    }, action, r => { //action , postaction
-        $(selLoading).hide();
-        $(selResult).html(r);
-    });
-}
-
-async function doWorkSafe(preAction, action, postAction) {
-    preAction();
-    let result;
-    try {
-	const actionRes = await action();
-	if (actionRes === false) {
-	    throw new Error("Operation failed: Unknown error");
-	} else if (actionRes === true || actionRes === "" || actionRes == null) {
-	    result = ok();
-	} else {
-	    result = actionRes;
-	}
-    }
-    catch (e) {
-        result = err(e);
-    }
-    postAction(result);
-}
-
-async function getObjectsByProp(e) {
-    return getObjectsBy(async () => API.viewer.getObjects(getPropSelector()), e);
-}
-
-function getPropSelector() {
-    return {
-        parameter: {
-            properties: {
-                [$("#propNameFilter").val()]: $("#propValueFilter").val()
-            }
-        }
-    };
-}
-
-function getPropSelectorByPropnameAndValue(propNameFilter, propValueFilter) {
-    return {
-        parameter: {
-            properties: {
-                [propNameFilter]: propValueFilter
-            }
-        }
-    };
-}
-
-async function addTextMarkups() {
-    try {
-        //SetText2("Start adding markups");
-        let jsonArray = "[";
-        //SetText2(jsonArray);
-        //const propSelector = getPropSelector();
-        //await API.viewer.setSelection(propSelector, "set");
-        //const mobjectsArr = await API.viewer.getObjects(propSelector);
-        //const mobjectsArr = await API.viewer.getSelection();
-        const selection = await API.viewer.getSelection();
-        const selector = {
-            modelObjectIds: selection
-        };
-        const mobjectsArr = await API.viewer.getObjects(selector);
-        //SetText(mobjectsArr.length);
-        //mobjectsArr type: ModelObjects[]
-        //haalt enkel gemeenschappelijk hebben property sets op
-        for (const mobjects of mobjectsArr) {
-            //mobjects type: ModelObjects met mobjects.objects type: ObjectProperties[]
-            const objectsIds = mobjects.objects.map(o => o.id);
-            //const objectsRuntimeIds = await API.viewer.convertToObjectRuntimeIds(mobjects.modelId, objectsIds);
-            const objPropertiesArr = await API.viewer.getObjectProperties(mobjects.modelId, objectsIds);
-            for (const objproperties of objPropertiesArr) {
-                //objproperties type: ObjectProperties
-                let cogX = 0.0;
-                let cogY = 0.0;
-                let cogZ = 0.0;
-                let assemblyPos = "";
-                let propertiesFound = 0;
-                for (const propertyset of objproperties.properties) {
-                    for (const property of propertyset.properties) {
-                        const propertyName = property.name;
-                        const propertyValue = property.value;
-                        if (typeof propertyName !== "undefined" && typeof propertyValue !== "undefined") {
-                            if (propertyName === "COG_X") {
-                                cogX = propertyValue;
-                                propertiesFound++;
-                            }
-                            else if (propertyName === "COG_Y") {
-                                cogY = propertyValue;
-                                propertiesFound++;
-                            }
-                            else if (propertyName === "COG_Z") {
-                                cogZ = propertyValue;
-                                propertiesFound++;
-                            }
-                            else if (propertyName === "MERKNUMMER") {
-                                assemblyPos = propertyValue;
-                                propertiesFound++;
-                            }
-                        }
-                    }
-                }
-                if (propertiesFound != 4) {
-                    continue;
-                }
-                jsonArray = jsonArray.concat("{");
-                //jsonArray = jsonArray.concat("\"id\": ");
-                //jsonArray = jsonArray.concat(objproperties.id);
-                //jsonArray = jsonArray.concat(",");
-                jsonArray = jsonArray.concat("\"color\": {\"r\": 60,\"g\": 203,\"b\": 62,\"a\": 255}, ");
-                jsonArray = jsonArray.concat("\"start\": ");
-                jsonArray = jsonArray.concat("{");
-                jsonArray = jsonArray.concat("\"positionX\": ");
-                jsonArray = jsonArray.concat(cogX);
-                jsonArray = jsonArray.concat(",");
-                jsonArray = jsonArray.concat("\"positionY\": ");
-                jsonArray = jsonArray.concat(cogY);
-                jsonArray = jsonArray.concat(",");
-                jsonArray = jsonArray.concat("\"positionZ\": ");
-                jsonArray = jsonArray.concat(cogZ);
-                jsonArray = jsonArray.concat(",");
-                jsonArray = jsonArray.concat("\"modelId\": ");
-                jsonArray = jsonArray.concat("\"");
-                jsonArray = jsonArray.concat(mobjects.modelId);
-                jsonArray = jsonArray.concat("\"");
-                jsonArray = jsonArray.concat(",");
-                jsonArray = jsonArray.concat("\"objectId\": ");
-                jsonArray = jsonArray.concat(objproperties.id);
-                jsonArray = jsonArray.concat("}");
-                jsonArray = jsonArray.concat(",");
-                jsonArray = jsonArray.concat("\"end\": ");
-                jsonArray = jsonArray.concat("{");
-                jsonArray = jsonArray.concat("\"positionX\": ");
-                jsonArray = jsonArray.concat(cogX);
-                jsonArray = jsonArray.concat(",");
-                jsonArray = jsonArray.concat("\"positionY\": ");
-                jsonArray = jsonArray.concat(cogY);
-                jsonArray = jsonArray.concat(",");
-                jsonArray = jsonArray.concat("\"positionZ\": ");
-                jsonArray = jsonArray.concat(cogZ);
-                jsonArray = jsonArray.concat(",");
-                jsonArray = jsonArray.concat("\"objectId\": null");
-                jsonArray = jsonArray.concat("}");
-                jsonArray = jsonArray.concat(",");
-                jsonArray = jsonArray.concat("\"text\": ");
-                jsonArray = jsonArray.concat("\"");
-                jsonArray = jsonArray.concat(assemblyPos);
-                jsonArray = jsonArray.concat("\"");
-                jsonArray = jsonArray.concat("}");
-                jsonArray = jsonArray.concat(",");
-            }
-        }
-        //SetText2("Finished going through array");
-        jsonArray = jsonArray = jsonArray.slice(0, -1);
-        jsonArray = jsonArray.concat("]");
-        API.markup.removeMarkups();
-        //SetText2(jsonArray);
-        API.markup.addTextMarkup(JSON.parse(jsonArray));
-    }
-    catch (e) {
-        //SetErrorText("Error");
-        //SetErrorText(e.message);
-        //SetText2(jsonArray);
-    }
-}
+//#endregion
 
 //#region buttons
+
+function getPrefix(steelName) {
+    var prefix = steelName.substring(steelName.indexOf(".") + 1);
+    prefix = prefix.substring(0, prefix.indexOf("."));
+    prefix = prefix.replace(/^0+/, "");
+    return prefix;
+}
+
+function getassemblyPosNmbr(steelName) {
+    var pos = steelName.substring(steelName.lastIndexOf(".") + 1);
+    pos = pos.substring(0, pos.indexOf("\/"));
+    pos = pos.replace(/^0+/, "");
+    return pos;
+}
 
 $(function () {
     $("#btnSetColorFromStatus").dxButton({
@@ -1092,7 +529,7 @@ $(function () {
                 //var debugInfo = "";
                 //Get project name
                 var regexProjectName = /^[TV]\d+_\w+/;
-                var project = await API.project.getProject(); //{ name: "V8597_VDL" };  
+                var project = await API.project.getProject(); // { name: "V8622_GALLOO" };  
                 //debugInfo = debugInfo.concat("<br />Project name: " + project.name);
                 //$(debug).html(debugInfo);
                 if (!regexProjectName.test(project.name))
@@ -1111,14 +548,16 @@ $(function () {
                 ClearObjectStatusesGuids();
                 var referenceDate = new Date();
                 var referenceToday = checkBoxToday.dxCheckBox("instance").option("value");
-                console.log("referenceToday: " + referenceToday);
+                //console.log("referenceToday: " + referenceToday);
                 if (!Boolean(referenceToday)) {
                     referenceDate = new Date(referenceDatePicker.dxDateBox("instance").option("value"));
-                    console.log("referenceDate: " + referenceDate);
+                    //console.log("referenceDate: " + referenceDate);
                 }
                 referenceDate.setHours(23);
                 referenceDate.setMinutes(59);
                 referenceDate.setSeconds(59);
+
+                //Get concrete assembly info
                 var ended = 0;
                 var lastId = -1;
                 while (ended != 1) { //loop cuz only 80 records get fetched at a time
@@ -1143,13 +582,99 @@ $(function () {
                                 guidArr.Guids.push(record.name);
                                 guidArr.CompressedIfcGuids.push(Guid.fromFullToCompressed(record.name));
                             }
-                            console.log("records fetched");
+                        }
+                    });
+                }
+
+                //Get steel assembly info
+                var assembliesSteel = [];
+                ended = 0;
+                lastId = -1;
+                while (ended != 1) { //loop cuz only 80 records get fetched at a time
+                    await $.ajax({
+                        type: "GET",
+                        url: odooURL + "/api/v1/search_read",
+                        headers: { "Authorization": "Bearer " + token },
+                        data: {
+                            model: "project.mark_steel_production",
+                            domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"]]',
+                            fields: '["id", "name", "upper_id", "state"]',
+                        },
+                        success: function (data) {
+                            if (data.length == 0) { //no more records
+                                ended = 1;
+                                return;
+                            }
+                            for (const record of data) {
+                                lastId = record.id;
+                                var status = StatusPlanned;
+                                if (record.state === "done")
+                                    status = StatusProductionEnded;
+                                var prefix = getPrefix(record.name);
+                                var assemblyPos = prefix + getassemblyPosNmbr(record.name);
+                                var assemblySteel = {
+                                    Prefix: prefix,
+                                    AssemblyPos: assemblyPos,
+                                    Status: status
+                                };
+                                assembliesSteel.push(assemblySteel);
+                            }
                         }
                     });
                 }
 
                 const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
 
+                //runtimeIds = [17062, 17065, ...] = ids used by viewer
+                //objectIds = compressed IFC guids = ['28DCGNPlH98vcQNyNhB4sQ', '0fKOmd_6PFgOiexu4H1vtU', ...] = can be used to map runtimeId to original IFC
+
+                //find objects by assemblypos and add to status objects
+                var sliceLength = 5000;
+                for (const mobjects of mobjectsArr) {
+                    var modelId = mobjects.modelId;
+                    var tempPlannedObjectsRuntimeIds = [];
+                    var tempProdEndedObjectsRuntimeIds = [];
+
+                    const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+                    for (var i = 0; i < objectsRuntimeIds.length; i += sliceLength) {
+                        var objectsRuntimeIdsSliced = objectsRuntimeIds.slice(i, i + sliceLength);
+                        const objectPropertiesArr = await API.viewer.getObjectProperties(modelId, objectsRuntimeIdsSliced);
+                        for (const objproperties of objectPropertiesArr) {
+                            var propMerknummer = objproperties.properties.flatMap(p => p.properties).find(p => p.name === "MERKNUMMER");
+                            if (propMerknummer === undefined) continue;
+                            var merkNummer = propMerknummer.value;
+                            if (merkNummer.endsWith("(?)"))
+                                merkNummer = merkNummer.substring(0, merkNummer.length - 3);
+                            var steelAssembly = assembliesSteel.find(a => a.AssemblyPos === merkNummer);
+                            if (steelAssembly !== undefined) {
+                                if (steelAssembly.Status == StatusPlanned) {
+                                    tempPlannedObjectsRuntimeIds.push(objproperties.id);
+                                }
+                                else if (steelAssembly.Status == StatusProductionEnded) {
+                                    tempProdEndedObjectsRuntimeIds.push(objproperties.id)
+                                }
+                                var index = assembliesSteel.indexOf(steelAssembly);
+                                assembliesSteel.splice(index, 1);
+                            }
+                        }
+                    }
+
+                    if (tempPlannedObjectsRuntimeIds.length > 0) {
+                        const tempPlannedObjectsIfcIds = await API.viewer.convertToObjectIds(modelId, tempPlannedObjectsRuntimeIds);
+                        var objectStatusPlanned = ObjectStatuses.find(o => o.Status === StatusPlanned);
+                        objectStatusPlanned.Guids = objectStatusPlanned.Guids.concat(tempPlannedObjectsIfcIds.map(c => Guid.fromCompressedToFull(c)));
+                        objectStatusPlanned.CompressedIfcGuids = objectStatusPlanned.CompressedIfcGuids.concat(tempPlannedObjectsIfcIds);
+                    }
+                    if (tempProdEndedObjectsRuntimeIds.length > 0) {
+                        const tempProdEndedObjectsIfcIds = await API.viewer.convertToObjectIds(modelId, tempProdEndedObjectsRuntimeIds);
+                        var objectStatusProdEnded = ObjectStatuses.find(o => o.Status === StatusProductionEnded);
+                        objectStatusProdEnded.Guids = objectStatusProdEnded.Guids.concat(tempProdEndedObjectsIfcIds.map(c => Guid.fromCompressedToFull(c)));
+                        objectStatusProdEnded.CompressedIfcGuids = objectStatusProdEnded.CompressedIfcGuids.concat(tempProdEndedObjectsIfcIds);
+                    }
+                }
+
+                var objectStatusModelled = ObjectStatuses.find(o => o.Status === StatusModelled);
+                var unplannedIfcIds = [];
                 for (const mobjects of mobjectsArr) {
                     var modelId = mobjects.modelId;
                     const objectsRuntimeIds = mobjects.objects.map(o => o.id);
@@ -1161,12 +686,7 @@ $(function () {
                     }
                     var compressedIfcGuidsWithKnownStatusSet = new Set(compressedIfcGuidsWithKnownStatus);
 
-                    const unplannedIfcIds = objectsIfcIds.filter(x => !compressedIfcGuidsWithKnownStatusSet.has(x));
-
-                    //will also include existing assemblies
-                    var objectStatusModelled = ObjectStatuses.find(o => o.Status === StatusModelled);
-                    objectStatusModelled.CompressedIfcGuids = Array.from(unplannedIfcIds);
-                    objectStatusModelled.Guids = objectStatusModelled.CompressedIfcGuids.map(c => Guid.fromCompressedToFull(c));
+                    unplannedIfcIds = unplannedIfcIds.concat(objectsIfcIds.filter(x => !compressedIfcGuidsWithKnownStatusSet.has(x)));
 
                     for (const objStatus of ObjectStatuses) {
                         var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, objStatus.CompressedIfcGuids);
@@ -1174,16 +694,19 @@ $(function () {
                     }
                 }
 
+                //will also include existing assemblies
+                objectStatusModelled.CompressedIfcGuids = Array.from(unplannedIfcIds);
+                objectStatusModelled.Guids = objectStatusModelled.CompressedIfcGuids.map(c => Guid.fromCompressedToFull(c));
+
                 const mobjectsExisting = await API.viewer.getObjects({ parameter: { properties: { 'Default.MERKPREFIX': 'BESTAAND' } } });
                 for (const mobjects of mobjectsExisting) {
                     var modelId = mobjects.modelId;
                     const objectsRuntimeIds = mobjects.objects.map(o => o.id);
                     var objectStatusExisting = ObjectStatuses.find(o => o.Status === StatusExisting);
-                    objectStatusExisting.CompressedIfcGuids = await API.viewer.convertToObjectIds(modelId, objectsRuntimeIds);
-                    objectStatusExisting.Guids = objectStatusExisting.CompressedIfcGuids.map(i => Guid.fromCompressedToFull(i));
+                    objectStatusExisting.CompressedIfcGuids = objectStatusExisting.CompressedIfcGuids.concat(await API.viewer.convertToObjectIds(modelId, objectsRuntimeIds));
+                    objectStatusExisting.Guids = objectStatusExisting.Guids.concat(objectStatusExisting.CompressedIfcGuids.map(i => Guid.fromCompressedToFull(i)));
 
                     //remove existing from modelled
-                    var objectStatusModelled = ObjectStatuses.find(o => o.Status === StatusModelled);
                     var compressedIfcGuidsWithStatusExistingSet = new Set(objectStatusExisting.CompressedIfcGuids);
                     objectStatusModelled.CompressedIfcGuids = Array.from(objectStatusModelled.CompressedIfcGuids.filter(x => !compressedIfcGuidsWithStatusExistingSet.has(x)));
                     var guidsWithStatusExistingSet = new Set(objectStatusExisting.Guids);
@@ -1192,8 +715,15 @@ $(function () {
                     await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: objectStatusExisting.Color });
                 }
 
-                var runtimeIdsModelled = await API.viewer.convertToObjectRuntimeIds(modelId, objectStatusModelled.CompressedIfcGuids);
-                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsModelled }] }, { color: objectStatusModelled.Color });
+                for (const mobjects of mobjectsArr) {
+                    var modelId = mobjects.modelId;
+                    const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+                    //get overlapping runtimeIds of both collections
+                    var runtimeIdsModelled = await API.viewer.convertToObjectRuntimeIds(modelId, objectStatusModelled.CompressedIfcGuids);
+                    const filteredRuntimeIds = objectsRuntimeIds.filter(i => runtimeIdsModelled.includes(i));
+
+                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: filteredRuntimeIds }] }, { color: objectStatusModelled.Color });
+                }
 
                 modelIsColored = true;
             }
@@ -1398,7 +928,7 @@ $(function () {
             buttonIndicator.option('visible', true);
             try {
                 const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
-                var spliceLength = 5000;
+                var sliceLength = 5000;
                 for (const mobjects of mobjectsArr) {
                     var modelId = mobjects.modelId;
                     const objectsRuntimeIds = mobjects.objects.map(o => o.id);
@@ -1407,10 +937,10 @@ $(function () {
                         continue;
                     }
                     var idsPerPrefix = [];
-                    for (var i = 0; i < objectsRuntimeIds.length; i += spliceLength) {
+                    for (var i = 0; i < objectsRuntimeIds.length; i += sliceLength) {
                         //var cntr = 0;
-                        var objectsRuntimeIdsSpliced = objectsRuntimeIds.slice(i, i + spliceLength);
-                        const objectPropertiesArr = await API.viewer.getObjectProperties(modelId, objectsRuntimeIdsSpliced);
+                        var objectsRuntimeIdsSliced = objectsRuntimeIds.slice(i, i + sliceLength);
+                        const objectPropertiesArr = await API.viewer.getObjectProperties(modelId, objectsRuntimeIdsSliced);
                         //console.log("objectPropertiesArr: " + objectPropertiesArr);
                         //console.log("objectPropertiesArr.length: " + objectPropertiesArr.length);
                         for (const objproperties of objectPropertiesArr) {
@@ -1579,7 +1109,7 @@ $(function () {
     });
 });
 
-//#region legend existing
+//#region legend
 
 async function SetVisibility(status, visibility) {
     try {
@@ -1947,6 +1477,602 @@ $(function () {
 //#endregion
 
 //#endregion
+
+//#endregion
+
+const StatusModelled = "Modelled";
+const StatusExisting = "Existing";
+const StatusDrawn = "Drawn";
+const StatusOnHold = "OnHold";
+const StatusPlanned = "Planned";
+const StatusDemoulded = "Demoulded";
+const StatusProductionEnded = "ProductionEnded";
+const StatusAvailableForTransport = "AvailableForTransport";
+const StatusTransported = "Transported";
+var ObjectStatuses = [];
+function fillObjectStatuses() {
+    var modelled = {
+        Status: StatusModelled,
+        Color: { r: 211, g: 211, b: 211 },
+        Guids: [],
+        CompressedIfcGuids: []
+    };
+    ObjectStatuses.push(modelled);
+
+    var existing = {
+        Status: StatusExisting,
+        Color: { r: 130, g: 92, b: 79 },
+        Guids: [],
+        CompressedIfcGuids: []
+    };
+    ObjectStatuses.push(existing);
+
+    var drawn = {
+        Status: StatusDrawn,
+        Color: { r: 221, g: 160, b: 221 },
+        Guids: [],
+        CompressedIfcGuids: []
+    };
+    ObjectStatuses.push(drawn);
+
+    var onHold = {
+        Status: StatusOnHold,
+        Color: { r: 255, g: 0, b: 0 },
+        Guids: [],
+        CompressedIfcGuids: []
+    };
+    ObjectStatuses.push(onHold);
+
+    var planned = {
+        Status: StatusPlanned,
+        Color: { r: 255, g: 140, b: 0 },
+        Guids: [],
+        CompressedIfcGuids: []
+    };
+    ObjectStatuses.push(planned);
+
+    var demoulded = {
+        Status: StatusDemoulded,
+        Color: { r: 128, g: 128, b: 0 },
+        Guids: [],
+        CompressedIfcGuids: []
+    };
+    ObjectStatuses.push(demoulded);
+
+    var prodEnded = {
+        Status: StatusProductionEnded,
+        Color: { r: 255, g: 255, b: 0 },
+        Guids: [],
+        CompressedIfcGuids: []
+    };
+    ObjectStatuses.push(prodEnded);
+
+    var availForTransport = {
+        Status: StatusAvailableForTransport,
+        Color: { r: 0, g: 128, b: 255 },
+        Guids: [],
+        CompressedIfcGuids: []
+    };
+    ObjectStatuses.push(availForTransport);
+
+    var transported = {
+        Status: StatusTransported,
+        Color: { r: 34, g: 177, b: 76 },
+        Guids: [],
+        CompressedIfcGuids: []
+    };
+    ObjectStatuses.push(transported);
+}
+
+function ClearObjectStatusesGuids() {
+    for (var os of ObjectStatuses) {
+        os.Guids = [];
+        os.CompressedIfcGuids = [];
+    }
+}
+
+function getColorString(color) {
+    return "rgb(" + color.r + ", " + color.g + ", " + color.b + ")";
+}
+
+function addASecond(s) {
+    var dateS = GetDateAndTimeFromString(s);
+    dateS = new Date(dateS.setSeconds(dateS.getSeconds() + 1));
+    return GetStringFromDate(dateS);
+}
+
+async function addTextMarkups() {
+    try {
+        //SetText2("Start adding markups");
+        let jsonArray = "[";
+        //SetText2(jsonArray);
+        //const propSelector = getPropSelector();
+        //await API.viewer.setSelection(propSelector, "set");
+        //const mobjectsArr = await API.viewer.getObjects(propSelector);
+        //const mobjectsArr = await API.viewer.getSelection();
+        const selection = await API.viewer.getSelection();
+        const selector = {
+            modelObjectIds: selection
+        };
+        const mobjectsArr = await API.viewer.getObjects(selector);
+        const modelspecs = await API.viewer.getModels();
+        //SetText(mobjectsArr.length);
+        //mobjectsArr type: ModelObjects[]
+        //haalt enkel gemeenschappelijk hebben property sets op
+        for (const mobjects of mobjectsArr) {
+            const modelspec = modelspecs.find(s => s.id === mobjects.modelId);
+            const modelPos = modelspec.placement.position;
+            //mobjects type: ModelObjects met mobjects.objects type: ObjectProperties[]
+            const objectsIds = mobjects.objects.map(o => o.id);
+            //const objectsRuntimeIds = await API.viewer.convertToObjectRuntimeIds(mobjects.modelId, objectsIds);
+            const objPropertiesArr = await API.viewer.getObjectProperties(mobjects.modelId, objectsIds);
+            for (const objproperties of objPropertiesArr) {
+                //objproperties type: ObjectProperties
+                let cogX = 0.0;
+                let cogY = 0.0;
+                let cogZ = 0.0;
+                let assemblyPos = "";
+                let propertiesFound = 0;
+                for (const propertyset of objproperties.properties) {
+                    for (const property of propertyset.properties) {
+                        const propertyName = property.name;
+                        const propertyValue = property.value;
+                        if (typeof propertyName !== "undefined" && typeof propertyValue !== "undefined") {
+                            if (propertyName === "COG_X") {
+                                cogX = propertyValue;
+                                propertiesFound++;
+                            }
+                            else if (propertyName === "COG_Y") {
+                                cogY = propertyValue;
+                                propertiesFound++;
+                            }
+                            else if (propertyName === "COG_Z") {
+                                cogZ = propertyValue;
+                                propertiesFound++;
+                            }
+                            else if (propertyName === "MERKNUMMER") {
+                                assemblyPos = propertyValue;
+                                propertiesFound++;
+                            }
+                        }
+                    }
+                }
+                if (propertiesFound != 4) {
+                    continue;
+                }
+                jsonArray = jsonArray.concat("{");
+                //jsonArray = jsonArray.concat("\"id\": ");
+                //jsonArray = jsonArray.concat(objproperties.id);
+                //jsonArray = jsonArray.concat(",");
+                jsonArray = jsonArray.concat("\"color\": {\"r\": 60,\"g\": 203,\"b\": 62,\"a\": 255}, ");
+                jsonArray = jsonArray.concat("\"start\": ");
+                jsonArray = jsonArray.concat("{");
+                jsonArray = jsonArray.concat("\"positionX\": ");
+                jsonArray = jsonArray.concat(modelPos.x + cogX);
+                jsonArray = jsonArray.concat(",");
+                jsonArray = jsonArray.concat("\"positionY\": ");
+                jsonArray = jsonArray.concat(modelPos.y + cogY);
+                jsonArray = jsonArray.concat(",");
+                jsonArray = jsonArray.concat("\"positionZ\": ");
+                jsonArray = jsonArray.concat(modelPos.z + cogZ);
+                jsonArray = jsonArray.concat(",");
+                jsonArray = jsonArray.concat("\"modelId\": ");
+                jsonArray = jsonArray.concat("\"");
+                jsonArray = jsonArray.concat(mobjects.modelId);
+                jsonArray = jsonArray.concat("\"");
+                jsonArray = jsonArray.concat(",");
+                jsonArray = jsonArray.concat("\"objectId\": ");
+                jsonArray = jsonArray.concat(objproperties.id);
+                jsonArray = jsonArray.concat("}");
+                jsonArray = jsonArray.concat(",");
+                jsonArray = jsonArray.concat("\"end\": ");
+                jsonArray = jsonArray.concat("{");
+                jsonArray = jsonArray.concat("\"positionX\": ");
+                jsonArray = jsonArray.concat(modelPos.x + cogX);
+                jsonArray = jsonArray.concat(",");
+                jsonArray = jsonArray.concat("\"positionY\": ");
+                jsonArray = jsonArray.concat(modelPos.y + cogY);
+                jsonArray = jsonArray.concat(",");
+                jsonArray = jsonArray.concat("\"positionZ\": ");
+                jsonArray = jsonArray.concat(modelPos.z + cogZ);
+                jsonArray = jsonArray.concat(",");
+                jsonArray = jsonArray.concat("\"objectId\": null");
+                jsonArray = jsonArray.concat("}");
+                jsonArray = jsonArray.concat(",");
+                jsonArray = jsonArray.concat("\"text\": ");
+                jsonArray = jsonArray.concat("\"");
+                jsonArray = jsonArray.concat(assemblyPos);
+                jsonArray = jsonArray.concat("\"");
+                jsonArray = jsonArray.concat("}");
+                jsonArray = jsonArray.concat(",");
+            }
+        }
+        //SetText2("Finished going through array");
+        jsonArray = jsonArray = jsonArray.slice(0, -1);
+        jsonArray = jsonArray.concat("]");
+        API.markup.removeMarkups();
+        //SetText2(jsonArray);
+        API.markup.addTextMarkup(JSON.parse(jsonArray));
+    }
+    catch (e) {
+        //SetErrorText("Error");
+        //SetErrorText(e.message);
+        //SetText2(jsonArray);
+    }
+}
+
+//#region Odoo
+
+var token = "";
+var refresh_token = "";
+var tokenExpiretime;
+var client_id = "3oVDFZt2EVPhAOfQRgsRDYI9pIcdcdTGYR7rUSST";
+var client_secret = "PXthv4zShfW5NORk4bKFgr6O1dlYTxqD8KwFlx1S";
+async function getToken() {
+    if (token !== "" && refresh_token !== "" && tokenExpiretime.getTime() > Date.now() - 60000) {
+        console.log("Refreshing token");
+        var refreshSuccesful = false;
+        await $.ajax({
+            type: "POST",
+            url: odooURL + "/api/v1/authentication/oauth2/token",
+            data: {
+                client_id: client_id,
+                client_secret: client_secret,
+                grant_type: "refresh_token",
+                refresh_token: refresh_token
+            },
+            success: function () {
+                refreshSuccesful = true;
+            },
+        });
+        if (!refreshSuccesful) {
+            token = "";
+        }
+        console.log("End refresh token");
+    }
+    if (token === "") {
+        console.log("Fetching token");
+        var username = odooUsernameTextbox.dxTextBox("instance").option("value");
+        var password = odooPasswordTextbox.dxTextBox("instance").option("value");
+        if (typeof username !== 'string' || typeof password !== 'string' || username === "" || password === "") {
+            console.log("no username and/or password found");
+            throw "Gelieve gebruikersnaam en/of paswoord in te vullen.";
+        }
+        //console.log("Start db name fetch1");
+        //await $.ajax({
+        //    type: "GET",
+        //    url: odooURL + "/api/v1/database",
+        //    data: {
+        //        db: odooDatabase
+        //    },
+        //    success: function (data) {
+        //        console.log(data); 
+        //    },
+        //});
+        //console.log("Einde db name fetch");
+        await $.ajax({
+            type: "POST",
+            url: odooURL + "/api/v1/authentication/oauth2/token",
+            data: {
+                db: odooDatabase,
+                username: username,
+                password: password,
+                client_id: client_id,
+                client_secret: client_secret,
+                grant_type: "password"
+            },
+            success: function (data) {
+                token = data.access_token;
+                refresh_token = data.refresh_token;
+                console.log(data);
+                tokenExpiretime = new Date(Date.now() + data.expires_in * 1000);
+                console.log(tokenExpiretime);
+            }
+        });
+        console.log("Token received");
+    }
+    return token;
+}
+
+var lastUpdate = "";
+var modelIsColored = false;
+async function getRecentOdooData() {
+    if (!modelIsColored)
+        return;
+
+    //Authenticate with MUK API
+    var token = await getToken();
+
+    //var debugInfo = "";
+    //Get project name
+    var regexProjectName = /^[TV]\d+_\w+/;
+    var project = await API.project.getProject();//{ name: "V8597_VDL" };//
+    //debugInfo = debugInfo.concat("<br />Project name: " + project.name);
+    //$(debug).html(debugInfo);
+    if (!regexProjectName.test(project.name))
+        return;
+    var projectNumber = project.name.split("_")[0];
+
+    //Get project ID
+    var id = await GetProjectId(projectNumber);
+
+    if (lastUpdate === "") {
+        await $.ajax({
+            type: "GET",
+            url: odooURL + "/api/v1/search_read",
+            headers: { "Authorization": "Bearer " + token },
+            data: {
+                model: "trimble.connect.main",
+                domain: '[["project_id.id", "=", "' + id + '"]]',
+                order: 'write_date desc',
+                limit: 1,
+                fields: '["id", "write_date"]'
+            },
+            success: function (data) {
+                lastUpdate = data[0].write_date;
+                lastUpdate = addASecond(lastUpdate);
+                console.log("Last update: " + lastUpdate);
+            }
+        });
+    }
+    else {
+        await $.ajax({
+            type: "GET",
+            url: odooURL + "/api/v1/search_read",
+            headers: { "Authorization": "Bearer " + token },
+            data: {
+                model: "trimble.connect.main",
+                domain: '[["project_id.id", "=", "' + id + '"],["write_date",">=","' + lastUpdate + '"]]',
+                order: 'write_date desc',
+                fields: '["id", "write_date", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "state", "mark_available"]',
+            },
+            success: async function (data) {
+                var date = GetStringFromDate(new Date());
+                if (data.length > 0) {
+                    console.log(date + ": " + data.length + " updated records found.");
+                    lastUpdate = data[0].write_date;
+                    lastUpdate = addASecond(lastUpdate);
+
+                    var referenceDate = new Date();
+                    referenceDate.setHours(23);
+                    referenceDate.setMinutes(59);
+                    referenceDate.setSeconds(59);
+                    for (const record of data) {
+                        var status = getStatus(record, referenceDate);
+                        var color = getColorByStatus(status);
+
+                        const mobjectsArr = await API.viewer.getObjects({ parameter: { properties: { 'Default.GUID': record.name } } });
+                        console.log("mobjectsArr length: " + mobjectsArr.length);
+
+                        for (const mobjects of mobjectsArr) {
+                            var modelId = mobjects.modelId;
+                            console.log("modelId: " + modelId);
+                            var compressedIfcGuids = [];
+                            console.log("record.name: " + record.name);
+                            var compressedIfcGuid = Guid.fromFullToCompressed(record.name);
+                            console.log("compressedIfcGuid: " + compressedIfcGuid);
+                            compressedIfcGuids.push(compressedIfcGuid);
+                            var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedIfcGuids);
+                            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: color });
+                        }
+                    }
+                }
+                else {
+                    console.log(date + ": no updated records found.");
+                }
+            }
+        });
+    }
+}
+
+async function GetProjectId(projectNumber) {
+    var id = -1;
+    //console.log("Start get project Id");
+    //console.log("Odoo URL: " + odooURL + "/api/v1/search_read");
+    //console.log("using token: " + token);
+    await $.ajax({
+        type: "GET",
+        url: odooURL + "/api/v1/search_read",
+        headers: { "Authorization": "Bearer " + token },
+        data: {
+            model: "project.project",
+            domain: '[["project_identifier", "=", "' + projectNumber + '"]]',
+            fields: '["id", "project_identifier"]',
+        },
+        success: function (data) {
+            //console.log(data);
+            id = data[0].id;
+        }
+    });
+    //console.log("End get project Id");
+    return id;
+}
+
+//#endregion
+
+function getStatus(record, referenceDate) {
+    if (typeof record.state === 'string' && record.state === 'onhold') {
+        return StatusOnHold;
+    }
+    else if (typeof record.date_transported === 'string' && GetDateFromString(record.date_fab_dem) <= referenceDate) {
+        return StatusTransported;
+    }
+    else if (typeof record.date_fab_end === 'string' && GetDateFromString(record.date_fab_end) <= referenceDate) {
+        if (record.mark_available) {
+            return StatusAvailableForTransport;
+        }
+        else {
+            return StatusProductionEnded;
+        }
+    }
+    else if (typeof record.date_fab_dem === 'string' && GetDateFromString(record.date_fab_dem) <= referenceDate) {
+        return StatusDemoulded;
+    }
+    else if (typeof record.date_fab_planned === 'string' && GetDateFromString(record.date_fab_planned) <= referenceDate) {
+        return StatusPlanned;
+    }
+    else if (typeof record.date_drawn === 'string' && GetDateFromString(record.date_drawn) <= referenceDate) {
+        return StatusDrawn;
+    }
+    else {
+        return StatusModelled;
+    }
+}
+
+function getColorByStatus(status) {
+    var color = { r: 211, g: 211, b: 211 };
+    var ostat = ObjectStatuses.find(o => o.Status === status);
+    if (ostat !== undefined)
+        color = ostat.Color;
+    return color;
+}
+
+var regexDate = /[0-9]{4}-[0-9]{2}-[0-9]{2}/;
+function GetDateFromString(s) {
+    var date = null;
+    var resultDate = s.match(regexDate);
+    if (resultDate != null) {
+        var splitDate = resultDate[0].split("-");
+        var year = splitDate[0];
+        var month = splitDate[1];
+        var day = splitDate[2];
+        date = new Date(year, month - 1, day);
+    }
+    return date;
+}
+
+var regexDateAndTime = /[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}/;
+function GetDateAndTimeFromString(s) {
+    var date = null;
+    var resultDate = s.match(regexDateAndTime);
+    if (resultDate != null) {
+        var splitDateTime = resultDate[0].split(" ");
+        var splitDate = splitDateTime[0].split("-");
+        var splitTime = splitDateTime[1].split(":");
+        var year = splitDate[0];
+        var month = splitDate[1];
+        var day = splitDate[2];
+        var hours = splitTime[0];
+        var minutes = splitTime[1];
+        var seconds = splitTime[2];
+        date = new Date(year, month - 1, day, hours, minutes, seconds);
+    }
+    return date;
+}
+
+function GetStringFromDate(d) {
+    var year = d.getFullYear();
+    var month = pad("00", d.getMonth() + 1);
+    var day = pad("00", d.getDate());
+    var hours = pad("00", d.getHours());
+    var minutes = pad("00", d.getMinutes());
+    var seconds = pad("00", d.getSeconds());
+    var returnstr = year + "-" + month + "-" + day + " " + hours + ":" + minutes + ":" + seconds;
+    return returnstr;
+}
+
+function pad(pad, str) {
+    if (typeof str === 'undefined')
+        return pad;
+    return (pad + str).slice(-pad.length);
+}
+
+function SetSelectionByFilter()
+{
+    var filterTypes = getFilterTypes();
+    var selectedItem = filterTypeSelectBox.dxSelectBox("instance").option("selectedItem");
+    if (selectedItem === filterTypes[0]) {
+        var selected = prefixSelectionTagBox.dxTagBox("instance").option("selectedItems");
+        for (let i = 0; i < selected.length; i++) {
+            var actionType = i == 0 ? "set" : "add";
+            setObjectSelectionByPropnameAndValue("Default.MERKPREFIX", selected[i], actionType);
+        }
+    }
+    else if (selectedItem === filterTypes[1]) {
+        var text = assemblyTextBox.dxTextBox("instance").option("value");
+        setObjectSelectionByPropnameAndValue("Default.MERKNUMMER", text, "set");
+    }
+    else if (selectedItem === filterTypes[2]) {
+        var propertyName = propertyNameTextBox.dxTextBox("instance").option("value");
+        var propertyValue = propertyValueTextBox.dxTextBox("instance").option("value");
+        setObjectSelectionByPropnameAndValue(propertyName, propertyValue, "set");
+    }
+
+    setObjectSelectionByPropnameAndValue("Tekla Common.Finish", "MONTAGE", "add");
+}
+
+async function setObjectsByProp() {
+	return doObjectsFilter(async () => API.viewer.setSelection(getPropSelector(), "set"));
+}
+
+async function setObjectsByProp2() {
+    await API.viewer.setSelection(getPropSelector(), "set");
+}
+
+async function setObjectSelectionByPropnameAndValue(propNameFilter, propValueFilter, selectionType) {
+    await API.viewer.setSelection(getPropSelectorByPropnameAndValue(propNameFilter, propValueFilter), selectionType);
+}
+
+async function doObjectsFilter(action) {
+    return doWorkRes("#objectsResult", "#objectsLoading", action);
+}
+
+async function doWorkRes(selResult, selLoading, action) {
+    return doWorkSafe(() => { //preaction
+        $(selResult).html(""); //inhoud van selResult leegmaken
+        $(selLoading).show(); //selLoading zichtbaar maken
+    }, action, r => { //action , postaction
+        $(selLoading).hide();
+        $(selResult).html(r);
+    });
+}
+
+async function doWorkSafe(preAction, action, postAction) {
+    preAction();
+    let result;
+    try {
+	const actionRes = await action();
+	if (actionRes === false) {
+	    throw new Error("Operation failed: Unknown error");
+	} else if (actionRes === true || actionRes === "" || actionRes == null) {
+	    result = ok();
+	} else {
+	    result = actionRes;
+	}
+    }
+    catch (e) {
+        result = err(e);
+    }
+    postAction(result);
+}
+
+async function getObjectsByProp(e) {
+    return getObjectsBy(async () => API.viewer.getObjects(getPropSelector()), e);
+}
+
+function getPropSelector() {
+    return {
+        parameter: {
+            properties: {
+                [$("#propNameFilter").val()]: $("#propValueFilter").val()
+            }
+        }
+    };
+}
+
+function getPropSelectorByPropnameAndValue(propNameFilter, propValueFilter) {
+    return {
+        parameter: {
+            properties: {
+                [propNameFilter]: propValueFilter
+            }
+        }
+    };
+}
+
+function selectionChanged(data) {
+
+}
 
 // https://github.com/jsdbroughton/ifc-guid/blob/master/Guid.js
 // IfcGuid
