@@ -564,7 +564,7 @@ $(function () {
                 referenceDate.setSeconds(59);
 
                 //Get concrete assembly info
-                console.log("Start: Getting concrete assembly info");
+                //console.log("Start: Getting concrete assembly info");
                 var processedAssemblyIds = [];
                 var ended = 0;
                 var lastId = -1;
@@ -596,15 +596,15 @@ $(function () {
                         }
                     });
                 }
-                console.log(processedAssemblyIds);
-                console.log("Finished: Getting concrete assembly info");
+                //console.log(processedAssemblyIds);
+                //console.log("Finished: Getting concrete assembly info");
 
                 //--Get steel assembly info
                 //Assume that assemblies, which are not entered into the trimble.connect.main table, are steel assemblies 
                 //=> get all assemblies from project.master_marks
                 //and filter out those that are entered into the trimble.connect.main table
                 //result: unprocessedAssemblies
-                console.log("Start: Getting unprocessedAssemblies");
+                //console.log("Start: Getting unprocessedAssemblies");
                 var unprocessedAssemblies = []; //modelled steel assemblies
                 ended = 0;
                 lastId = -1;
@@ -641,9 +641,9 @@ $(function () {
                         }
                     });
                 }
-                console.log("Finished: Getting unprocessedAssemblies");
+                //console.log("Finished: Getting unprocessedAssemblies");
 
-                console.log("Start: Getting project.mark_steel_production info");
+                //console.log("Start: Getting project.mark_steel_production info");
                 ended = 0;
                 lastId = -1;
                 while (ended != 1) { //loop cuz only 80 records get fetched at a time
@@ -675,9 +675,9 @@ $(function () {
                         }
                     });
                 }
-                console.log("Finished: Getting project.mark_steel_production info");
+                //console.log("Finished: Getting project.mark_steel_production info");
 
-                console.log("Start: Getting project.mark_steel_pack info");
+                //console.log("Start: Getting project.mark_steel_pack info");
                 var steelPacks = [];
                 ended = 0;
                 lastId = -1;
@@ -718,10 +718,10 @@ $(function () {
                         }
                     });
                 }
-                console.log("Finished: Getting project.mark_steel_pack info");
+                //console.log("Finished: Getting project.mark_steel_pack info");
 
                 //get steel pack items
-                console.log("Start: Getting project.mark_steel_pack_items info");
+                //console.log("Start: Getting project.mark_steel_pack_items info");
                 var steelPackItems = [];
                 for (const steelPack of steelPacks) {
                     await $.ajax({
@@ -753,9 +753,9 @@ $(function () {
                         }
                     });
                 }
-                console.log("Finished: Getting project.mark_steel_pack_items info");
+                //console.log("Finished: Getting project.mark_steel_pack_items info");
 
-                console.log("Start: Processing steel pack info");
+                //console.log("Start: Processing steel pack info");
                 for (const steelPack of steelPacks) {
                     const itemsInPack = steelPackItems.filter(x => steelPack.MarkIds.includes(x.OdooId));
                     for (const item of itemsInPack) {
@@ -773,8 +773,8 @@ $(function () {
                         }
                     }
                 }
-                console.log(unprocessedAssemblies);
-                console.log("Finished: Processing steel pack info");
+                //console.log(unprocessedAssemblies);
+                //console.log("Finished: Processing steel pack info");
 
                 const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
 
