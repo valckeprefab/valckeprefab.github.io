@@ -500,7 +500,7 @@ function getPrefix(steelName) {
     return prefix;
 }
 
-function getassemblyPosNmbr(steelName) {
+function getAssemblyPosNmbrFromSteelname(steelName) {
     var pos = steelName.substring(steelName.lastIndexOf(".") + 1);
     pos = pos.substring(0, pos.indexOf("\/"));
     pos = pos.replace(/^0+/, "");
@@ -535,7 +535,7 @@ $(function () {
                 //var debugInfo = "";
                 //Get project name
                 var regexProjectName = /^[TV]\d+_\w+/;
-                var project = await API.project.getProject(); // { name: "V8622_GALLOO" };  
+                var project = await API.project.getProject(); //{ name: "V8622_GALLOO" };
                 //debugInfo = debugInfo.concat("<br />Project name: " + project.name);
                 //$(debug).html(debugInfo);
                 if (!regexProjectName.test(project.name))
@@ -564,6 +564,8 @@ $(function () {
                 referenceDate.setSeconds(59);
 
                 //Get concrete assembly info
+                //console.log("Start: Getting concrete assembly info");
+                var processedAssemblyIds = [];
                 var ended = 0;
                 var lastId = -1;
                 while (ended != 1) { //loop cuz only 80 records get fetched at a time
@@ -574,7 +576,8 @@ $(function () {
                         data: {
                             model: "trimble.connect.main",
                             domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"],["state","!=","cancelled"]]',
-                            fields: '["id", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "state", "mark_available"]',
+                            fields: '["id", "mark_id", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "state", "mark_available"]',
+                            order: 'id',
                         },
                         success: function (data) {
                             if (data.length == 0) { //no more records
@@ -587,13 +590,59 @@ $(function () {
                                 var guidArr = ObjectStatuses.find(o => o.Status === status);
                                 guidArr.Guids.push(record.name);
                                 guidArr.CompressedIfcGuids.push(Guid.fromFullToCompressed(record.name));
+                                if (record.mark_id[0] != undefined)
+                                    processedAssemblyIds.push(record.mark_id[0]);
                             }
                         }
                     });
                 }
+                //console.log("Finished: Getting concrete assembly info");
 
-                //Get steel assembly info
-                var assembliesSteel = [];
+                //--Get steel assembly info
+                //Assume that assemblies, which are not entered into the trimble.connect.main table, are steel assemblies 
+                //=> get all assemblies from project.master_marks
+                //and filter out those that are entered into the trimble.connect.main table
+                //result: unprocessedAssemblies
+                //console.log("Start: Getting unprocessedAssemblies");
+                var unprocessedAssemblies = []; //modelled steel assemblies
+                ended = 0;
+                lastId = -1;
+                while (ended != 1) { //loop cuz only 80 records get fetched at a time
+                    await $.ajax({
+                        type: "GET",
+                        url: odooURL + "/api/v1/search_read",
+                        headers: { "Authorization": "Bearer " + token },
+                        data: {
+                            model: "project.master_marks",
+                            domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"]]',
+                            fields: '["id", "mark_prefix", "mark_ref", "create_date", "mark_qty"]',
+                            order: 'id',
+                        },
+                        success: function (data) {
+                            if (data.length == 0) { //no more records
+                                ended = 1;
+                                return;
+                            }
+                            for (const record of data) {
+                                lastId = record.id;
+                                if (!processedAssemblyIds.includes(record.id) && GetDateFromString(record.create_date) <= referenceDate) {
+                                    for (var i = 0; i < record.mark_qty; i++) {
+                                        var unprocessedAssembly = {
+                                            Prefix: record.mark_prefix,
+                                            AssemblyPos: record.mark_ref,
+                                            Status: StatusDrawn,
+                                            AssemblyId: record.id,
+                                        }
+                                        unprocessedAssemblies.push(unprocessedAssembly);
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+                //console.log("Finished: Getting unprocessedAssemblies");
+
+                //console.log("Start: Getting project.mark_steel_production info");
                 ended = 0;
                 lastId = -1;
                 while (ended != 1) { //loop cuz only 80 records get fetched at a time
@@ -604,7 +653,8 @@ $(function () {
                         data: {
                             model: "project.mark_steel_production",
                             domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"]]',
-                            fields: '["id", "name", "upper_id", "state"]',
+                            fields: '["id", "upper_id", "date_delivered"]',
+                            order: 'id',
                         },
                         success: function (data) {
                             if (data.length == 0) { //no more records
@@ -613,23 +663,21 @@ $(function () {
                             }
                             for (const record of data) {
                                 lastId = record.id;
-                                var status = StatusPlanned;
-                                if (record.state === "done")
-                                    status = StatusProductionEnded;
-                                var prefix = getPrefix(record.name);
-                                var assemblyPos = prefix + getassemblyPosNmbr(record.name);
-                                var assemblySteel = {
-                                    Prefix: prefix,
-                                    AssemblyPos: assemblyPos,
-                                    Status: status
-                                };
-                                assembliesSteel.push(assemblySteel);
+                                var unprocessedUnplannedAssembly = unprocessedAssemblies.find(x => x.AssemblyId == record.upper_id[0] && x.Status === StatusDrawn);
+                                if (unprocessedUnplannedAssembly != undefined) {
+                                    if (record.date_delivered != false && GetDateFromString(record.date_delivered) <= referenceDate)
+                                        unprocessedUnplannedAssembly.Status = StatusProductionEnded;
+                                    else
+                                        unprocessedUnplannedAssembly.Status = StatusPlanned;
+                                }
                             }
                         }
                     });
                 }
+                //console.log("Finished: Getting project.mark_steel_production info");
 
-                var transportedSteelPacks = [];
+                //console.log("Start: Getting project.mark_steel_pack info");
+                var steelPacks = [];
                 ended = 0;
                 lastId = -1;
                 while (ended != 1) { //loop cuz only 80 records get fetched at a time
@@ -638,9 +686,10 @@ $(function () {
                         url: odooURL + "/api/v1/search_read",
                         headers: { "Authorization": "Bearer " + token },
                         data: {
-                            model: "project.mark_steel_production",
-                            domain: '[["project_id.id", "=", "' + id + '"],["state", "=", "done"]]',
-                            fields: '["id"]',
+                            model: "project.mark_steel_pack",
+                            domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"]]',
+                            fields: '["id", "mark_ids", "date_ready", "date_done"]', //mark_id = pack item id
+                            order: 'id',
                         },
                         success: function (data) {
                             if (data.length == 0) { //no more records
@@ -649,13 +698,82 @@ $(function () {
                             }
                             for (const record of data) {
                                 lastId = record.id;
-                                transportedSteelPacks.push(record.id);
+                                if (record.mark_ids.length > 0) {
+                                    var dateReady = new Date(3000, 0, 1);
+                                    if (record.date_ready != false)
+                                        dateReady = GetDateFromString(record.date_ready);
+                                    var dateDone = new Date(3000, 0, 1);
+                                    if (record.date_done != false)
+                                        dateDone = GetDateFromString(record.date_done);
+                                    var steelPack = {
+                                        OdooId: record.id,
+                                        MarkIds: record.mark_ids,
+                                        DateReady: dateReady,
+                                        DateDone: dateDone,
+                                    };
+                                    steelPacks.push(steelPack);
+                                }
                             }
                         }
                     });
                 }
+                //console.log("Finished: Getting project.mark_steel_pack info");
 
+                //get steel pack items
+                //console.log("Start: Getting project.mark_steel_pack_items info");
+                var steelPackItems = [];
+                for (const steelPack of steelPacks) {
+                    await $.ajax({
+                        type: "GET",
+                        url: odooURL + "/api/v1/search_read",
+                        headers: { "Authorization": "Bearer " + token },
+                        data: {
+                            model: "project.mark_steel_pack_items",
+                            domain: '[["upper_id.id", "=", "' + steelPack.OdooId + '"]]',
+                            fields: '["id", "mark_id", "qty"]', //mark_id = pack item id
+                            order: 'id',
+                        },
+                        success: function (data) {
+                            if (data.length == 0) { //no more records
+                                ended = 1;
+                                return;
+                            }
+                            for (const record of data) {
+                                lastId = record.id;
+                                if (record.qty > 0) {
+                                    var steelPackItem = {
+                                        OdooId: record.id,
+                                        AssemblyId: record.mark_id[0],
+                                        Quantity: record.qty,
+                                    };
+                                    steelPackItems.push(steelPackItem);
+                                }
+                            }
+                        }
+                    });
+                }
+                //console.log("Finished: Getting project.mark_steel_pack_items info");
 
+                //console.log("Start: Processing steel pack info");
+                for (const steelPack of steelPacks) {
+                    const itemsInPack = steelPackItems.filter(x => steelPack.MarkIds.includes(x.OdooId));
+                    for (const item of itemsInPack) {
+                        //console.log(item);
+                        for (var i = 0; i < item.Quantity; i++) {
+                            var unprocessedAssembly = unprocessedAssemblies.find(x => x.AssemblyId == item.AssemblyId
+                                && x.Status === StatusProductionEnded);
+                            //console.log(unprocessedAssembly);
+                            if (unprocessedAssembly != undefined) {
+                                if (steelPack.DateReady <= referenceDate)
+                                    unprocessedAssembly.Status = StatusAvailableForTransport;
+                                if (steelPack.DateDone <= referenceDate)
+                                    unprocessedAssembly.Status = StatusTransported;
+                            }
+                        }
+                    }
+                }
+                console.log(unprocessedAssemblies);
+                //console.log("Finished: Processing steel pack info");
 
                 const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
 
@@ -666,8 +784,14 @@ $(function () {
                 var sliceLength = 5000;
                 for (const mobjects of mobjectsArr) {
                     var modelId = mobjects.modelId;
-                    var tempPlannedObjectsRuntimeIds = [];
-                    var tempProdEndedObjectsRuntimeIds = [];
+                    var tempObjectRuntimeIdsPerStatus = [];
+                    for (const objStatus of ObjectStatuses) {
+                        var tempObjStatus = {
+                            Status: objStatus.Status,
+                            ObjectRuntimeIds: [],
+                        };
+                        tempObjectRuntimeIdsPerStatus.push(tempObjStatus);
+                    }
 
                     const objectsRuntimeIds = mobjects.objects.map(o => o.id);
                     for (var i = 0; i < objectsRuntimeIds.length; i += sliceLength) {
@@ -679,31 +803,23 @@ $(function () {
                             var merkNummer = propMerknummer.value;
                             if (merkNummer.endsWith("(?)"))
                                 merkNummer = merkNummer.substring(0, merkNummer.length - 3);
-                            var steelAssembly = assembliesSteel.find(a => a.AssemblyPos === merkNummer);
-                            if (steelAssembly !== undefined) {
-                                if (steelAssembly.Status == StatusPlanned) {
-                                    tempPlannedObjectsRuntimeIds.push(objproperties.id);
-                                }
-                                else if (steelAssembly.Status == StatusProductionEnded) {
-                                    tempProdEndedObjectsRuntimeIds.push(objproperties.id)
-                                }
-                                var index = assembliesSteel.indexOf(steelAssembly);
-                                assembliesSteel.splice(index, 1);
+                            var unprocessedAssembly = unprocessedAssemblies.find(a => a.AssemblyPos === merkNummer);
+                            if (unprocessedAssembly !== undefined) {
+                                var tempArray = tempObjectRuntimeIdsPerStatus.find(x => x.Status === unprocessedAssembly.Status);
+                                tempArray.ObjectRuntimeIds.push(objproperties.id)
+                                var index = unprocessedAssemblies.indexOf(unprocessedAssembly);
+                                unprocessedAssemblies.splice(index, 1);
                             }
                         }
                     }
 
-                    if (tempPlannedObjectsRuntimeIds.length > 0) {
-                        const tempPlannedObjectsIfcIds = await API.viewer.convertToObjectIds(modelId, tempPlannedObjectsRuntimeIds);
-                        var objectStatusPlanned = ObjectStatuses.find(o => o.Status === StatusPlanned);
-                        objectStatusPlanned.Guids = objectStatusPlanned.Guids.concat(tempPlannedObjectsIfcIds.map(c => Guid.fromCompressedToFull(c)));
-                        objectStatusPlanned.CompressedIfcGuids = objectStatusPlanned.CompressedIfcGuids.concat(tempPlannedObjectsIfcIds);
-                    }
-                    if (tempProdEndedObjectsRuntimeIds.length > 0) {
-                        const tempProdEndedObjectsIfcIds = await API.viewer.convertToObjectIds(modelId, tempProdEndedObjectsRuntimeIds);
-                        var objectStatusProdEnded = ObjectStatuses.find(o => o.Status === StatusProductionEnded);
-                        objectStatusProdEnded.Guids = objectStatusProdEnded.Guids.concat(tempProdEndedObjectsIfcIds.map(c => Guid.fromCompressedToFull(c)));
-                        objectStatusProdEnded.CompressedIfcGuids = objectStatusProdEnded.CompressedIfcGuids.concat(tempProdEndedObjectsIfcIds);
+                    for (const tempObjects of tempObjectRuntimeIdsPerStatus) {
+                        if (tempObjects.ObjectRuntimeIds.length > 0) {
+                            const tempObjectsIfcIds = await API.viewer.convertToObjectIds(modelId, tempObjects.ObjectRuntimeIds);
+                            var objectStatus = ObjectStatuses.find(o => o.Status === tempObjects.Status);
+                            objectStatus.Guids = objectStatus.Guids.concat(tempObjectsIfcIds.map(c => Guid.fromCompressedToFull(c)));
+                            objectStatus.CompressedIfcGuids = objectStatus.CompressedIfcGuids.concat(tempObjectsIfcIds);
+                        }
                     }
                 }
 

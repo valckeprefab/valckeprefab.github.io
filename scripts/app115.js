@@ -535,7 +535,7 @@ $(function () {
                 //var debugInfo = "";
                 //Get project name
                 var regexProjectName = /^[TV]\d+_\w+/;
-                var project = { name: "V8622_GALLOO" };//await API.project.getProject();
+                var project = await API.project.getProject(); //{ name: "V8622_GALLOO" };
                 //debugInfo = debugInfo.concat("<br />Project name: " + project.name);
                 //$(debug).html(debugInfo);
                 if (!regexProjectName.test(project.name))
