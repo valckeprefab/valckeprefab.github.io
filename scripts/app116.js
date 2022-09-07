@@ -781,6 +781,7 @@ $(function () {
                 //objectIds = compressed IFC guids = ['28DCGNPlH98vcQNyNhB4sQ', '0fKOmd_6PFgOiexu4H1vtU', ...] = can be used to map runtimeId to original IFC
 
                 //find objects by assemblypos and add to status objects
+                console.log("1");
                 var sliceLength = 5000;
                 for (const mobjects of mobjectsArr) {
                     var modelId = mobjects.modelId;
@@ -823,6 +824,7 @@ $(function () {
                     }
                 }
 
+                console.log("2");
                 var objectStatusModelled = ObjectStatuses.find(o => o.Status === StatusModelled);
                 var unplannedIfcIds = [];
                 for (const mobjects of mobjectsArr) {
@@ -845,9 +847,11 @@ $(function () {
                 }
 
                 //will also include existing assemblies
+                console.log("3");
                 objectStatusModelled.CompressedIfcGuids = Array.from(unplannedIfcIds);
                 objectStatusModelled.Guids = objectStatusModelled.CompressedIfcGuids.map(c => Guid.fromCompressedToFull(c));
 
+                console.log("4");
                 const mobjectsExisting = await API.viewer.getObjects({ parameter: { properties: { 'Default.MERKPREFIX': 'BESTAAND' } } });
                 for (const mobjects of mobjectsExisting) {
                     var modelId = mobjects.modelId;
@@ -865,6 +869,7 @@ $(function () {
                     await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: objectStatusExisting.Color });
                 }
 
+                console.log("5");
                 for (const mobjects of mobjectsArr) {
                     var modelId = mobjects.modelId;
                     const objectsRuntimeIds = mobjects.objects.map(o => o.id);
