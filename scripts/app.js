@@ -852,6 +852,8 @@ $(function () {
                 for (const mobjects of mobjectsExisting) {
                     var modelId = mobjects.modelId;
                     const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+                    if (objectsRuntimeIds.length == 0)
+                        continue;
                     var objectStatusExisting = ObjectStatuses.find(o => o.Status === StatusExisting);
                     objectStatusExisting.CompressedIfcGuids = objectStatusExisting.CompressedIfcGuids.concat(await API.viewer.convertToObjectIds(modelId, objectsRuntimeIds));
                     objectStatusExisting.Guids = objectStatusExisting.Guids.concat(objectStatusExisting.CompressedIfcGuids.map(i => Guid.fromCompressedToFull(i)));
@@ -1966,9 +1968,11 @@ async function getRecentOdooData() {
                 fields: '["id", "write_date"]'
             },
             success: function (data) {
-                lastUpdate = data[0].write_date;
-                lastUpdate = addASecond(lastUpdate);
-                console.log("Last update: " + lastUpdate);
+                if (data.length > 0) {
+                    lastUpdate = data[0].write_date;
+                    lastUpdate = addASecond(lastUpdate);
+                    console.log("Last update: " + lastUpdate);
+                }
             }
         });
     }
