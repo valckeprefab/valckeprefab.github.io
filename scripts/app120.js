@@ -391,9 +391,7 @@ function getTextById(id) {
     if (textUi[id][userLang] !== undefined) {
         return textUi[id][userLang];
     }
-    else {
-        return textUi[id]["en"];
-    }
+    return textUi[id]["en"];
 }
 
 //#endregion
@@ -508,7 +506,7 @@ function getAssemblyPosNmbrFromSteelname(steelName) {
 }
 
 $(function () {
-    $("#btnSetColorFromStatus").dxButton({
+    $("#btnSetColorFromStatusDivId").dxButton({
         stylingMode: "outlined",
         text: getTextById("btnSetColorFromStatus"),
         type: "success",
@@ -890,7 +888,7 @@ $(function () {
 });
 
 $(function () {
-    $("#btnSetOdooLabels").dxButton({
+    $("#btnSetOdooLabelsDivId").dxButton({
         stylingMode: "outlined",
         text: getTextById("btnSetOdooLabels"),
         type: "success",
@@ -1073,7 +1071,7 @@ $(function () {
 
 var idsPerPrefixPerModelId = [];
 $(function () {
-    $("#btnShowKnownPrefixes").dxButton({
+    $("#btnShowKnownPrefixesDivId").dxButton({
         stylingMode: "outlined",
         text: getTextById("btnShowKnownPrefixes"),
         type: "success",
@@ -1171,7 +1169,7 @@ $(function () {
 });
 
 $(function () {
-    $("#btnSelectByFilter").dxButton({
+    $("#btnSelectByFilterDivId").dxButton({
         stylingMode: "outlined",
         text: getTextById("btnSelectByFilter"),
         type: "success",
@@ -1244,7 +1242,7 @@ $(function () {
 });
 
 $(function () {
-    $("#btnShowLabels").dxButton({
+    $("#btnShowLabelsDivId").dxButton({
         stylingMode: "outlined",
         text: getTextById("btnShowLabels"),
         type: "success",
