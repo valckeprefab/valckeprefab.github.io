@@ -2006,33 +2006,32 @@ async function getRecentOdooData() {
                         console.log("mobjectsArr length: " + mobjectsArr.length);
 
                         var compressedIfcGuids = [];
-                        console.log("record.name: " + record.name);
                         var compressedIfcGuid = Guid.fromFullToCompressed(record.name);
-                        console.log("compressedIfcGuid: " + compressedIfcGuid);
                         compressedIfcGuids.push(compressedIfcGuid);
                         //remove element from previous status
                         for (const objStatus of ObjectStatuses) {
                             var index = objStatus.CompressedIfcGuids.indexOf(compressedIfcGuid);
                             if (index != -1) {
                                 objStatus.CompressedIfcGuids.splice(index, 1);
+                                console.log("Assembly " + record.name + " removed from CompressedIfcGuids as " + objStatus.Status);
                             }
                             index = objStatus.Guids.indexOf(record.name);
                             if (index != -1) {
                                 objStatus.Guids.splice(index, 1);
+                                console.log("Assembly " + record.name + " removed from Guids as " + objStatus.Status);
                             }
                         }
                         //add element to new status
                         var objStatus = ObjectStatuses.find(o => o.Status === status);
                         objStatus.Guids.push(record.name);
                         objStatus.CompressedIfcGuids.push(compressedIfcGuid);
+                        console.log("Assembly " + record.name + " added as " + status);
                         
                         for (const mobjects of mobjectsArr) {
                             var modelId = mobjects.modelId;
-                            console.log("modelId: " + modelId);
                             var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedIfcGuids);
                             await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: color });
                         }
-
                     }
                 }
                 else {
