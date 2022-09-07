@@ -391,9 +391,7 @@ function getTextById(id) {
     if (textUi[id][userLang] !== undefined) {
         return textUi[id][userLang];
     }
-    else {
-        return textUi[id]["en"];
-    }
+    return textUi[id]["en"];
 }
 
 //#endregion
@@ -508,7 +506,7 @@ function getAssemblyPosNmbrFromSteelname(steelName) {
 }
 
 $(function () {
-    $("#btnSetColorFromStatus").dxButton({
+    $("#btnSetColorFromStatusDivId").dxButton({
         stylingMode: "outlined",
         text: getTextById("btnSetColorFromStatus"),
         type: "success",
@@ -519,6 +517,7 @@ $(function () {
             }).dxLoadIndicator('instance');
         },
         onClick: async function (data) {
+            modelIsColored = false;
             data.component.option('text', getTextById("btnSetColorFromStatusSetting"));
             buttonIndicator.option('visible', true);
             document.getElementById("legend").style.display = 'block';
@@ -889,7 +888,7 @@ $(function () {
 });
 
 $(function () {
-    $("#btnSetOdooLabels").dxButton({
+    $("#btnSetOdooLabelsDivId").dxButton({
         stylingMode: "outlined",
         text: getTextById("btnSetOdooLabels"),
         type: "success",
@@ -1072,7 +1071,7 @@ $(function () {
 
 var idsPerPrefixPerModelId = [];
 $(function () {
-    $("#btnShowKnownPrefixes").dxButton({
+    $("#btnShowKnownPrefixesDivId").dxButton({
         stylingMode: "outlined",
         text: getTextById("btnShowKnownPrefixes"),
         type: "success",
@@ -1170,7 +1169,7 @@ $(function () {
 });
 
 $(function () {
-    $("#btnSelectByFilter").dxButton({
+    $("#btnSelectByFilterDivId").dxButton({
         stylingMode: "outlined",
         text: getTextById("btnSelectByFilter"),
         type: "success",
@@ -1243,7 +1242,7 @@ $(function () {
 });
 
 $(function () {
-    $("#btnShowLabels").dxButton({
+    $("#btnShowLabelsDivId").dxButton({
         stylingMode: "outlined",
         text: getTextById("btnShowLabels"),
         type: "success",
@@ -2006,33 +2005,32 @@ async function getRecentOdooData() {
                         console.log("mobjectsArr length: " + mobjectsArr.length);
 
                         var compressedIfcGuids = [];
-                        console.log("record.name: " + record.name);
                         var compressedIfcGuid = Guid.fromFullToCompressed(record.name);
-                        console.log("compressedIfcGuid: " + compressedIfcGuid);
                         compressedIfcGuids.push(compressedIfcGuid);
                         //remove element from previous status
                         for (const objStatus of ObjectStatuses) {
                             var index = objStatus.CompressedIfcGuids.indexOf(compressedIfcGuid);
                             if (index != -1) {
                                 objStatus.CompressedIfcGuids.splice(index, 1);
+                                console.log("Assembly " + record.name + " removed from CompressedIfcGuids as " + objStatus.Status);
                             }
                             index = objStatus.Guids.indexOf(record.name);
                             if (index != -1) {
                                 objStatus.Guids.splice(index, 1);
+                                console.log("Assembly " + record.name + " removed from Guids as " + objStatus.Status);
                             }
                         }
                         //add element to new status
                         var objStatus = ObjectStatuses.find(o => o.Status === status);
                         objStatus.Guids.push(record.name);
                         objStatus.CompressedIfcGuids.push(compressedIfcGuid);
+                        console.log("Assembly " + record.name + " added as " + status);
                         
                         for (const mobjects of mobjectsArr) {
                             var modelId = mobjects.modelId;
-                            console.log("modelId: " + modelId);
                             var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedIfcGuids);
                             await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: color });
                         }
-
                     }
                 }
                 else {
