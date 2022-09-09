@@ -354,6 +354,12 @@ const textUi = {
         fr: "Aucune des assemblages sélectionnées n'a été reconnue par Odoo.",
         en: "None of the selected assemblies are recognized by Odoo."
     },
+    btnShowAllColored:
+    {
+        nl: "Toon alle merken met kleur",
+        fr: "Afficher toutes les assemblages avec la couleur",
+        en: "Show alle assemblies as colored"
+    }
 };
 
 const filterTypes = {
@@ -886,6 +892,49 @@ $(function () {
         },
     });
 });
+
+$(function () {
+    $("#btnShowAllColoredDivId").dxButton({
+        stylingMode: "outlined",
+        text: getTextById("btnShowAllColored"),
+        type: "success",
+        template(data, container) {
+            $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+            buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+                visible: false,
+            }).dxLoadIndicator('instance');
+        },
+        onClick: async function (data) {
+            modelIsColored = false;
+            data.component.option('text', getTextById("btnShowAllColored"));
+            buttonIndicator.option('visible', true);
+            try {
+                const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
+
+                for (const mobjects of mobjectsArr) {
+                    var modelId = mobjects.modelId;
+                    const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+                    const modelCompressedIfcGuids = await API.viewer.convertToObjectIds(modelId, objectsRuntimeIds);
+                    const modelCompressedIfcGuidsSet = new Set(modelCompressedIfcGuids);
+
+                    for (const objStatus of ObjectStatuses) {
+                        var statusCompressedIfcGuidsInModel = Array.from(objStatus.CompressedIfcGuids.filter(x => modelCompressedIfcGuidsSet.has(x)));
+                        var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, statusCompressedIfcGuidsInModel);
+                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { visible: true });
+                    }
+                }
+
+                modelIsColored = true;
+            }
+            catch (e) {
+                DevExpress.ui.notify(e);
+            }
+            buttonIndicator.option('visible', false);
+            data.component.option('text', getTextById("btnShowAllColored"));
+        },
+    });
+});
+
 
 $(function () {
     $("#btnSetOdooLabelsDivId").dxButton({
@@ -1922,9 +1971,9 @@ async function getToken() {
             success: function (data) {
                 token = data.access_token;
                 refresh_token = data.refresh_token;
-                console.log(data);
+                //console.log(data);
                 tokenExpiretime = new Date(Date.now() + data.expires_in * 1000);
-                console.log(tokenExpiretime);
+                //console.log(tokenExpiretime);
             }
         });
         console.log("Token received");
