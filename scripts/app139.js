@@ -2426,7 +2426,7 @@ async function selectionChanged(data) {
                             domainProjectMarks = '"|", ' + filterArrStr + ',' + domainProjectMarks;
                         }
                         else {
-                            domainProjectMarks = '"|", ["id", "=", "' + record.mark_id[0] + '"]';
+                            domainProjectMarks = filterArrStr;
                         }
                         var selectedObject = selectedObjects.find(x => x.Guid === record.name);
                         if (selectedObject != undefined) {
