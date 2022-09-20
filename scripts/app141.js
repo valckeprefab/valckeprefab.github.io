@@ -2411,6 +2411,7 @@ async function selectionChanged(data) {
             console.log("domainTrimbleConnectMain");
             console.log(domainTrimbleConnectMain);
             var domainProjectMarks = "";
+            var recordsAdded = 0;
             await $.ajax({
                 type: "GET",
                 url: odooURL + "/api/v1/search_read",
@@ -2439,35 +2440,41 @@ async function selectionChanged(data) {
                             selectedObject.Rank = record.rank;
                         }
                         cntr++;
+                        recordsAdded++;
                     }
                     domainProjectMarks = "[" + domainProjectMarks + "]";
                 }
             });
-            console.log("domainProjectMarks");
-            console.log(domainProjectMarks);
-            await $.ajax({
-                type: "GET",
-                url: odooURL + "/api/v1/search_read",
-                headers: { "Authorization": "Bearer " + token },
-                data: {
-                    model: "project.master_marks",
-                    domain: domainProjectMarks,
-                    fields: '["id", "mark_mass", "mark_ranking", "mark_prefix"]',
-                },
-                success: function (odooData) {
-                    console.log("project.master_marks");
-                    console.log(odooData);
-                    for (var record of odooData) {
-                        var objects = selectedObjects.filter(x => x.OdooPmmId == record.id);
-                        for (var object of objects) {
-                            object.Weight = record.mark_mass;
-                            object.PosNmbr = record.mark_ranking;
-                            object.Prefix = record.mark_prefix;
-                            object.AssemblyName = record.mark_prefix + record.mark_ranking  + "." + object.Rank;
+            if (recordsAdded > 0) {
+                console.log("domainProjectMarks");
+                console.log(domainProjectMarks);
+                await $.ajax({
+                    type: "GET",
+                    url: odooURL + "/api/v1/search_read",
+                    headers: { "Authorization": "Bearer " + token },
+                    data: {
+                        model: "project.master_marks",
+                        domain: domainProjectMarks,
+                        fields: '["id", "mark_mass", "mark_ranking", "mark_prefix"]',
+                    },
+                    success: function (odooData) {
+                        console.log("project.master_marks");
+                        console.log(odooData);
+                        for (var record of odooData) {
+                            var objects = selectedObjects.filter(x => x.OdooPmmId == record.id);
+                            for (var object of objects) {
+                                object.Weight = record.mark_mass;
+                                object.PosNmbr = record.mark_ranking;
+                                object.Prefix = record.mark_prefix;
+                                object.AssemblyName = record.mark_prefix + record.mark_ranking + "." + object.Rank;
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
+            else {
+                console.log("no records found in trimble.connect.main");
+            }
         }
         console.log("selectedObjects2");
         console.log(selectedObjects);
