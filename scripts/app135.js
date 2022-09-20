@@ -2453,6 +2453,13 @@ async function selectionChanged(data) {
         }
         console.log("selectedObjects2");
         console.log(selectedObjects);
+        dataGridTransport.refresh()
+            .done(function () {
+                console.log("refresh datagrid successful")
+            })
+            .fail(function (error) {
+                console.log("refresh datagrid failed: " + error)
+            });
     }
     catch (e) {
         console.log(e);
