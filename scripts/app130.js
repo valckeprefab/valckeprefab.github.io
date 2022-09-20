@@ -426,7 +426,6 @@ var filterTypeSelectBox = $('#filterTypeSelection').dxSelectBox({
         manualInputDiv.style.display = "none";
 
         var filterTypes = getFilterTypes();
-        console.log("3");
         var selectedItem = e.component.option("selectedItem");
         if (selectedItem === filterTypes[0]) {
             prefixSelectDiv.style.display = "block";
@@ -1978,7 +1977,7 @@ var client_id = "3oVDFZt2EVPhAOfQRgsRDYI9pIcdcdTGYR7rUSST";
 var client_secret = "PXthv4zShfW5NORk4bKFgr6O1dlYTxqD8KwFlx1S";
 async function getToken() {
     if (token !== "" && refresh_token !== "" && tokenExpiretime.getTime() > Date.now() - 60000) {
-        console.log("Refreshing token");
+        //console.log("Refreshing token");
         var refreshSuccesful = false;
         await $.ajax({
             type: "POST",
@@ -1996,10 +1995,10 @@ async function getToken() {
         if (!refreshSuccesful) {
             token = "";
         }
-        console.log("End refresh token");
+        //console.log("End refresh token");
     }
     if (token === "") {
-        console.log("Fetching token");
+        //console.log("Fetching token");
         var username = odooUsernameTextbox.dxTextBox("instance").option("value");
         var password = odooPasswordTextbox.dxTextBox("instance").option("value");
         if (typeof username !== 'string' || typeof password !== 'string' || username === "" || password === "") {
@@ -2037,7 +2036,7 @@ async function getToken() {
                 //console.log(tokenExpiretime);
             }
         });
-        console.log("Token received");
+        //console.log("Token received");
     }
     return token;
 }
@@ -2080,7 +2079,7 @@ async function getRecentOdooData() {
                 if (data.length > 0) {
                     lastUpdate = data[0].write_date;
                     lastUpdate = addASecond(lastUpdate);
-                    console.log("Last update: " + lastUpdate);
+                    //console.log("Last update: " + lastUpdate);
                 }
             }
         });
@@ -2112,7 +2111,7 @@ async function getRecentOdooData() {
                         var color = getColorByStatus(status);
 
                         const mobjectsArr = await API.viewer.getObjects({ parameter: { properties: { 'Default.GUID': record.name } } });
-                        console.log("mobjectsArr length: " + mobjectsArr.length);
+                        //console.log("mobjectsArr length: " + mobjectsArr.length);
 
                         var compressedIfcGuids = [];
                         var compressedIfcGuid = Guid.fromFullToCompressed(record.name);
