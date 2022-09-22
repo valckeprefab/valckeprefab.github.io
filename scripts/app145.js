@@ -2585,7 +2585,8 @@ $(function () {
                     console.log(selectedObject.OdooTcmId);
 
                     var prefixDetail = prefixDetails.find(x => x.Prefix === selectedObject.Prefix);
-                    var valuesStr = '{"slip_id": ' + deliverySlipId + ', "mark_id": ' + selectedObject.OdooPmmId
+                    var valuesStr = '{"slip_id": ' + deliverySlipId
+                        + ', "mark_id": ' + selectedObject.OdooPmmId
                         + ', "trimble_connect_id": ' + selectedObject.OdooTcmId
                         + ', "name": ' + selectedObject.AssemblyName
                         + ', "product_qty": 1';
