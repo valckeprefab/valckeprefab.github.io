@@ -2513,13 +2513,11 @@ async function fillPrefixDetails() {
                 prefixDetails.push({
                     Prefix: record.name,
                     Id: record.id,
-                    ProductId: product_id,
+                    ProductId: record.product_id,
                 });
             }
         }
     });
-    //console.log("End get project Id");
-    return id;
 }
 
 $(function () {
