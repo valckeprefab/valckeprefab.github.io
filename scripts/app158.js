@@ -572,7 +572,7 @@ $(function () {
             try {
                 //var debugInfo = "";
                 //Get project name
-                var projectNumber = GetProjectNumber();
+                var projectNumber = await GetProjectNumber();
                 if (projectNumber == undefined)
                     return;
 
@@ -987,7 +987,7 @@ async function getAssemblyNamesByCompressedGuids(compressedGuids) {
     var token = await getToken();
 
     //Get project name
-    var projectNumber = GetProjectNumber();
+    var projectNumber = await GetProjectNumber();
 
     //Get project ID
     var projectId = await GetProjectId(projectNumber);
@@ -2126,7 +2126,7 @@ async function getRecentOdooData() {
 
     //var debugInfo = "";
     //Get project name
-    var projectNumber = GetProjectNumber();
+    var projectNumber = await GetProjectNumber();
     if (projectNumber == undefined)
         return;
 
@@ -2490,7 +2490,7 @@ async function selectionChanged(data) {
 
         if (selectionChangedIds[selectionChangedIds.length - 1] != mySelectionId) return;
         //Get project name
-        var projectNumber = GetProjectNumber();
+        var projectNumber = await GetProjectNumber();
         if (projectNumber == undefined)
             return;
 
@@ -2644,7 +2644,7 @@ $(function () {
             buttonIndicator.option('visible', true);
             try {
                 //Get project name
-                var projectNumber = GetProjectNumber();
+                var projectNumber = await GetProjectNumber();
                 if (projectNumber == undefined)
                     return;
 
