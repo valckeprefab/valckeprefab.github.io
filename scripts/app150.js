@@ -2372,7 +2372,7 @@ function getPropSelectorByPropnameAndValue(propNameFilter, propValueFilter) {
 
 async function selectionChanged(data) {
     if (!performSelectionChanged) {
-        console.log("performSelectionChanged " + performSelectionChanged " => selectionChanged skipped");
+        console.log("performSelectionChanged " + performSelectionChanged + " => selectionChanged skipped");
         return;
     }
 
