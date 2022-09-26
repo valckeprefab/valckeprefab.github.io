@@ -36,6 +36,14 @@ body .dx-popup-content .custom-item {
     padding: 0 10px 10px 0;
 }
 
+.v-grp {
+    width: 100%;
+}
+
+.v-dataGridTransport {
+    width: 100%;
+}
+
 .v-field-label2 {
     font-family: 'Segoe UI Light', 'Helvetica Neue Light', 'Segoe UI', 'Helvetica Neue', 'Trebuchet MS', Verdana;
     font-weight: 200;
@@ -86,6 +94,10 @@ body .dx-popup-content .custom-item {
     margin: 0px;
     width: 100%;
     margin: 5px 0 5px 0;
+}
+
+.v-showTitle {
+    float: right;
 }
 
 .v-selection {
@@ -139,6 +151,10 @@ table th, table td {
 .v-transport {
     background-color: rgba(0, 221, 33, 0.25);
     padding: 5px 0 1px 10px;
+}
+
+.v-transportBlock {
+    padding: 5px 10px 5px 5px;
 }
 
 #dataGridTransport {
