@@ -847,36 +847,27 @@ $(function () {
                 //Get concrete assembly info
                 //console.log("Start: Getting concrete assembly info");
                 var processedAssemblyIds = [];
-                var ended = 0;
-                var lastId = -1;
-                while (ended != 1) { //loop cuz only 80 records get fetched at a time
-                    await $.ajax({
-                        type: "GET",
-                        url: odooURL + "/api/v1/search_read",
-                        headers: { "Authorization": "Bearer " + token },
-                        data: {
-                            model: "trimble.connect.main",
-                            domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"],["state","!=","cancelled"]]',
-                            fields: '["id", "mark_id", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "state", "mark_available"]',
-                            order: 'id',
-                        },
-                        success: function (data) {
-                            if (data.length == 0) { //no more records
-                                ended = 1;
-                                return;
-                            }
-                            for (const record of data) {
-                                lastId = record.id;
-                                var status = getStatus(record, referenceDate);
-                                var guidArr = ObjectStatuses.find(o => o.Status === status);
-                                guidArr.Guids.push(record.name);
-                                guidArr.CompressedIfcGuids.push(Guid.fromFullToCompressed(record.name));
-                                if (record.mark_id[0] != undefined)
-                                    processedAssemblyIds.push(record.mark_id[0]);
-                            }
+                await $.ajax({
+                    type: "GET",
+                    url: odooURL + "/api/v1/search_read",
+                    headers: { "Authorization": "Bearer " + token },
+                    data: {
+                        model: "trimble.connect.main",
+                        domain: '[["project_id.id", "=", "' + id + '"],["state","!=","cancelled"]]',
+                        fields: '["id", "mark_id", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "state", "mark_available"]',
+                        order: 'id',
+                    },
+                    success: function (data) {
+                        for (const record of data) {
+                            var status = getStatus(record, referenceDate);
+                            var guidArr = ObjectStatuses.find(o => o.Status === status);
+                            guidArr.Guids.push(record.name);
+                            guidArr.CompressedIfcGuids.push(Guid.fromFullToCompressed(record.name));
+                            if (record.mark_id[0] != undefined)
+                                processedAssemblyIds.push(record.mark_id[0]);
                         }
-                    });
-                }
+                    }
+                });
                 //console.log("Finished: Getting concrete assembly info");
 
                 //--Get steel assembly info
@@ -886,118 +877,91 @@ $(function () {
                 //result: unprocessedAssemblies
                 //console.log("Start: Getting unprocessedAssemblies");
                 var unprocessedAssemblies = []; //modelled steel assemblies
-                ended = 0;
-                lastId = -1;
-                while (ended != 1) { //loop cuz only 80 records get fetched at a time
-                    await $.ajax({
-                        type: "GET",
-                        url: odooURL + "/api/v1/search_read",
-                        headers: { "Authorization": "Bearer " + token },
-                        data: {
-                            model: "project.master_marks",
-                            domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"]]',
-                            fields: '["id", "mark_prefix", "mark_ref", "create_date", "mark_qty"]',
-                            order: 'id',
-                        },
-                        success: function (data) {
-                            if (data.length == 0) { //no more records
-                                ended = 1;
-                                return;
-                            }
-                            for (const record of data) {
-                                lastId = record.id;
-                                if (!processedAssemblyIds.includes(record.id) && GetDateFromString(record.create_date) <= referenceDate) {
-                                    for (var i = 0; i < record.mark_qty; i++) {
-                                        var unprocessedAssembly = {
-                                            Prefix: record.mark_prefix,
-                                            AssemblyPos: record.mark_ref,
-                                            Status: StatusDrawn,
-                                            AssemblyId: record.id,
-                                        }
-                                        unprocessedAssemblies.push(unprocessedAssembly);
+                await $.ajax({
+                    type: "GET",
+                    url: odooURL + "/api/v1/search_read",
+                    headers: { "Authorization": "Bearer " + token },
+                    data: {
+                        model: "project.master_marks",
+                        domain: '[["project_id.id", "=", "' + id + '"]]',
+                        fields: '["id", "mark_prefix", "mark_ref", "create_date", "mark_qty"]',
+                        order: 'id',
+                    },
+                    success: function (data) {
+                        for (const record of data) {
+                            if (!processedAssemblyIds.includes(record.id) && GetDateFromString(record.create_date) <= referenceDate) {
+                                for (var i = 0; i < record.mark_qty; i++) {
+                                    var unprocessedAssembly = {
+                                        Prefix: record.mark_prefix,
+                                        AssemblyPos: record.mark_ref,
+                                        Status: StatusDrawn,
+                                        AssemblyId: record.id,
                                     }
+                                    unprocessedAssemblies.push(unprocessedAssembly);
                                 }
                             }
                         }
-                    });
-                }
+                    }
+                });
                 //console.log("Finished: Getting unprocessedAssemblies");
 
                 //console.log("Start: Getting project.mark_steel_production info");
-                ended = 0;
-                lastId = -1;
-                while (ended != 1) { //loop cuz only 80 records get fetched at a time
-                    await $.ajax({
-                        type: "GET",
-                        url: odooURL + "/api/v1/search_read",
-                        headers: { "Authorization": "Bearer " + token },
-                        data: {
-                            model: "project.mark_steel_production",
-                            domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"]]',
-                            fields: '["id", "upper_id", "date_delivered"]',
-                            order: 'id',
-                        },
-                        success: function (data) {
-                            if (data.length == 0) { //no more records
-                                ended = 1;
-                                return;
-                            }
-                            for (const record of data) {
-                                lastId = record.id;
-                                var unprocessedUnplannedAssembly = unprocessedAssemblies.find(x => x.AssemblyId == record.upper_id[0] && x.Status === StatusDrawn);
-                                if (unprocessedUnplannedAssembly != undefined) {
-                                    if (record.date_delivered != false && GetDateFromString(record.date_delivered) <= referenceDate)
-                                        unprocessedUnplannedAssembly.Status = StatusProductionEnded;
-                                    else
-                                        unprocessedUnplannedAssembly.Status = StatusPlanned;
-                                }
+                await $.ajax({
+                    type: "GET",
+                    url: odooURL + "/api/v1/search_read",
+                    headers: { "Authorization": "Bearer " + token },
+                    data: {
+                        model: "project.mark_steel_production",
+                        domain: '[["project_id.id", "=", "' + id + '"]]',
+                        fields: '["id", "upper_id", "date_delivered"]',
+                        order: 'id',
+                    },
+                    success: function (data) {
+                        for (const record of data) {
+                            var unprocessedUnplannedAssembly = unprocessedAssemblies.find(x => x.AssemblyId == record.upper_id[0] && x.Status === StatusDrawn);
+                            if (unprocessedUnplannedAssembly != undefined) {
+                                if (record.date_delivered != false && GetDateFromString(record.date_delivered) <= referenceDate)
+                                    unprocessedUnplannedAssembly.Status = StatusProductionEnded;
+                                else
+                                    unprocessedUnplannedAssembly.Status = StatusPlanned;
                             }
                         }
-                    });
-                }
+                    }
+                });
                 //console.log("Finished: Getting project.mark_steel_production info");
 
                 //console.log("Start: Getting project.mark_steel_pack info");
                 var steelPacks = [];
-                ended = 0;
-                lastId = -1;
-                while (ended != 1) { //loop cuz only 80 records get fetched at a time
-                    await $.ajax({
-                        type: "GET",
-                        url: odooURL + "/api/v1/search_read",
-                        headers: { "Authorization": "Bearer " + token },
-                        data: {
-                            model: "project.mark_steel_pack",
-                            domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"]]',
-                            fields: '["id", "mark_ids", "date_ready", "date_done"]', //mark_id = pack item id
-                            order: 'id',
-                        },
-                        success: function (data) {
-                            if (data.length == 0) { //no more records
-                                ended = 1;
-                                return;
-                            }
-                            for (const record of data) {
-                                lastId = record.id;
-                                if (record.mark_ids.length > 0) {
-                                    var dateReady = new Date(3000, 0, 1);
-                                    if (record.date_ready != false)
-                                        dateReady = GetDateFromString(record.date_ready);
-                                    var dateDone = new Date(3000, 0, 1);
-                                    if (record.date_done != false)
-                                        dateDone = GetDateFromString(record.date_done);
-                                    var steelPack = {
-                                        OdooId: record.id,
-                                        MarkIds: record.mark_ids,
-                                        DateReady: dateReady,
-                                        DateDone: dateDone,
-                                    };
-                                    steelPacks.push(steelPack);
-                                }
+                await $.ajax({
+                    type: "GET",
+                    url: odooURL + "/api/v1/search_read",
+                    headers: { "Authorization": "Bearer " + token },
+                    data: {
+                        model: "project.mark_steel_pack",
+                        domain: '[["project_id.id", "=", "' + id + '"]]',
+                        fields: '["id", "mark_ids", "date_ready", "date_done"]', //mark_id = pack item id
+                        order: 'id',
+                    },
+                    success: function (data) {
+                        for (const record of data) {
+                            if (record.mark_ids.length > 0) {
+                                var dateReady = new Date(3000, 0, 1);
+                                if (record.date_ready != false)
+                                    dateReady = GetDateFromString(record.date_ready);
+                                var dateDone = new Date(3000, 0, 1);
+                                if (record.date_done != false)
+                                    dateDone = GetDateFromString(record.date_done);
+                                var steelPack = {
+                                    OdooId: record.id,
+                                    MarkIds: record.mark_ids,
+                                    DateReady: dateReady,
+                                    DateDone: dateDone,
+                                };
+                                steelPacks.push(steelPack);
                             }
                         }
-                    });
-                }
+                    }
+                });
                 //console.log("Finished: Getting project.mark_steel_pack info");
 
                 //get steel pack items
@@ -1015,12 +979,7 @@ $(function () {
                             order: 'id',
                         },
                         success: function (data) {
-                            if (data.length == 0) { //no more records
-                                ended = 1;
-                                return;
-                            }
                             for (const record of data) {
-                                lastId = record.id;
                                 if (record.qty > 0) {
                                     var steelPackItem = {
                                         OdooId: record.id,
@@ -3029,43 +2988,34 @@ async function refreshExistingSlips() {
 
         var tempExistingSlips = [];
         var lineIds = [];
-        var ended = 0;
-        var lastId = -1;
-        while (ended != 1) { //loop cuz only 80 records get fetched at a time
-            await $.ajax({
-                type: "GET",
-                url: odooURL + "/api/v1/search_read",
-                headers: { "Authorization": "Bearer " + token },
-                data: {
-                    model: "vpb.delivery.slip",
-                    //, ["state", "=", "draft"]
-                    domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"]]',
-                    fields: '["id", "name", "line_ids", "state", "date"]',
-                    order: 'id',
-                },
-                success: function (data) {
-                    if (data.length == 0) { //no more records
-                        ended = 1;
-                        return;
-                    }
-                    for (const record of data) {
-                        lastId = record.id;
-                        tempExistingSlips.push({
-                            OdooId: record.id,
-                            State: record.state,
-                            Name: record.name,
-                            Guids: [],
-                            OdooLineIds: record.line_ids,
-                            AssemblyNames: "",
-                            //Date: GetDateFromString(record.date),
-                        });
-                        if (record.line_ids.length > 0) {
-                            lineIds.push(...record.line_ids);
-                        }
+        await $.ajax({
+            type: "GET",
+            url: odooURL + "/api/v1/search_read",
+            headers: { "Authorization": "Bearer " + token },
+            data: {
+                model: "vpb.delivery.slip",
+                //, ["state", "=", "draft"]
+                domain: '[["project_id.id", "=", "' + id + '"]]',
+                fields: '["id", "name", "line_ids", "state", "date"]',
+                order: 'id',
+            },
+            success: function (data) {
+                for (const record of data) {
+                    tempExistingSlips.push({
+                        OdooId: record.id,
+                        State: record.state,
+                        Name: record.name,
+                        Guids: [],
+                        OdooLineIds: record.line_ids,
+                        AssemblyNames: "",
+                        //Date: GetDateFromString(record.date),
+                    });
+                    if (record.line_ids.length > 0) {
+                        lineIds.push(...record.line_ids);
                     }
                 }
-            });
-        }
+            }
+        });
 
         for (var i = 0; i < lineIds.length; i += 80) { //loop cuz only 80 records get fetched at a time
             var domainSliplines = "";
