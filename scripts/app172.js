@@ -1204,19 +1204,18 @@ async function getAssemblyNamesByCompressedGuids(compressedGuids) {
 
     console.log(prefixDetails);
 
-    for (var i = 0; i < compressedGuids.length; i++) { //loop cuz only 80 records get fetched at a time
+    for (var i = 0; i < compressedGuids.length; i++) {
         var domainTrimbleConnectMain = "";
 
-        for (var j = i; j < compressedGuids.length && j < i + 80; j++) {
-            var fullGuid = Guid.fromCompressedToFull(compressedGuids[j]);
-            var filterArrStr = '["name", "ilike", "' + fullGuid + '"]';
-            if (j > i) {
-                domainTrimbleConnectMain = '"|", ' + filterArrStr + ',' + domainTrimbleConnectMain;
-            }
-            else {
-                domainTrimbleConnectMain = filterArrStr;
-            }
+        var fullGuid = Guid.fromCompressedToFull(compressedGuids[i]);
+        var filterArrStr = '["name", "ilike", "' + fullGuid + '"]';
+        if (i > 0) {
+            domainTrimbleConnectMain = '"|", ' + filterArrStr + ',' + domainTrimbleConnectMain;
         }
+        else {
+            domainTrimbleConnectMain = filterArrStr;
+        }
+    }
 
     domainTrimbleConnectMain = '[["project_id.id", "=", "' + projectId + '"],' + domainTrimbleConnectMain + "]";
     await $.ajax({
