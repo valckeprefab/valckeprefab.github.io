@@ -338,7 +338,7 @@ const textUi = {
     legendDemouldedTitle:
     {
         nl: "Ontkist:",
-        fr: "Décintrer:",
+        fr: "Décoffrage:",
         en: "Demoulded:"
     },
     legendDemouldedDescr:
@@ -350,7 +350,7 @@ const textUi = {
     legendProductionEndedTitle:
     {
         nl: "Einde productie:",
-        fr: "Décintrer:",
+        fr: "Production terminée:",
         en: "Production ended:"
     },
     legendProductionEndedDescr:
@@ -490,7 +490,97 @@ const textUi = {
         nl: "Toon Odoo gegevens",
         fr: "Afficher les données Odoo",
         en: "Show Odoo data"
-    }
+    },
+    textGuid:
+    {
+        nl: "GUID",
+        fr: "GUID",
+        en: "GUID"
+    },
+    textNaam:
+    {
+        nl: "Merknaam",
+        fr: "Nom d'assemblage",
+        en: "Assemblyname"
+    },
+    textDateDrawn:
+    {
+        nl: "Datum getekend",
+        fr: "Date dessiné",
+        en: "Date drawn"
+    },
+    textDatePlanned:
+    {
+        nl: "Datum gepland",
+        fr: "Date planifié",
+        en: "Date planned"
+    },
+    textDateProductionStarted:
+    {
+        nl: "Datum productie gestart",
+        fr: "Date debut production",
+        en: "Date production started"
+    },
+    textDateDemoulded:
+    {
+        nl: "Datum ontkist",
+        fr: "Date décoffrage",
+        en: "Date demoulded"
+    },
+    textDateProductionEnded:
+    {
+        nl: "Datum productie beëindigd",
+        fr: "Date production terminée",
+        en: "date production ended"
+    },
+    textDateTransported:
+    {
+        nl: "Datum getransporteerd",
+        fr: "Date transporté",
+        en: "Date transported"
+    },
+    textBin:
+    {
+        nl: "Bekisting",
+        fr: "Coffrage",
+        en: "Bin"
+    },
+    textProjectpart:
+    {
+        nl: "Projectonderdeel",
+        fr: "Partie de projet",
+        en: "Project part"
+    },
+    textMass:
+    {
+        nl: "Massa",
+        fr: "Masse",
+        en: "Mass"
+    },
+    textVolume:
+    {
+        nl: "Volume",
+        fr: "Volume",
+        en: "Volume"
+    },
+    textLength:
+    {
+        nl: "Lengte",
+        fr: "Longeur",
+        en: "Length"
+    },
+    textFreight:
+    {
+        nl: "Vracht",
+        fr: "Cargo",
+        en: "Freight"
+    },
+    textNoInfoFound:
+    {
+        nl: "Merk bestaat niet op Odoo",
+        fr: "Assemblage n'existe pas sur Odoo",
+        en: "Assembly does not exist on Odoo"
+    },
 };
 
 const filterTypes = {
@@ -1060,14 +1150,12 @@ $("#btnGetOdooInfoDivId").dxButton({
                 }
             }
 
-            if (selectedAssemblies.length > 0) {
-                odooAssemblyData = selectedAssemblies[0];
+            odooAssemblyData = selectedAssemblies[0];
 
-                popup.option({
-                    contentTemplate: () => popupContentTemplate(),
-                });
-                popup.show();
-            }
+            popup.option({
+                contentTemplate: () => popupContentTemplate(),
+            });
+            popup.show();
         }
         catch (e) {
             DevExpress.ui.notify(e);
@@ -1079,22 +1167,29 @@ $("#btnGetOdooInfoDivId").dxButton({
 
 let odooAssemblyData = null;
 const popupContentTemplate = function () {
-    return $('<div>').append(
-        $(`<p>Guid: <span>${odooAssemblyData.Guid}</span></p>`),
-        $(`<p>Naam: <span>${odooAssemblyData.AssemblyName}</span></p>`),
-        $(`<p>Getekend op: <span>${odooAssemblyData.DateDrawn}</span></p>`),
-        $(`<p>Gepland op: <span>${odooAssemblyData.DateProductionPlanned}</span></p>`),
-        $(`<p>Productie gestart op: <span>${odooAssemblyData.DateProductionStarted}</span></p>`),
-        $(`<p>Merk ontkist op: <span>${odooAssemblyData.DateDemoulded}</span></p>`),
-        $(`<p>Productie beëindigd op: <span>${odooAssemblyData.DateProductionEnded}</span></p>`),
-        $(`<p>Merk getransporteerd op: <span>${odooAssemblyData.DateTransported}</span></p>`),
-        $(`<p>Bekisting: <span>${odooAssemblyData.Bin}</span></p>`),
-        $(`<p>Projectonderdeel: <span>${odooAssemblyData.Unit}</span></p>`),
-        $(`<p>Massa [kg]: <span>${odooAssemblyData.Mass}</span></p>`),
-        $(`<p>Volume [m³]: <span>${odooAssemblyData.Volume}</span></p>`),
-        $(`<p>Lengte [mm]: <span>${odooAssemblyData.Length}</span></p>`),
-        $(`<p>Vracht: <span>${odooAssemblyData.Freight}</span></p>`),
-    );
+    if (odooAssemblyData != null && odooAssemblyData != undefined) {
+        return $('<div>').append(
+            $(`<p>${getTextById("textGuid")}: <span>${odooAssemblyData.Guid}</span></p>`),
+            $(`<p>${getTextById("textNaam")}: <span>${odooAssemblyData.AssemblyName}</span></p>`),
+            $(`<p>${getTextById("textDateDrawn")}: <span>${odooAssemblyData.DateDrawn}</span></p>`),
+            $(`<p>${getTextById("textDatePlanned")}: <span>${odooAssemblyData.DateProductionPlanned}</span></p>`),
+            $(`<p>${getTextById("textDateProductionStarted")}: <span>${odooAssemblyData.DateProductionStarted}</span></p>`),
+            $(`<p>${getTextById("textDateDemoulded")}: <span>${odooAssemblyData.DateDemoulded}</span></p>`),
+            $(`<p>${getTextById("textDateProductionEnded")} op: <span>${odooAssemblyData.DateProductionEnded}</span></p>`),
+            $(`<p>${getTextById("textDateTransported")}: <span>${odooAssemblyData.DateTransported}</span></p>`),
+            $(`<p>${getTextById("textBin")}: <span>${odooAssemblyData.Bin}</span></p>`),
+            $(`<p>${getTextById("textProjectpart")}: <span>${odooAssemblyData.Unit}</span></p>`),
+            $(`<p>${getTextById("textMass")} [kg]: <span>${odooAssemblyData.Mass}</span></p>`),
+            $(`<p>${getTextById("textVolume")} [m³]: <span>${odooAssemblyData.Volume}</span></p>`),
+            $(`<p>${getTextById("textLength")} [mm]: <span>${odooAssemblyData.Length}</span></p>`),
+            $(`<p>${getTextById("textFreight")}: <span>${odooAssemblyData.Freight}</span></p>`),
+        );
+    }
+    else {
+        return $('<div>').append(
+            $(`<p>${getTextById("textNoInfoFound")}</p>`),
+        );
+    }
 };
 
 const popup = $('#popup').dxPopup({
