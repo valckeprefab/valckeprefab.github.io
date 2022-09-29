@@ -1,15 +1,16 @@
 var API = null;
 var odooURL = "https://odoo.valcke-prefab.be";
 var odooDatabase = "erp_prd"
+var fetchLimit = 80;
 
 window.onload = async function () {
-    API = await Workspace.connect(window.parent, (event, data) => {
-        console.log("Event: ", event, data);
+    API = await Workspace.connect(window.parent, async (event, data) => {
+        //console.log("Event: ", event, data);
 
         var eventName = event.split(".").pop();
 
         if (eventName === "onSelectionChanged") {
-            selectionChanged(data.data);
+            await selectionChanged(data.data);
         }
     });
 
@@ -17,6 +18,34 @@ window.onload = async function () {
     setInterval(getRecentOdooData, 5000);
     setTextByLanguage();
 }
+
+//$("#testbtn").dxButton({
+//    stylingMode: "outlined",
+//    text: "test",
+//    type: "success",
+//    onClick: async function (data) {
+//        try {
+//            var token = await getToken();
+//            var domain = '[["project_id.id", "=", "2238"],"|", ["name", "ilike", "dc46b795-7099-4f43-b1ff-75e4bf308bcb"],"|", ["name", "ilike", "d6419331-c75f-4a82-b8d9-77810938a7f1"],"|", ["name", "ilike", "6780d3e4-69b0-4635-8f4d-f780ac04cc20"],["name", "ilike", "610e1f82-7ba5-407c-b2d7-82549751e617"]]';
+//            await $.ajax({
+//                type: "GET",
+//                url: odooURL + "/api/v1/search_read",
+//                headers: { "Authorization": "Bearer " + token },
+//                data: {
+//                    model: "trimble.connect.main",
+//                    domain: domain,
+//                    fields: '["id"]',
+//                },
+//                success: function (odooData) {
+//                    console.log(odooData);
+//                }
+//            });
+//        }
+//        catch (e) {
+//            console.log(e);
+//        }
+//    },
+//});
 
 //#region collections
 
@@ -234,6 +263,12 @@ const textUi = {
         fr: "En cours de places les étiquettes",
         en: "Showing labels"
     },
+    titleAction3:
+    {
+        nl: "Actie 3: Selecteren van gekende odoo elementen",
+        fr: "Action 3 : Sélectionner les assemblages connus d'Odoo",
+        en: "Action 3: Select assemblies known by Odoo"
+    },
     errorMsgUsernamePassword:
     {
         nl: "Gelieve gebruikersnaam en/of paswoord in te vullen.",
@@ -248,7 +283,7 @@ const textUi = {
     },
     legendExistingDescr:
     {
-        nl: "het merk was reeds aanwezig voor de aanvang van het project.",
+        nl: "merk was reeds aanwezig voor de aanvang van het project.",
         fr: "l'assemblage était déjà présent avant le début du projet.",
         en: "the assembly was already present at the site before the project began."
     },
@@ -260,7 +295,7 @@ const textUi = {
     },
     legendModelledDescr:
     {
-        nl: "het merk is nog niet doorgegeven aan productie.",
+        nl: "merk is nog niet doorgegeven aan productie.",
         fr: "l'assemblage n'est pas encore passé en production.",
         en: "the assembly hasn't been passed on to production yet."
     },
@@ -272,7 +307,7 @@ const textUi = {
     },
     legendOnHoldDescr:
     {
-        nl: "het merk staat tijdelijk 'on hold'.",
+        nl: "merk staat tijdelijk 'on hold'.",
         fr: "l'assemblage est temporairement 'en attente'.",
         en: "the assembly has been temporarily put 'on hold'."
     },
@@ -303,7 +338,7 @@ const textUi = {
     legendDemouldedTitle:
     {
         nl: "Ontkist:",
-        fr: "Décintrer:",
+        fr: "Décoffrage:",
         en: "Demoulded:"
     },
     legendDemouldedDescr:
@@ -315,14 +350,14 @@ const textUi = {
     legendProductionEndedTitle:
     {
         nl: "Einde productie:",
-        fr: "Décintrer:",
+        fr: "Production terminée:",
         en: "Production ended:"
     },
     legendProductionEndedDescr:
     {
-        nl: "productie voor het element is voltooid voor/op de referentiedatum.",
-        fr: "la production de l'élément est terminée avant/à la date de référence.",
-        en: "production on the assembly has ended before/on the reference date."
+        nl: "productie van het merk is voltooid voor/op de referentiedatum.",
+        fr: "la production de l'assemblage est terminée avant/à la date de référence.",
+        en: "production of the assembly has ended before/on the reference date."
     },
     legendAvailableForTransportTitle:
     {
@@ -336,6 +371,18 @@ const textUi = {
         fr: "l'assemblage est prête à être transportée.",
         en: "assembly has been stocked and is ready for transport."
     },
+    legendPlannedForTransportTitle:
+    {
+        nl: "Gepland voor transport:",
+        fr: "Planifié pour le transport:",
+        en: "Planned for transport:"
+    },
+    legendPlannedForTransportDescr:
+    {
+        nl: "merk is ingepland voor transport.",
+        fr: "l'assemblage est planifié pour le transport.",
+        en: "assembly has been planned for transport."
+    },
     legendTransportedTitle:
     {
         nl: "Getransporteerd:",
@@ -344,7 +391,7 @@ const textUi = {
     },
     legendTransportedDescr:
     {
-        nl: "element is getransporteerd naar de werf.",
+        nl: "merk is getransporteerd naar de werf.",
         fr: "l'assemblage a été transporté au chantier.",
         en: "assembly has been transported to the site."
     },
@@ -359,7 +406,181 @@ const textUi = {
         nl: "Toon alle merken met kleur",
         fr: "Afficher toutes les assemblages avec la couleur",
         en: "Show alle assemblies as colored"
-    }
+    },
+    btnCreateSlip:
+    {
+        nl: "Maak nieuwe transportbon van huidige selectie",
+        fr: "Créer un nouveau bon de livraison à partir de la sélection actuelle",
+        en: "Create new delivery slip from current selection",
+    },
+    errorMsgNoAssemblySelection:
+    {
+        nl: "Labels kunnen enkel geplaatst worden van objecten die geselecteerd werden met \"Assembly selection\".",
+        fr: "Les étiquettes ne peuvent être placées qu'à partir d'objets sélectionnés avec \"Sélection d'assemblage\".",
+        en: "Can only show labels of objects that were selected with \"Assembly selection\" on."
+    },
+    btnShowTitles:
+    {
+        nl: "Toon titels",
+        fr: "Afficher titres",
+        en: "Show titles"
+    },
+    btnHideTitles:
+    {
+        nl: "Verberg titels",
+        fr: "Cacher titres",
+        en: "Hide titles"
+    },
+    btnOdooSearch:
+    {
+        nl: "Selecteren",
+        fr: "Sélectionner",
+        en: "Select"
+    },
+    titleExistingSlips:
+    {
+        nl: "Bestaande transportbonnen:",
+        fr: "Bonnes de livraison existants:",
+        en: "Existing deliveryslips:"
+    },
+    titleCurrentSelection:
+    {
+        nl: "Huidige selectie:",
+        fr: "Sélection actuelle:",
+        en: "Current selection:"
+    },
+    gridTitleAssembly:
+    {
+        nl: "Merk",
+        fr: "Assemblage",
+        en: "Assembly"
+    },
+    gridTitleWeight:
+    {
+        nl: "Massa [kg]",
+        fr: "Masse [kg]",
+        en: "Mass [kg]"
+    },
+    gridTitleTotalPieces:
+    {
+        nl: "Totaal atl:",
+        fr: "Total:",
+        en: "Total:"
+    },
+    gridTitleTotalWeight:
+    {
+        nl: "Totale gewicht:",
+        fr: "Masse totale:",
+        en: "Total mass:"
+    },
+    gridUnitNumber:
+    {
+        nl: "stuks",
+        fr: "pièces",
+        en: "pieces"
+    },
+    phOdooSearch:
+    {
+        nl: "Voorbeeld: PV1 PS1+2 BV1-10 GU1.5-1.20 BS1.1+3.1",
+        fr: "Exemple: PV1 PS1+2 BV1-10 GU1.5-1.20 BS1.1+3.1",
+        en: "Example: PV1 PS1+2 BV1-10 GU1.5-1.20 BS1.1+3.1"
+    },
+    btnGetOdooInfo:
+    {
+        nl: "Toon Odoo gegevens",
+        fr: "Afficher les données Odoo",
+        en: "Show Odoo data"
+    },
+    textGuid:
+    {
+        nl: "GUID",
+        fr: "GUID",
+        en: "GUID"
+    },
+    textNaam:
+    {
+        nl: "Merknaam",
+        fr: "Nom d'assemblage",
+        en: "Assemblyname"
+    },
+    textDateDrawn:
+    {
+        nl: "Datum getekend",
+        fr: "Date dessiné",
+        en: "Date drawn"
+    },
+    textDatePlanned:
+    {
+        nl: "Datum gepland",
+        fr: "Date planifié",
+        en: "Date planned"
+    },
+    textDateProductionStarted:
+    {
+        nl: "Datum productie gestart",
+        fr: "Date debut production",
+        en: "Date production started"
+    },
+    textDateDemoulded:
+    {
+        nl: "Datum ontkist",
+        fr: "Date décoffrage",
+        en: "Date demoulded"
+    },
+    textDateProductionEnded:
+    {
+        nl: "Datum productie beëindigd",
+        fr: "Date production terminée",
+        en: "date production ended"
+    },
+    textDateTransported:
+    {
+        nl: "Datum getransporteerd",
+        fr: "Date transporté",
+        en: "Date transported"
+    },
+    textBin:
+    {
+        nl: "Bekisting",
+        fr: "Coffrage",
+        en: "Bin"
+    },
+    textProjectpart:
+    {
+        nl: "Projectonderdeel",
+        fr: "Partie de projet",
+        en: "Project part"
+    },
+    textMass:
+    {
+        nl: "Massa",
+        fr: "Masse",
+        en: "Mass"
+    },
+    textVolume:
+    {
+        nl: "Volume",
+        fr: "Volume",
+        en: "Volume"
+    },
+    textLength:
+    {
+        nl: "Lengte",
+        fr: "Longeur",
+        en: "Length"
+    },
+    textFreight:
+    {
+        nl: "Vracht",
+        fr: "Cargo",
+        en: "Freight"
+    },
+    textNoInfoFound:
+    {
+        nl: "Merk bestaat niet op Odoo",
+        fr: "Assemblage n'existe pas sur Odoo",
+        en: "Assembly does not exist on Odoo"
+    },
 };
 
 const filterTypes = {
@@ -412,6 +633,13 @@ function getFilterTypes() {
     }
 }
 
+function GetDateShortString(date) {
+    var mm = date.getMonth() + 1; // getMonth() is zero-based
+    var dd = date.getDate();
+    var dayName = date.toLocaleDateString(getUserLang(), { weekday: 'long' });
+    return dayName + " " + [(dd > 9 ? '' : '0') + dd, (mm > 9 ? '' : '0') + mm, date.getFullYear(),].join('-');
+};
+
 //#region controls
 
 var filterTypeSelectBox = $('#filterTypeSelection').dxSelectBox({
@@ -426,7 +654,6 @@ var filterTypeSelectBox = $('#filterTypeSelection').dxSelectBox({
         manualInputDiv.style.display = "none";
 
         var filterTypes = getFilterTypes();
-        console.log("3");
         var selectedItem = e.component.option("selectedItem");
         if (selectedItem === filterTypes[0]) {
             prefixSelectDiv.style.display = "block";
@@ -484,6 +711,10 @@ const propertyValueTextBox = $('#placeholderPropertyValue').dxTextBox({
     placeholder: getTextById("phPropertyvalue"),
 });
 
+var odooSearchTextBox = $('#placeholderOdooSearch').dxTextBox({
+    placeholder: getTextById("phOdooSearch"),
+});
+
 const prefixSelectionTagBox = $('#prefixSelection').dxTagBox({
     items: prefixes,
     showSelectionControls: true,
@@ -511,6 +742,512 @@ function getAssemblyPosNmbrFromSteelname(steelName) {
     return pos;
 }
 
+var maxRank = 99999;
+function GetPosAndRank(str, isStart) {
+    var pos = -1;
+    var rank = -1;
+    if (str.includes(".")) {
+        var splitStr = str.split(".");
+        pos = splitStr[0];
+        rank = splitStr[1];
+    }
+    else {
+        pos = str;
+        rank = isStart ? 1 : maxRank;
+    }
+
+    return {Pos: pos, Rank: rank};
+}
+
+function GetQueryGroupItem(prefix, start, end) {
+    return {
+        Prefix: prefix,
+        StartPos: start.Pos,
+        StartRank: start.Rank,
+        EndPos: end.Pos,
+        EndRank: end.Rank,
+    };
+}
+
+function GetQueryGroupItemByPrefix(prefix) {
+    return {
+        Prefix: prefix,
+        StartPos: 1,
+        StartRank: 1,
+        EndPos: 99999,
+        EndRank: maxRank,
+    };
+}
+
+$("#btnOdooSearchDivId").dxButton({
+    stylingMode: "outlined",
+    text: getTextById("btnOdooSearch"),
+    type: "success",
+    template(data, container) {
+        $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+        buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+            visible: false,
+        }).dxLoadIndicator('instance');
+    },
+    onClick: async function (data) {
+        data.component.option('text', getTextById("btnOdooSearch"));
+        buttonIndicator.option('visible', true);
+        try {
+            //decode string
+            var searchStr = odooSearchTextBox.dxTextBox("instance").option("value");
+            if (searchStr.trim() === "") throw "Empty searchstring, no selection performed.";
+            var splitBySpaceArr = searchStr.trim().split(" ");
+            var queryGroups = [];
+            for (var splitBySpace of splitBySpaceArr) {
+                var letterGroups = splitBySpace.match(/[a-zA-Z]+/g);
+                if (letterGroups == null) throw 'Prefix missing in part "' + splitBySpace + '", no selection performed.';
+                if (letterGroups.length > 1) throw 'Unexpected text in "' + splitBySpace + '", no selection performed.';
+                var prefix = letterGroups.length > 0 ? letterGroups[0] : '';
+                var splitPartExclPrefix = splitBySpace.substring(prefix.length);
+                if (splitPartExclPrefix === "*") {
+                    queryGroups.push(GetQueryGroupItemByPrefix(prefix));
+                }
+                else {
+                    var splitByPlusArr = splitPartExclPrefix.split("+");
+                    for (var splitByPlus of splitByPlusArr) {
+                        var splitByMinusArr = splitByPlus.split("-");
+                        if (splitByMinusArr.length > 1) {
+                            if (splitByMinusArr.length % 2 == 0) {
+                                for (var i = 0; i < splitByMinusArr.length; i += 2) {
+                                    var start = GetPosAndRank(splitByMinusArr[i], true);
+                                    var end = GetPosAndRank(splitByMinusArr[i + 1], false);
+                                    queryGroups.push(GetQueryGroupItem(prefix, start, end));
+                                }
+                            }
+                        }
+                        else {
+                            var start = GetPosAndRank(splitByMinusArr[0], true);
+                            var end = GetPosAndRank(splitByMinusArr[0], false);
+                            queryGroups.push(GetQueryGroupItem(prefix, start, end));
+                        }
+                    }
+                }
+            }
+
+            //console.log(queryGroups);
+
+            //search for assemblies on Odoo
+            //Authenticate with MUK API
+            var token = await getToken();
+
+            //Get project name
+            var projectNumber = await GetProjectNumber();
+
+            //Get project ID
+            var projectId = await GetProjectId(projectNumber);
+
+            if (prefixDetails.length == 0) {
+                await fillPrefixDetails();
+            }
+
+            var domainStr = "";
+            for (var i = 0; i < queryGroups.length; i++) {
+                var q = queryGroups[i];
+                var qStr = "";
+                if (q.Prefix === "V") {
+                    qStr = '"&",["freight", ">=", "' + q.StartPos + '"],["freight", "<=", "' + q.EndPos + '"]';
+                }
+                else {
+                    var partPrefix = '["mark_id.mark_prefix", "=", "' + q.Prefix + '"]';
+                    var partOrange = '["mark_id.mark_ranking", "=", "' + q.StartPos + '"]';
+                    if (q.StartPos == q.EndPos && q.StartRank == 1 && q.EndRank == maxRank) {
+                        qStr = '"&",' + partPrefix + ',' + partOrange;
+                    }
+                    else if (q.StartPos == q.EndPos && q.StartRank == q.EndRank)
+                    {
+                        qStr = '"&",' + partPrefix + ',"&",' + partOrange + ',["rank", "=", "' + q.StartRank + '"]';
+                    }
+                    else {
+                        //odooPos == startpos && odooRank >= startrank || odooPos == endpos && odooRank <= endrank || odooPos > startpos && odooPos < endpos
+                        //orange || green || blue
+                        var partOrange = '["mark_id.mark_ranking", "=", "' + q.StartPos + '"]';
+                        if (q.StartRank != 1)
+                            partOrange = '"&",' + partOrange + ',["rank", ">=", "' + q.StartRank + '"]';
+                        var partGreen = '["mark_id.mark_ranking", "=", "' + q.EndPos + '"]';
+                        if (q.EndRank != maxRank)
+                            partGreen = '"&",' + partGreen + ',["rank", "<=", "' + q.EndRank + '"]';
+                        var partBlue = '"&",["mark_id.mark_ranking", ">", "' + q.StartPos + '"],["mark_id.mark_ranking", "<", "' + q.EndPos + '"]';
+                        qStr = '"&",' + partPrefix + ',"|",' + partOrange + ',"|",' + partGreen + ',' + partBlue;
+                    }
+                }
+                if (i > 0) {
+                    domainStr = '"|",' + qStr + "," + domainStr;
+                }
+                else {
+                    domainStr = qStr;
+                }
+            }
+            domainStr = '[["project_id.id", "=", "' + projectId + '"],' + domainStr + ']';
+
+            //domainStr = '[';
+            //domainStr += '["project_id.id", "=", "2238"],';
+
+            //domainStr += '"|",';
+
+            //domainStr += '"&",';
+            //domainStr += '["mark_id.mark_prefix", "=", "PV"],';
+            //domainStr += '"|",';
+            //domainStr += '"&",';
+            //domainStr += '["mark_id.mark_ranking", "=", "1"],';
+            //domainStr += '["rank", ">=", "1"],';
+            //domainStr += '"|",';
+            //domainStr += '"&",';
+            //domainStr += '["mark_id.mark_ranking", "=", "20"],';
+            //domainStr += '["rank", "<=", "99999"],';
+            //domainStr += '"&",';
+            //domainStr += '["mark_id.mark_ranking", ">", "1"],';
+            //domainStr += '["mark_id.mark_ranking", "<", "20"],';
+
+            //domainStr += '"|",';
+
+            //domainStr += '"&",';
+            //domainStr += '["mark_id.mark_prefix", "=", "BS"],';
+            //domainStr += '"|",';
+            //domainStr += '"&",';
+            //domainStr += '["mark_id.mark_ranking", "=", "1"],';
+            //domainStr += '["rank", ">=", "1"],';
+            //domainStr += '"|",';
+            //domainStr += '"&",';
+            //domainStr += '["mark_id.mark_ranking", "=", "5"],';
+            //domainStr += '["rank", "<=", "99999"],';
+            //domainStr += '"&",';
+            //domainStr += '["mark_id.mark_ranking", ">", "1"],';
+            //domainStr += '["mark_id.mark_ranking", "<", "5"],';
+
+            //domainStr += '"|",';
+
+            //domainStr += '"&",';
+            //domainStr += '["mark_id.mark_prefix", "=", "BV"],';
+            //domainStr += '"|",';
+            //domainStr += '"&",';
+            //domainStr += '["mark_id.mark_ranking", "=", "1"],';
+            //domainStr += '["rank", ">=", "1"],';
+            //domainStr += '"|",';
+            //domainStr += '"&",';
+            //domainStr += '["mark_id.mark_ranking", "=", "5"],';
+            //domainStr += '["rank", "<=", "99999"],';
+            //domainStr += '"&",';
+            //domainStr += '["mark_id.mark_ranking", ">", "1"],';
+            //domainStr += '["mark_id.mark_ranking", "<", "5"],';
+
+            //domainStr += '"&",';
+            //domainStr += '["mark_id.mark_prefix", "=", "FM"],';
+            //domainStr += '"|",';
+            //domainStr += '"&",';
+            //domainStr += '["mark_id.mark_ranking", "=", "1"],';
+            //domainStr += '["rank", ">=", "1"],';
+            //domainStr += '"|",';
+            //domainStr += '"&",';
+            //domainStr += '["mark_id.mark_ranking", "=", "5"],';
+            //domainStr += '["rank", "<=", "99999"],';
+            //domainStr += '"&",';
+            //domainStr += '["mark_id.mark_ranking", ">", "1"],';
+            //domainStr += '["mark_id.mark_ranking", "<", "5"]';
+
+            //domainStr += ']';
+
+            console.log(domainStr);
+
+            var assembliesToSelect = [];
+            await $.ajax({
+                type: "GET",
+                url: odooURL + "/api/v1/search_read",
+                headers: { "Authorization": "Bearer " + token },
+                data: {
+                    model: "trimble.connect.main",
+                    domain: domainStr,
+                    order: 'id',
+                    fields: '["id", "mark_id", "rank", "name"]'
+                },
+                success: function (data) {
+                    if (data.length > 0) {
+                        for (var record of data) {
+                            assembliesToSelect.push(
+                                {
+                                    OdooId: record.id,
+                                    MarkId: record.mark_id[0],
+                                    OdooName: record.mark_id[1],
+                                    Rank: record.rank,
+                                    Guid: record.name,
+                                }
+                            );
+                        }
+                    }
+                }
+            });
+            console.log(assembliesToSelect);
+
+            if (assembliesToSelect.length > 0) {
+                var guidsToSelect = assembliesToSelect.map(a => a.Guid);
+                //console.log(guidsToSelect);
+                await SelectGuids(guidsToSelect);
+            }
+            else {
+                throw "No results found for given searchstring";
+            }
+
+
+            //select assemblies
+            //inform if certain elements weren't found
+        }
+        catch (e) {
+            DevExpress.ui.notify(e);
+        }
+        buttonIndicator.option('visible', false);
+        data.component.option('text', getTextById("btnOdooSearch"));
+    },
+});
+
+$("#btnGetOdooInfoDivId").dxButton({
+    stylingMode: "outlined",
+    text: getTextById("btnGetOdooInfo"),
+    type: "success",
+    template(data, container) {
+        $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+        buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+            visible: false,
+        }).dxLoadIndicator('instance');
+    },
+    onClick: async function (data) {
+        data.component.option('text', getTextById("btnGetOdooInfo"));
+        buttonIndicator.option('visible', true);
+        try {
+            const selection = await API.viewer.getSelection();
+            const selector = {
+                modelObjectIds: selection
+            };
+            const mobjectsArr = await API.viewer.getObjects(selector);
+            var selectedGuids = [];
+            for (const mobjects of mobjectsArr) {
+                const objectRuntimeIds = mobjects.objects.map(o => o.id); //o.id = runtimeId = number
+                const objectIds = await API.viewer.convertToObjectIds(mobjects.modelId, objectRuntimeIds);//objectIds = compressed ifc ids
+                //console.log(objectRuntimeIds);
+                selectedGuids.push(...objectIds.map(x => Guid.fromCompressedToFull(x)));
+            }
+
+            if (selectedGuids.length == 0)
+                throw "Nothing selected";
+
+            //Get project name
+            var projectNumber = await GetProjectNumber();
+            if (projectNumber == undefined)
+                return;
+
+            //Authenticate with MUK API
+            var token = await getToken();
+
+            //Get project ID
+            var projectId = await GetProjectId(projectNumber);
+
+            var selectedAssemblies = [];
+
+            for (var i = 0; i < selectedGuids.length; i += fetchLimit) { //loop cuz only fetchLimit records get fetched at a time
+                var domainTrimbleConnectMain = "";
+
+                for (var j = i; j < selectedGuids.length && j < i + fetchLimit; j++) {
+                    var filterArrStr = '["name", "ilike", "' + selectedGuids[j] + '"]';
+                    if (j > i) {
+                        domainTrimbleConnectMain = '"|", ' + filterArrStr + ',' + domainTrimbleConnectMain;
+                    }
+                    else {
+                        domainTrimbleConnectMain = filterArrStr;
+                    }
+                }
+                //adding project_id to the query reduces the time it takes to find the records
+                //based on seeing how fast the grid refreshes with and w/o project_id, should properly time the difference to verify.
+                //should also try this with other queries that use ilike
+                domainTrimbleConnectMain = '[["project_id.id", "=", "' + projectId + '"],' + domainTrimbleConnectMain + "]";
+                //console.log("domainTrimbleConnectMain");
+                //console.log(domainTrimbleConnectMain);
+                var domainProjectMarks = "";
+                var recordsAdded = 0;
+                await $.ajax({
+                    type: "GET",
+                    url: odooURL + "/api/v1/search_read",
+                    headers: { "Authorization": "Bearer " + token },
+                    data: {
+                        model: "trimble.connect.main",
+                        domain: domainTrimbleConnectMain,
+                        fields: `["id", "name", "mark_id", "rank", "date_drawn", "date_fab_planned", "date_fab_start", "date_fab_end", "date_fab_dem", 
+                            "date_transported", "date_transported", "mark_available", "location_bin", "freight", "unit_id"]`,
+                    },
+                    success: function (odooData) {
+                        //console.log("trimble.connect.main");
+                        //console.log(odooData);
+                        var cntr = 0;
+                        for (var record of odooData) {
+                            var filterArrStr = '["id", "=", "' + record.mark_id[0] + '"]';
+                            if (cntr > 0) {
+                                domainProjectMarks = '"|", ' + filterArrStr + ',' + domainProjectMarks;
+                            }
+                            else {
+                                domainProjectMarks = filterArrStr;
+                            }
+                            selectedAssemblies.push(
+                                {
+                                    OdooTcmId: record.id,
+                                    Guid: record.name,
+                                    OdooPmmId: record.mark_id[0],
+                                    Rank: record.rank,
+                                    OdooCode: record.mark_id[1],
+                                    DateDrawn: record.date_drawn ? GetDateShortString(GetDateFromString(record.date_drawn)) : "",
+                                    DateProductionPlanned: record.date_fab_planned ? GetDateShortString(GetDateFromString(record.date_fab_planned)) : "",
+                                    DateProductionStarted: record.date_fab_start ? GetDateShortString(GetDateFromString(record.date_fab_start)) : "",
+                                    DateProductionEnded: record.date_fab_end ? GetDateShortString(GetDateFromString(record.date_fab_end)) : "",
+                                    DateDemoulded: record.date_fab_dem ? GetDateShortString(GetDateFromString(record.date_fab_dem)) : "",
+                                    DateTransported: record.date_transported ? GetDateShortString(GetDateFromString(record.date_transported)) : "",
+                                    AvailableForTransport: record.mark_available,
+                                    Bin: record.location_bin[1],
+                                    Freight: record.freight == -1 ? '/' : record.freight,
+                                    Unit: record.unit_id[1],
+                                    Mass: 0,
+                                    PosNmbr: 0,
+                                    Prefix: "",
+                                    AssemblyName: "",
+                                    Length: 0,
+                                    Volume: 0,
+                                });
+                            cntr++;
+                            recordsAdded++;
+                        }
+                        //don't think project_id would make this query faster since it's an exact id is given
+                        domainProjectMarks = "[" + domainProjectMarks + "]";
+                    }
+                });
+                if (recordsAdded > 0) {
+                    //console.log("domainProjectMarks");
+                    //console.log(domainProjectMarks);
+                    await $.ajax({
+                        type: "GET",
+                        url: odooURL + "/api/v1/search_read",
+                        headers: { "Authorization": "Bearer " + token },
+                        data: {
+                            model: "project.master_marks",
+                            domain: domainProjectMarks,
+                            fields: '["id", "mark_mass", "mark_ranking", "mark_prefix", "mark_length", "mark_volume"]',
+                        },
+                        success: function (odooData) {
+                            //console.log("project.master_marks");
+                            //console.log(odooData);
+                            for (var record of odooData) {
+                                var objects = selectedAssemblies.filter(x => x.OdooPmmId == record.id);
+                                for (var object of objects) {
+                                    object.Mass = record.mark_mass;
+                                    object.PosNmbr = record.mark_ranking;
+                                    object.Prefix = record.mark_prefix;
+                                    object.AssemblyName = record.mark_prefix + record.mark_ranking + "." + object.Rank;
+                                    object.Length = record.mark_length;
+                                    object.Volume = record.mark_volume;
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            odooAssemblyData = selectedAssemblies[0];
+
+            popup.option({
+                contentTemplate: () => popupContentTemplate(),
+            });
+            popup.show();
+        }
+        catch (e) {
+            DevExpress.ui.notify(e);
+        }
+        buttonIndicator.option('visible', false);
+        data.component.option('text', getTextById("btnGetOdooInfo"));
+    },
+});
+
+let odooAssemblyData = null;
+const popupContentTemplate = function () {
+    if (odooAssemblyData != null && odooAssemblyData != undefined) {
+        return $('<div>').append(
+            $(`<p><a href="https://odoo.valcke-prefab.be/web#id=${odooAssemblyData.OdooPmmId}&active_id=2260&model=project.master_marks&view_type=form&cids=1&menu_id=2270" target="_blank" rel="noopener noreferrer">Odoo</a></p>`),
+            $(`<p>${getTextById("textNaam")}: <span>${odooAssemblyData.AssemblyName}</span></p>`),
+            $(`<p>${getTextById("textDateDrawn")}: <span>${odooAssemblyData.DateDrawn}</span></p>`),
+            $(`<p>${getTextById("textDatePlanned")}: <span>${odooAssemblyData.DateProductionPlanned}</span></p>`),
+            $(`<p>${getTextById("textDateProductionStarted")}: <span>${odooAssemblyData.DateProductionStarted}</span></p>`),
+            $(`<p>${getTextById("textDateDemoulded")}: <span>${odooAssemblyData.DateDemoulded}</span></p>`),
+            $(`<p>${getTextById("textDateProductionEnded")}: <span>${odooAssemblyData.DateProductionEnded}</span></p>`),
+            $(`<p>${getTextById("textDateTransported")}: <span>${odooAssemblyData.DateTransported}</span></p>`),
+            $(`<p>${getTextById("textBin")}: <span>${odooAssemblyData.Bin}</span></p>`),
+            $(`<p>${getTextById("textProjectpart")}: <span>${odooAssemblyData.Unit}</span></p>`),
+            $(`<p>${getTextById("textMass")} [kg]: <span>${odooAssemblyData.Mass}</span></p>`),
+            $(`<p>${getTextById("textVolume")} [m³]: <span>${odooAssemblyData.Volume}</span></p>`),
+            $(`<p>${getTextById("textLength")} [mm]: <span>${odooAssemblyData.Length}</span></p>`),
+            $(`<p>${getTextById("textFreight")}: <span>${odooAssemblyData.Freight}</span></p>`),
+        );
+    }
+    else {
+        return $('<div>').append(
+            $(`<p>${getTextById("textNoInfoFound")}</p>`),
+        );
+    }
+};
+
+const popup = $('#popup').dxPopup({
+    contentTemplate: popupContentTemplate,
+    width: 300,
+    height: 500,
+    container: '.dx-viewport',
+    showTitle: true,
+    title: 'Info',
+    visible: false,
+    dragEnabled: false,
+    hideOnOutsideClick: true,
+    showCloseButton: true,
+    position: {
+        at: 'center',
+        my: 'center',
+    },
+    toolbarItems: [{
+        widget: 'dxButton',
+        toolbar: 'bottom',
+        location: 'after',
+        options: {
+            text: 'Close',
+            onClick() {
+                popup.hide();
+            },
+        },
+    }],
+}).dxPopup('instance');
+
+var hasAccesToTransport = false;
+async function canReadDeliverySlips() {
+    try {
+        var token = await getToken();
+
+        await $.ajax({
+            type: "GET",
+            url: odooURL + "/api/v1/search_read",
+            headers: { "Authorization": "Bearer " + token },
+            data: {
+                model: "vpb.delivery.slip",
+                domain: '[["id", ">", "-1"]]',
+                limit: 1,
+                fields: '["id"]'
+            },
+            success: function () {
+                hasAccesToTransport = true;
+                return true;
+            }
+        });
+    }
+    catch(ex)
+    {
+
+    }
+    return false;
+}
+
 $(function () {
     $("#btnSetColorFromStatusDivId").dxButton({
         stylingMode: "outlined",
@@ -535,17 +1272,17 @@ $(function () {
             document.getElementById("trLegendDemoulded").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusDemoulded).Color);
             document.getElementById("trLegendProductionEnded").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusProductionEnded).Color);
             document.getElementById("trLegendAvailableForTransport").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusAvailableForTransport).Color);
+            document.getElementById("trLegendPlannedForTransport").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusPlannedForTransport).Color);
             document.getElementById("trLegendTransported").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusTransported).Color);
+            await canReadDeliverySlips();
+            document.getElementById("transportDiv").style.display = hasAccesToTransport ? 'block' : 'none';
+
             try {
                 //var debugInfo = "";
                 //Get project name
-                var regexProjectName = /^[TV]\d+_\w+/;
-                var project = await API.project.getProject(); //{ name: "V8622_GALLOO" };
-                //debugInfo = debugInfo.concat("<br />Project name: " + project.name);
-                //$(debug).html(debugInfo);
-                if (!regexProjectName.test(project.name))
+                var projectNumber = await GetProjectNumber();
+                if (projectNumber == undefined)
                     return;
-                var projectNumber = project.name.split("_")[0];
 
                 //debugInfo = debugInfo.concat("<br />Project number: " + projectNumber);
                 //console.log(debugInfo);
@@ -573,7 +1310,7 @@ $(function () {
                 var processedAssemblyIds = [];
                 var ended = 0;
                 var lastId = -1;
-                while (ended != 1) { //loop cuz only 80 records get fetched at a time
+                while (ended != 1) { //loop cuz only fetchLimit records get fetched at a time
                     await $.ajax({
                         type: "GET",
                         url: odooURL + "/api/v1/search_read",
@@ -612,7 +1349,7 @@ $(function () {
                 var unprocessedAssemblies = []; //modelled steel assemblies
                 ended = 0;
                 lastId = -1;
-                while (ended != 1) { //loop cuz only 80 records get fetched at a time
+                while (ended != 1) { //loop cuz only fetchLimit records get fetched at a time
                     await $.ajax({
                         type: "GET",
                         url: odooURL + "/api/v1/search_read",
@@ -650,7 +1387,7 @@ $(function () {
                 //console.log("Start: Getting project.mark_steel_production info");
                 ended = 0;
                 lastId = -1;
-                while (ended != 1) { //loop cuz only 80 records get fetched at a time
+                while (ended != 1) { //loop cuz only fetchLimit records get fetched at a time
                     await $.ajax({
                         type: "GET",
                         url: odooURL + "/api/v1/search_read",
@@ -685,7 +1422,7 @@ $(function () {
                 var steelPacks = [];
                 ended = 0;
                 lastId = -1;
-                while (ended != 1) { //loop cuz only 80 records get fetched at a time
+                while (ended != 1) { //loop cuz only fetchLimit records get fetched at a time
                     await $.ajax({
                         type: "GET",
                         url: odooURL + "/api/v1/search_read",
@@ -935,6 +1672,90 @@ $(function () {
     });
 });
 
+function removeLeadingZeroes(stringwithzeroes) {
+    return stringwithzeroes.replace(/^0+/, "");
+}
+
+async function GetProjectNumber() {
+    //Get project name
+    var regexProjectName = /^[TV]\d+_\w+/;
+    var project = await API.project.getProject();//{ name: "V8597_VDL" };//
+    //debugInfo = debugInfo.concat("<br />Project name: " + project.name);
+    //$(debug).html(debugInfo);
+    if (!regexProjectName.test(project.name))
+        return undefined;
+    else
+        return project.name.split("_")[0];
+}
+
+async function getAssemblyNamesByCompressedGuids(compressedGuids) {
+    var assemblies = [];
+
+    //Authenticate with MUK API
+    var token = await getToken();
+
+    //Get project name
+    var projectNumber = await GetProjectNumber();
+
+    //Get project ID
+    var projectId = await GetProjectId(projectNumber);
+
+    if (prefixDetails.length == 0) {
+        await fillPrefixDetails();
+    }
+
+    //console.log(prefixDetails);
+
+    for (var i = 0; i < compressedGuids.length; i += fetchLimit) { //loop cuz only fetchLimit records get fetched at a time
+        var domainTrimbleConnectMain = "";
+
+        for (var j = i; j < compressedGuids.length && j < i + fetchLimit; j++) {
+            var fullGuid = Guid.fromCompressedToFull(compressedGuids[j]);
+            var filterArrStr = '["name", "ilike", "' + fullGuid + '"]';
+            if (j > i) {
+                domainTrimbleConnectMain = '"|", ' + filterArrStr + ',' + domainTrimbleConnectMain;
+            }
+            else {
+                domainTrimbleConnectMain = filterArrStr;
+            }
+        }
+
+        domainTrimbleConnectMain = '[["project_id.id", "=", "' + projectId + '"],' + domainTrimbleConnectMain + "]";
+        await $.ajax({
+            type: "GET",
+            url: odooURL + "/api/v1/search_read",
+            headers: { "Authorization": "Bearer " + token },
+            data: {
+                model: "trimble.connect.main",
+                domain: domainTrimbleConnectMain,
+                fields: '["id", "name", "rank", "mark_id"]',
+            },
+            success: function (odooData) {
+                //console.log("trimble.connect.main");
+                //console.log(odooData);
+                for (var record of odooData) {
+                    var odooAssemblyStr = record.mark_id[1];
+                    //console.log("odooAssemblyStr: " + odooAssemblyStr);
+                    var splitStr = odooAssemblyStr.split(".");
+                    //console.log("splitStr: " + splitStr);
+                    var shortPrefix = removeLeadingZeroes(splitStr[1]);
+                    //console.log("shortPrefix: " + shortPrefix);
+                    var longPrefix = prefixDetails.find(x => x.ShortPrefix === shortPrefix).Prefix;
+                    //console.log("longPrefix: " + longPrefix);
+                    var posNmbr = removeLeadingZeroes(splitStr[2]);
+                    //console.log("posNmbr: " + posNmbr);
+                    assemblies.push(
+                        {
+                            AssemblyName: longPrefix + posNmbr + "." + record.rank,
+                            Guid: record.name
+                        });
+                }
+            }
+        });
+    }
+
+    return assemblies;
+}
 
 $(function () {
     $("#btnSetOdooLabelsDivId").dxButton({
@@ -951,15 +1772,14 @@ $(function () {
             data.component.option('text', getTextById("btnSetOdooLabelsSetting"));
             buttonIndicator.option('visible', true);
             try {
+                await CheckAssemblySelection();
+
                 var username = odooUsernameTextbox.dxTextBox("instance").option("value");
                 var password = odooPasswordTextbox.dxTextBox("instance").option("value");
                 if (typeof username !== 'string' || typeof password !== 'string' || username === "" || password === "") {
                     console.log("no username and/or password found");
                     throw getTextById("errorMsgUsernamePassword");
                 }
-
-                //Authenticate with MUK API
-                var token = await getToken();
 
                 let jsonArray = "[";
                 const selection = await API.viewer.getSelection();
@@ -975,8 +1795,12 @@ $(function () {
                     //console.log(modelspec);
                     const modelPos = modelspec.placement.position;
                     //console.log(modelPos);
-                    const objectsIds = mobjects.objects.map(o => o.id);
-                    const objPropertiesArr = await API.viewer.getObjectProperties(mobjects.modelId, objectsIds);
+                    const objectRuntimeIds = mobjects.objects.map(o => o.id); //o.id = runtimeId = number
+                    const objectIds = await API.viewer.convertToObjectIds(mobjects.modelId, objectRuntimeIds);//objectIds = compressed ifc ids
+                    const objPropertiesArr = await API.viewer.getObjectProperties(mobjects.modelId, objectRuntimeIds);
+                    //console.log(objectRuntimeIds);
+                    var assemblyNames = await getAssemblyNamesByCompressedGuids(objectIds);
+                    //console.log(assemblyNames);
                     for (const objproperties of objPropertiesArr) {
                         let cogX = 0.0;
                         let cogY = 0.0;
@@ -1011,47 +1835,15 @@ $(function () {
                             continue;
                         }
 
-                        var markId = "";
-                        var rank;
-                        var assemblyPos = "";
-                        await $.ajax({
-                            type: "GET",
-                            url: odooURL + "/api/v1/search_read",
-                            headers: { "Authorization": "Bearer " + token },
-                            data: {
-                                model: "trimble.connect.main",
-                                domain: '[["name", "=", "' + guid + '"]]',
-                                fields: '["id", "mark_id", "rank"]',
-                            },
-                            success: function (data) {
-                                if (typeof data[0] !== 'undefined') {
-                                    markId = data[0].mark_id[0];
-                                    rank = data[0].rank;
-                                }
-                            }
-                        });
+                        //console.log("searching in assemblyNames for " + objproperties.id);
+                        var assemblyNameObj = assemblyNames.find(x => x.Guid.toUpperCase() === guid.toUpperCase());
+                        //console.log("assemblyNameObj: " + assemblyNameObj);
 
-                        if (markId === "") {
+                        if (assemblyNameObj == undefined) {
                             continue;
                         }
 
-                        await $.ajax({
-                            type: "GET",
-                            url: odooURL + "/api/v1/search_read",
-                            headers: { "Authorization": "Bearer " + token },
-                            data: {
-                                model: "project.master_marks",
-                                domain: '[["id", "=", "' + markId + '"]]',
-                                fields: '["id", "mark_ref"]',
-                            },
-                            success: function (data) {
-                                assemblyPos = data[0].mark_ref;
-                            }
-                        });
-
-                        if (assemblyPos === "") {
-                            continue;
-                        }
+                        var assemblyName = assemblyNameObj.AssemblyName;
 
                         jsonArray = jsonArray.concat("{");
                         jsonArray = jsonArray.concat("\"color\": {\"r\": 60,\"g\": 203,\"b\": 62,\"a\": 255}, ");
@@ -1091,7 +1883,7 @@ $(function () {
                         jsonArray = jsonArray.concat(",");
                         jsonArray = jsonArray.concat("\"text\": ");
                         jsonArray = jsonArray.concat("\"");
-                        jsonArray = jsonArray.concat(assemblyPos + "." + rank);
+                        jsonArray = jsonArray.concat(assemblyName);
                         jsonArray = jsonArray.concat("\"");
                         jsonArray = jsonArray.concat("}");
                         jsonArray = jsonArray.concat(",");
@@ -1111,6 +1903,7 @@ $(function () {
             }
             catch (e) {
                 DevExpress.ui.notify(e);
+                console.log(e);
             }
             buttonIndicator.option('visible', false);
             data.component.option('text', getTextById("btnSetOdooLabels"));
@@ -1228,11 +2021,13 @@ $(function () {
                 visible: false,
             }).dxLoadIndicator('instance');
         },
-        onClick: function (data) {
+        onClick: async function (data) {
             data.component.option('text', getTextById("btnSelectByFilterSelecting"));
             buttonIndicator.option('visible', true);
             try {
-                SetSelectionByFilter();
+                //console.log("btnSelectByFilterDivId button clicked")
+                await API.viewer.setSettings({ assemblySelection : true });
+                await SetSelectionByFilter();
             }
             catch (e) {
                 DevExpress.ui.notify(e);
@@ -1290,6 +2085,13 @@ $(function () {
     });
 });
 
+async function CheckAssemblySelection() {
+    const settings = await API.viewer.getSettings();
+    if (!settings.assemblySelection) {
+        DevExpress.ui.notify(errorMsgNoAssemblySelection);
+    }
+}
+
 $(function () {
     $("#btnShowLabelsDivId").dxButton({
         stylingMode: "outlined",
@@ -1301,11 +2103,12 @@ $(function () {
                 visible: false,
             }).dxLoadIndicator('instance');
         },
-        onClick: function (data) {
+        onClick: async function (data) {
             data.component.option('text', getTextById("btnShowLabelsShowing"));
             buttonIndicator.option('visible', true);
             try {
-                addTextMarkups();
+                await CheckAssemblySelection();
+                await addTextMarkups();
             }
             catch (e) {
                 DevExpress.ui.notify(e);
@@ -1314,6 +2117,27 @@ $(function () {
             data.component.option('text', getTextById("btnShowLabels"));
         },
     });
+});
+
+var titlesShown = true;
+$("#btnShowTitlesDivId").dxButton({
+    stylingMode: "text",
+    text: getTextById("btnHideTitles"),
+    onClick: function (data) {
+        var displayValue = titlesShown ? 'none' : 'block';
+        document.getElementById("divTitleVisibility").style.display = displayValue;
+        document.getElementById("divTitleFilters").style.display = displayValue;
+        document.getElementById("divTitleExtra").style.display = displayValue;
+        document.getElementById("divTitlePropertyLabels").style.display = displayValue;
+        document.getElementById("divTitleTransport").style.display = displayValue;
+        document.getElementById("divTitleVisualizeOdooData").style.display = displayValue;
+        document.getElementById("divTitleAction1").style.display = displayValue;
+        document.getElementById("divTitleAction2").style.display = displayValue;
+        document.getElementById("divTitleAction3").style.display = displayValue;
+        document.getElementById("divTitleAction4").style.display = displayValue;
+        titlesShown = !titlesShown;
+        data.component.option('text', titlesShown ? getTextById("btnHideTitles") : getTextById("btnShowTitles"));
+    },
 });
 
 //#region legend
@@ -1685,6 +2509,90 @@ $(function () {
 
 //#endregion
 
+var selectedObjects = [
+    //{
+    //    ModelId: "0",
+    //    ObjectRuntimeId: 0,
+    //    ObjectId: "0",
+    //    Guid: "8d14bb4d-9b0e-4cf9-b7d7-a3740b154195",
+    //    OdooTcmId: 68560,
+    //    OdooPmmId: 150228,
+    //    Weight: 8389,
+    //    Prefix: "FM",//voor sorteren
+    //    PosNmbr: 23,
+    //    Rank: 1,
+    //    AssemblyName: "FM23",
+    //    OdooCode: "V8622.0000FM.0023"
+    //},
+];
+
+var dataGridTransport = $("#dataGridTransport").dxDataGrid({
+    dataSource: selectedObjects,
+    keyExpr: 'OdooTcmId',
+    showBorders: true,
+    selection: {
+        mode: 'single',
+    },
+    editing: {
+        mode: 'row',
+        allowDeleting: true,
+        confirmDelete: false,
+        useIcons: true,
+    },
+    columns: [{
+        dataField: 'AssemblyName',
+        caption: getTextById("gridTitleAssembly"),
+        width: 130,
+        sortOrder: 'asc',
+        calculateSortValue: function (rowData) {
+            return rowData.Prefix.toString().padStart(12, "0") + rowData.PosNmbr.toString().padStart(6, "0") + "." + rowData.Rank.toString().padStart(4, "0");
+        },
+    }, {
+        dataField: 'Weight',
+        caption: getTextById("gridTitleWeight"),
+        dataType: 'number',
+        width: 160,
+        format: {
+            type: "fixedPoint",
+            precision: 0
+        },
+    },
+    ],
+    summary: {
+        totalItems: [{
+            column: 'AssemblyName',
+            summartyType: 'count',
+            displayFormat: getTextById("gridTitleTotalPieces") + " {0} " + getTextById("gridUnitNumber"),
+        },{
+            column: 'Weight',
+            summaryType: 'sum',
+            valueFormat: {
+                type: "fixedPoint",
+                precision: 0
+            },
+                displayFormat: getTextById("gridTitleTotalWeight") + " {0} kg",
+        }],
+    },
+    onRowRemoving: async function (e) {
+        var instanceDropDown = dropDownExistingSlips.dxDropDownBox("instance");
+        instanceDropDown.reset();
+        var objectRemoved = selectedObjects.find(x => x.OdooTcmId == e.key);
+        if (objectRemoved != undefined) {
+            var models = await API.viewer.getModels("loaded");
+            for (var model of models) {
+                var selector = { modelObjectIds: [{ modelId: model.id, objectRuntimeIds: [objectRemoved.ObjectRuntimeId] }] };
+                await API.viewer.setSelection(selector, 'remove');
+            }
+            e.cancel = true;
+        }
+    },
+    onCellPrepared: function (e) {
+        if (e.rowType === "data" /*&& e.column.dataField === "ProductName"*/) {
+            e.cellElement.css("color", e.data.Valid ? "white" : "red");
+        }
+    },
+});
+
 //#endregion
 
 const StatusModelled = "Modelled";
@@ -1695,6 +2603,7 @@ const StatusPlanned = "Planned";
 const StatusDemoulded = "Demoulded";
 const StatusProductionEnded = "ProductionEnded";
 const StatusAvailableForTransport = "AvailableForTransport";
+const StatusPlannedForTransport = "PlannedForTransport";
 const StatusTransported = "Transported";
 var ObjectStatuses = [];
 function fillObjectStatuses() {
@@ -1761,6 +2670,14 @@ function fillObjectStatuses() {
         CompressedIfcGuids: []
     };
     ObjectStatuses.push(availForTransport);
+
+    var plannedForTransport = {
+        Status: StatusPlannedForTransport,
+        Color: { r: 0, g: 255, b: 255 },
+        Guids: [],
+        CompressedIfcGuids: []
+    };
+    ObjectStatuses.push(plannedForTransport);
 
     var transported = {
         Status: StatusTransported,
@@ -1916,8 +2833,12 @@ var tokenExpiretime;
 var client_id = "3oVDFZt2EVPhAOfQRgsRDYI9pIcdcdTGYR7rUSST";
 var client_secret = "PXthv4zShfW5NORk4bKFgr6O1dlYTxqD8KwFlx1S";
 async function getToken() {
-    if (token !== "" && refresh_token !== "" && tokenExpiretime.getTime() > Date.now() - 60000) {
+    if (token !== "" && refresh_token !== "" && tokenExpiretime.getTime() < Date.now() + 60000) {
         console.log("Refreshing token");
+        //console.log("tokenExpiretime.getTime()");
+        //console.log(tokenExpiretime.getTime());
+        //console.log("Date.now()");
+        //console.log(Date.now());
         var refreshSuccesful = false;
         await $.ajax({
             type: "POST",
@@ -1928,8 +2849,12 @@ async function getToken() {
                 grant_type: "refresh_token",
                 refresh_token: refresh_token
             },
-            success: function () {
+            success: function (odooData) {
+                token = odooData.access_token;
+                refresh_token = data.refresh_token;
+                tokenExpiretime = new Date(Date.now() + data.expires_in * 1000);
                 refreshSuccesful = true;
+                console.log("refresh success");
             },
         });
         if (!refreshSuccesful) {
@@ -1938,7 +2863,7 @@ async function getToken() {
         console.log("End refresh token");
     }
     if (token === "") {
-        console.log("Fetching token");
+        //console.log("Fetching token");
         var username = odooUsernameTextbox.dxTextBox("instance").option("value");
         var password = odooPasswordTextbox.dxTextBox("instance").option("value");
         if (typeof username !== 'string' || typeof password !== 'string' || username === "" || password === "") {
@@ -1969,14 +2894,14 @@ async function getToken() {
                 grant_type: "password"
             },
             success: function (data) {
+                //console.log(data);
                 token = data.access_token;
                 refresh_token = data.refresh_token;
-                //console.log(data);
                 tokenExpiretime = new Date(Date.now() + data.expires_in * 1000);
                 //console.log(tokenExpiretime);
             }
         });
-        console.log("Token received");
+        //console.log("Token received");
     }
     return token;
 }
@@ -1992,13 +2917,9 @@ async function getRecentOdooData() {
 
     //var debugInfo = "";
     //Get project name
-    var regexProjectName = /^[TV]\d+_\w+/;
-    var project = await API.project.getProject();//{ name: "V8597_VDL" };//
-    //debugInfo = debugInfo.concat("<br />Project name: " + project.name);
-    //$(debug).html(debugInfo);
-    if (!regexProjectName.test(project.name))
+    var projectNumber = await GetProjectNumber();
+    if (projectNumber == undefined)
         return;
-    var projectNumber = project.name.split("_")[0];
 
     //Get project ID
     var id = await GetProjectId(projectNumber);
@@ -2019,7 +2940,7 @@ async function getRecentOdooData() {
                 if (data.length > 0) {
                     lastUpdate = data[0].write_date;
                     lastUpdate = addASecond(lastUpdate);
-                    console.log("Last update: " + lastUpdate);
+                    //console.log("Last update: " + lastUpdate);
                 }
             }
         });
@@ -2051,7 +2972,7 @@ async function getRecentOdooData() {
                         var color = getColorByStatus(status);
 
                         const mobjectsArr = await API.viewer.getObjects({ parameter: { properties: { 'Default.GUID': record.name } } });
-                        console.log("mobjectsArr length: " + mobjectsArr.length);
+                        //console.log("mobjectsArr length: " + mobjectsArr.length);
 
                         var compressedIfcGuids = [];
                         var compressedIfcGuid = Guid.fromFullToCompressed(record.name);
@@ -2090,27 +3011,36 @@ async function getRecentOdooData() {
     }
 }
 
+var projectId = -1;
 async function GetProjectId(projectNumber) {
-    var id = -1;
-    //console.log("Start get project Id");
-    //console.log("Odoo URL: " + odooURL + "/api/v1/search_read");
-    //console.log("using token: " + token);
-    await $.ajax({
-        type: "GET",
-        url: odooURL + "/api/v1/search_read",
-        headers: { "Authorization": "Bearer " + token },
-        data: {
-            model: "project.project",
-            domain: '[["project_identifier", "=", "' + projectNumber + '"]]',
-            fields: '["id", "project_identifier"]',
-        },
-        success: function (data) {
-            //console.log(data);
-            id = data[0].id;
-        }
-    });
-    //console.log("End get project Id");
-    return id;
+    if (projectId == -1) {
+        var id = -1;
+        //console.log("Start get project Id");
+        //console.log("Odoo URL: " + odooURL + "/api/v1/search_read");
+        //console.log("using token: " + token);
+
+        //Authenticate with MUK API
+        var token = await getToken();
+
+        await $.ajax({
+            type: "GET",
+            url: odooURL + "/api/v1/search_read",
+            headers: { "Authorization": "Bearer " + token },
+            data: {
+                model: "project.project",
+                domain: '[["project_identifier", "=", "' + projectNumber + '"]]',
+                fields: '["id", "project_identifier"]',
+            },
+            success: function (data) {
+                //console.log(data);
+                id = data[0].id;
+                projectId = id;
+            }
+        });
+        //console.log("End get project Id");
+    }
+
+    return projectId;
 }
 
 //#endregion
@@ -2202,28 +3132,42 @@ function pad(pad, str) {
     return (pad + str).slice(-pad.length);
 }
 
-function SetSelectionByFilter()
+//variable to prevent selection changed event from doing its queries again after selection erection arrows
+var performSelectionChanged = true;
+async function SetSelectionByFilter()
 {
+    performSelectionChanged = false;
+    //await setObjectSelectionByPropnameAndValue("Tekla Common.Finish", "MONTAGE", "add");
+
     var filterTypes = getFilterTypes();
     var selectedItem = filterTypeSelectBox.dxSelectBox("instance").option("selectedItem");
     if (selectedItem === filterTypes[0]) {
         var selected = prefixSelectionTagBox.dxTagBox("instance").option("selectedItems");
+        performSelectionChanged = false;
         for (let i = 0; i < selected.length; i++) {
             var actionType = i == 0 ? "set" : "add";
-            setObjectSelectionByPropnameAndValue("Default.MERKPREFIX", selected[i], actionType);
+            //console.log("selecting " + actionType + " " + selected[i]);
+            if (i == selected.length - 1) {
+                performSelectionChanged = true;
+            }
+            //console.log("setObjectSelectionByPropnameAndValue");
+            await setObjectSelectionByPropnameAndValue("Default.MERKPREFIX", selected[i], actionType);
         }
     }
     else if (selectedItem === filterTypes[1]) {
         var text = assemblyTextBox.dxTextBox("instance").option("value");
-        setObjectSelectionByPropnameAndValue("Default.MERKNUMMER", text, "set");
+        performSelectionChanged = true;
+        //console.log("setObjectSelectionByPropnameAndValue");
+        await setObjectSelectionByPropnameAndValue("Default.MERKNUMMER", text, "set");
     }
     else if (selectedItem === filterTypes[2]) {
         var propertyName = propertyNameTextBox.dxTextBox("instance").option("value");
         var propertyValue = propertyValueTextBox.dxTextBox("instance").option("value");
-        setObjectSelectionByPropnameAndValue(propertyName, propertyValue, "set");
+        performSelectionChanged = true;
+        //console.log("setObjectSelectionByPropnameAndValue");
+        await setObjectSelectionByPropnameAndValue(propertyName, propertyValue, "set");
     }
-
-    setObjectSelectionByPropnameAndValue("Tekla Common.Finish", "MONTAGE", "add");
+    performSelectionChanged = true;
 }
 
 async function setObjectsByProp() {
@@ -2295,9 +3239,533 @@ function getPropSelectorByPropnameAndValue(propNameFilter, propValueFilter) {
     };
 }
 
-function selectionChanged(data) {
+var selectionChangedIds = [];
+var lastSelectionId = -1;
+var resetSlipDropdown = true;
+async function selectionChanged(data) {
+    odooAssemblyData = undefined;
+    popup.hide();
 
+    if (!hasAccesToTransport)
+        return;
+
+    await CheckAssemblySelection();
+
+    var mySelectionId = ++lastSelectionId;
+    selectionChangedIds.push(mySelectionId);
+    if (!performSelectionChanged) {
+        //console.log("performSelectionChanged " + performSelectionChanged + " => selectionChanged skipped");
+        return;
+    }
+
+    if (selectionChangedIds[selectionChangedIds.length - 1] != mySelectionId) return;
+    //console.log("performSelectionChanged " + performSelectionChanged + " => selectionChanged passed");
+    var tempSelectedObjects = [];
+    //console.log(data);
+    try {
+        for (const mobjects of data) {
+            var modelId = mobjects.modelId;
+            //runtimeIds = [17062, 17065, ...] = ids used by viewer
+            //objectIds = compressed IFC guids = ['28DCGNPlH98vcQNyNhB4sQ', '0fKOmd_6PFgOiexu4H1vtU', ...] = can be used to map runtimeId to original IFC
+            const objectsRuntimeIds = mobjects.objectRuntimeIds;
+            //console.log("objectsRuntimeIds");
+            //console.log(objectsRuntimeIds);
+            if (objectsRuntimeIds.length == 0)
+                continue;
+            const objectIds = await API.viewer.convertToObjectIds(modelId, objectsRuntimeIds);
+            //console.log("objectIds");
+            //console.log(objectIds);
+            for (var i = 0; i < objectsRuntimeIds.length; i++) {
+                tempSelectedObjects.push({
+                    ModelId: modelId,
+                    ObjectRuntimeId: objectsRuntimeIds[i],
+                    ObjectId: objectIds[i],
+                    Guid: Guid.fromCompressedToFull(objectIds[i]),
+                    OdooTcmId: -1,
+                    OdooPmmId: -1,
+                    Weight: 0,
+                    Prefix: "",//voor sorteren
+                    PosNmbr: 0,
+                    Rank: 0,
+                    AssemblyName: "",
+                    AvailableForTransport: false,
+                    DateTransported: "",
+                    Valid: false,
+                });
+            }
+        }
+        //console.log("tempSelectedObjects");
+        //console.log(tempSelectedObjects);
+
+        if (selectionChangedIds[selectionChangedIds.length - 1] != mySelectionId) return;
+        //Get project name
+        var projectNumber = await GetProjectNumber();
+        if (projectNumber == undefined)
+            return;
+
+        //Authenticate with MUK API
+        var token = await getToken();
+
+        //Get project ID
+        var projectId = await GetProjectId(projectNumber);
+
+        var referenceDate = new Date();
+        referenceDate.setHours(23);
+        referenceDate.setMinutes(59);
+        referenceDate.setSeconds(59);
+
+        for (var i = 0; i < tempSelectedObjects.length; i += fetchLimit) { //loop cuz only fetchLimit records get fetched at a time
+            if (selectionChangedIds[selectionChangedIds.length - 1] != mySelectionId) return;
+            var domainTrimbleConnectMain = "";
+
+            for (var j = i; j < tempSelectedObjects.length && j < i + fetchLimit; j++) {
+                var filterArrStr = '["name", "ilike", "' + tempSelectedObjects[j].Guid + '"]';
+                if (j > i) {
+                    domainTrimbleConnectMain = '"|", ' + filterArrStr + ',' + domainTrimbleConnectMain;
+                }
+                else {
+                    domainTrimbleConnectMain = filterArrStr;
+                }
+            }
+            //adding project_id to the query reduces the time it takes to find the records
+            //based on seeing how fast the grid refreshes with and w/o project_id, should properly time the difference to verify.
+            //should also try this with other queries that use ilike
+            domainTrimbleConnectMain = '[["project_id.id", "=", "' + projectId + '"],' + domainTrimbleConnectMain + "]";
+            //console.log("domainTrimbleConnectMain");
+            //console.log(domainTrimbleConnectMain);
+            var domainProjectMarks = "";
+            var recordsAdded = 0;
+            await $.ajax({
+                type: "GET",
+                url: odooURL + "/api/v1/search_read",
+                headers: { "Authorization": "Bearer " + token },
+                data: {
+                    model: "trimble.connect.main",
+                    domain: domainTrimbleConnectMain,
+                    fields: '["id", "mark_id", "name", "rank", "mark_available", "date_transported"]',
+                },
+                success: function (odooData) {
+                    //console.log("trimble.connect.main");
+                    //console.log(odooData);
+                    var cntr = 0;
+                    for (var record of odooData) {
+                        var filterArrStr = '["id", "=", "' + record.mark_id[0] + '"]';
+                        if (cntr > 0) {
+                            domainProjectMarks = '"|", ' + filterArrStr + ',' + domainProjectMarks;
+                        }
+                        else {
+                            domainProjectMarks = filterArrStr;
+                        }
+                        var selectedObject = tempSelectedObjects.find(x => x.Guid === record.name);
+                        if (selectedObject != undefined) {
+                            selectedObject.OdooTcmId = record.id;
+                            selectedObject.OdooPmmId = record.mark_id[0];
+                            selectedObject.Rank = record.rank;
+                            selectedObject.OdooCode = record.mark_id[1];
+                            selectedObject.DateTransported = record.date_transported ? GetDateFromString(record.date_transported) : "";
+                            selectedObject.AvailableForTransport = record.mark_available;
+                        }
+                        cntr++;
+                        recordsAdded++;
+                    }
+                    //don't think project_id would make this query faster since it's an exact id is given
+                    domainProjectMarks = "[" + domainProjectMarks + "]";
+                }
+            });
+            if (recordsAdded > 0) {
+                //console.log("domainProjectMarks");
+                //console.log(domainProjectMarks);
+                await $.ajax({
+                    type: "GET",
+                    url: odooURL + "/api/v1/search_read",
+                    headers: { "Authorization": "Bearer " + token },
+                    data: {
+                        model: "project.master_marks",
+                        domain: domainProjectMarks,
+                        fields: '["id", "mark_mass", "mark_ranking", "mark_prefix"]',
+                    },
+                    success: function (odooData) {
+                        //console.log("project.master_marks");
+                        //console.log(odooData);
+                        for (var record of odooData) {
+                            var objects = tempSelectedObjects.filter(x => x.OdooPmmId == record.id);
+                            for (var object of objects) {
+                                object.Weight = record.mark_mass;
+                                object.PosNmbr = record.mark_ranking;
+                                object.Prefix = record.mark_prefix;
+                                object.AssemblyName = record.mark_prefix + record.mark_ranking + "." + object.Rank;
+                                object.Valid = object.AvailableForTransport && object.DateTransported === "";
+                            }
+                        }
+                    }
+                });
+            }
+            else {
+                //console.log("no records found in trimble.connect.main");
+            }
+        }
+        if (selectionChangedIds[selectionChangedIds.length - 1] != mySelectionId) return;
+        //console.log("tempSelectedObjects2");
+        //console.log(tempSelectedObjects);
+        selectedObjects.length = 0;
+        //for (var o of tempSelectedObjects)
+        //    selectedObjects.push(o);
+        selectedObjects.push(...tempSelectedObjects);
+        dataGridTransport.dxDataGrid("refresh");
+
+        if (resetSlipDropdown) {
+            var instanceDropDown = dropDownExistingSlips.dxDropDownBox("instance");
+            instanceDropDown.reset();
+        }
+        resetSlipDropdown = true;
+    }
+    catch (e) {
+        console.log(e);
+    }
+    performSelectionChanged = true;
 }
+
+var existingSlips = [
+    //{
+    //    OdooId: 10,
+    //    State: 'Draft',
+    //    Name: 'TB003322',
+    //    Elements: [],
+    //    Guids: [],
+    //    Date: GetDateFromString("2022-02-15"),
+    //},
+    //{
+    //    OdooId: 21,
+    //    State: 'Confirmed',
+    //    Name: 'TB003323',
+    //    Elements: [],
+    //    Guids: [],
+    //    Date: GetDateFromString("2022-02-16"),
+    //}
+];
+var dropDownExistingSlips = $('#dropDownBoxExistingSlipsTransport').dxDropDownBox({
+    value: 10,
+    valueExpr: 'OdooId',
+    deferRendering: false,
+    placeholder: 'Select a value...',
+    displayExpr(item) {
+        return item && `${item.Name} <${item.State}>`;
+    },
+    showClearButton: true,
+    dataSource: new DevExpress.data.DataSource({
+        store: {
+            type: "array",
+            key: "OdooId",
+            data: existingSlips,
+            // Other ArrayStore properties go here
+        },
+        // Other DataSource properties go here
+    }),
+    contentTemplate(e) {
+        const value = e.component.option('value');
+        const $dataGrid = $('<div>').dxDataGrid({
+            dataSource: e.component.getDataSource(),
+            columns: ['Name', 'Date', 'State'],
+            hoverStateEnabled: true,
+            paging: { enabled: true, pageSize: 10 },
+            filterRow: { visible: true },
+            scrolling: { mode: 'virtual' },
+            selection: { mode: 'single' },
+            selectedRowKeys: [value],
+            height: '100%',
+            onSelectionChanged(selectedItems) {
+                const keys = selectedItems.selectedRowKeys;
+                const hasSelection = keys.length;
+
+                e.component.option('value', hasSelection ? keys[0] : null);
+            },
+        });
+
+        dataGrid = $dataGrid.dxDataGrid('instance');
+
+        e.component.on('valueChanged', (args) => {
+            dataGrid.selectRows(args.value, false);
+
+            e.component.close();
+        });
+
+        e.component.on('valueChanged', async (args) => {
+            var selectedSlip = existingSlips.find(x => x.OdooId == args.value);
+            if (selectedSlip != undefined) {
+                resetSlipDropdown = false;
+                await SelectGuids(selectedSlip.Guids);
+            }
+        });
+
+        return $dataGrid;
+    },
+});
+
+async function refreshExistingSlips() {
+    try {
+        //Get project name
+        var projectNumber = await GetProjectNumber();
+        if (projectNumber == undefined)
+            return;
+
+        //Authenticate with MUK API
+        var token = await getToken();
+
+        //Get project ID
+        var id = await GetProjectId(projectNumber);
+
+        var tempExistingSlips = [];
+        var lineIds = [];
+        var ended = 0;
+        var lastId = -1;
+        while (ended != 1) { //loop cuz only fetchLimit records get fetched at a time
+            await $.ajax({
+                type: "GET",
+                url: odooURL + "/api/v1/search_read",
+                headers: { "Authorization": "Bearer " + token },
+                data: {
+                    model: "vpb.delivery.slip",
+                    //, ["state", "=", "draft"]
+                    domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"]]',
+                    fields: '["id", "name", "line_ids", "state", "date"]',
+                    order: 'id',
+                },
+                success: function (data) {
+                    if (data.length == 0) { //no more records
+                        ended = 1;
+                        return;
+                    }
+                    for (const record of data) {
+                        lastId = record.id;
+                        tempExistingSlips.push({
+                            OdooId: record.id,
+                            State: record.state,
+                            Name: record.name,
+                            Guids: [],
+                            OdooLineIds: record.line_ids,
+                            AssemblyNames: "",
+                            Date: record.date ? GetDateFromString(record.date) : "",
+                        });
+                        if (record.line_ids.length > 0) {
+                            lineIds.push(...record.line_ids);
+                        }
+                    }
+                }
+            });
+        }
+
+        for (var i = 0; i < lineIds.length; i += fetchLimit) { //loop cuz only fetchLimit records get fetched at a time
+            var domainSliplines = "";
+
+            for (var j = i; j < lineIds.length && j < i + fetchLimit; j++) {
+                var filterArrStr = '["id", "=", "' + lineIds[j] + '"]';
+                if (j > i) {
+                    domainSliplines = '"|", ' + filterArrStr + ',' + domainSliplines;
+                }
+                else {
+                    domainSliplines = filterArrStr;
+                }
+            }
+            domainSliplines = "[" + domainSliplines + "]";
+            await $.ajax({
+                type: "GET",
+                url: odooURL + "/api/v1/search_read",
+                headers: { "Authorization": "Bearer " + token },
+                data: {
+                    model: "vpb.delivery.slip.line",
+                    domain: domainSliplines,
+                    fields: '["id", "slip_id", "trimble_connect_id", "name"]',
+                },
+                success: function (data) {
+                    for (const record of data) {
+                        var slip = tempExistingSlips.find(x => x.OdooId == record.slip_id[0]);
+                        if (slip != undefined) {
+                            slip.Guids.push(record.trimble_connect_id[1]);
+                            slip.AssemblyNames += record.name + ", ";
+                        }
+                    }
+                }
+            });
+        }
+
+        existingSlips.length = 0;
+        existingSlips.push(...tempExistingSlips);
+        
+        var instanceDropDown = dropDownExistingSlips.dxDropDownBox("instance");
+        //console.log(instanceDropDown);
+        //var previousIndex = instanceDropDown.option("value");
+        var ds = instanceDropDown.getDataSource();
+        ds.reload();
+    }
+    catch (ex) {
+        console.log(ex);
+    }
+}
+
+$("#btnRefreshExistingSlipsDivId").dxButton({
+    stylingMode: "outlined",
+    text: "Vernieuwen",
+    type: "success",
+    template(data, container) {
+        $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+        buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+            visible: false,
+        }).dxLoadIndicator('instance');
+    },
+    onClick: async function (data) {
+        data.component.option('text', 'Bezig met vernieuwen');
+        buttonIndicator.option('visible', true);
+
+        await refreshExistingSlips();
+
+        buttonIndicator.option('visible', false);
+        data.component.option('text', 'Vernieuwen');
+    },
+});
+
+var prefixDetails = [];
+async function fillPrefixDetails() {
+    await $.ajax({
+        type: "GET",
+        url: odooURL + "/api/v1/search_read",
+        headers: { "Authorization": "Bearer " + token },
+        data: {
+            model: "cust.prefix_to_ce",
+            domain: '[["id", ">", "-1"]]',
+            fields: '["id", "name", "product_id", "shortcode"]',
+        },
+        success: function (data) {
+            for (var record of data) {
+                prefixDetails.push({
+                    Prefix: record.name,
+                    ShortPrefix: record.shortcode,
+                    Id: record.id,
+                    ProductId: record.product_id[0],
+                });
+            }
+        }
+    });
+    //console.log(prefixDetails);
+}
+
+async function SelectGuids(guids) {
+    var validGuids = guids.filter(x => x != undefined && x !== "");
+    if (validGuids.length == 0) {
+        await API.viewer.setSelection(undefined, 'remove');
+    }
+    else {
+        var models = await API.viewer.getModels("loaded");
+        var compressedGuids = validGuids.map(x => Guid.fromFullToCompressed(x));
+        //console.log(compressedGuids);
+        for (var model of models) {
+            var runtimeIds = await API.viewer.convertToObjectRuntimeIds(model.id, compressedGuids);
+            //console.log(runtimeIds);
+            if (runtimeIds.length == 0)
+                continue;
+            var selector = { modelObjectIds: [{ modelId: model.id, objectRuntimeIds: runtimeIds }] };
+            await API.viewer.setSelection(selector, 'set');
+            //console.log("out of for");
+        }
+    //console.log("end");
+    }
+}
+
+$(function () {
+    $("#btnCreateSlipDivId").dxButton({
+        stylingMode: "outlined",
+        text: getTextById("btnCreateSlip"),
+        type: "success",
+        template(data, container) {
+            $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+            buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+                visible: false,
+            }).dxLoadIndicator('instance');
+        },
+        onClick: async function (data) {
+            modelIsColored = false;
+            data.component.option('text', getTextById("btnCreateSlip"));
+            buttonIndicator.option('visible', true);
+            try {
+                //Get project name
+                var projectNumber = await GetProjectNumber();
+                if (projectNumber == undefined)
+                    return;
+
+                //Authenticate with MUK API
+                var token = await getToken();
+
+                //Get project ID
+                var id = await GetProjectId(projectNumber);
+
+                if (prefixDetails.length == 0)
+                {
+                    await fillPrefixDetails();
+                }
+
+                //console.log("projectId: " + id);
+                //console.log(selectedObjects);
+                var deliverySlipId = -1;
+                await $.ajax({
+                    type: "POST",
+                    url: odooURL + "/api/v1/create",
+                    headers: { "Authorization": "Bearer " + token },
+                    data: {
+                        model: "vpb.delivery.slip",
+                        values: '{"project_id": ' + id + '}',
+                    },
+                    success: function (odooData) {
+                        deliverySlipId = odooData[0];
+                    }
+                });
+
+                //console.log("deliverySlipId:");
+                //console.log(deliverySlipId);
+                if (deliverySlipId == undefined || deliverySlipId == -1)
+                    throw "Deliveryslip was not created";
+
+                for (var selectedObject of selectedObjects) {
+                    if (selectedObject.OdooPmmId == -1 || selectedObject.OdooTcmId == -1 || !selectedObject.Valid)
+                        continue;
+
+                    //console.log("selectedObject.OdooPmmId:");
+                    //console.log(selectedObject.OdooPmmId);
+                    //console.log("selectedObject.OdooTcmId:");
+                    //console.log(selectedObject.OdooTcmId);
+
+                    var prefixDetail = prefixDetails.find(x => x.Prefix === selectedObject.Prefix);
+                    var valuesStr = '{"slip_id": ' + deliverySlipId
+                        + ', "mark_id": ' + selectedObject.OdooPmmId
+                        + ', "trimble_connect_id": ' + selectedObject.OdooTcmId
+                        + ', "name": "' + selectedObject.OdooCode + '"'
+                        + ', "product_qty": 1';
+                    if (prefixDetail != undefined)
+                        valuesStr = valuesStr + ', "product_id": ' + prefixDetail.ProductId;
+                    valuesStr = valuesStr + '}';
+                    //console.log(valuesStr);
+                    await $.ajax({
+                        type: "POST",
+                        url: odooURL + "/api/v1/create",
+                        headers: { "Authorization": "Bearer " + token },
+                        data: {
+                            model: "vpb.delivery.slip.line",
+                            values: valuesStr,
+                        },
+                        success: function (odooData) {
+                            var deliverySlipLineId = odooData[0];
+                            //console.log("deliverySlipLineId:");
+                            //console.log(deliverySlipLineId);
+                        }
+                    });
+                }
+            }
+            catch (e) {
+                DevExpress.ui.notify(e);
+            }
+            buttonIndicator.option('visible', false);
+            data.component.option('text', getTextById("btnCreateSlip"));
+        },
+    });
+});
 
 // https://github.com/jsdbroughton/ifc-guid/blob/master/Guid.js
 // IfcGuid
@@ -2336,7 +3804,7 @@ var Guid = (function (ns) {
             input = input.map((i) => pad(char, i, length));
             return join ? input.join('') : join;
         } else {
-            return (char * length + input).slice(-length);
+            return input.padStart(length, char);
         }
     };
 
@@ -2438,6 +3906,7 @@ var Guid = (function (ns) {
         d[6] = hex((num[5] / 256) % 256 >>> 0);
         d[7] = hex((num[5]) % 256 >>> 0);
 
+        //console.log(a);
         return [
             pad("0", a.toString(16), 8),
             pad("0", b.toString(16), 4),

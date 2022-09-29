@@ -28,15 +28,19 @@
             // ...
     </script>
     <div class="demo-container">
+        <div id="popup"></div>
+        <!--<div id="testbtn"></div>-->
         <div class="form">
             <div class="v-visibility">
-                <div class="v-title"><h1 id="titleVisibility">Zichtbaarheid onderdelen</h1></div>
+                <div class="v-showTitle" id="btnShowTitlesDivId"></div>
+                <div class="v-title" id="divTitleVisibility"><h1 id="titleVisibility">Zichtbaarheid onderdelen</h1></div>
                 <div class="dx-fieldset">
                     <div id="btnShowKnownPrefixesDivId"></div>
                 </div>
             </div>
+
             <div class="v-selection">
-                <div class="v-title"><h1 id="titleFilters">Selecteren met filters</h1></div>
+                <div class="v-title" id="divTitleFilters"><h1 id="titleFilters">Selecteren met filters</h1></div>
                 <div class="v-grp">
                     <div id="filterTypeSelectGrp">
                         <div class="dx-fieldset">
@@ -91,9 +95,9 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="v-showExtra">
-                <div class="v-title"><h1>Toon verborgen gegevens</h1></div>
+                <div class="v-title" id="divTitleExtra"><h1>Toon verborgen gegevens</h1></div>
                 <div class="v-grp">
                     <div class="dx-fieldset">
                         <div id="showGridAndArrows"></div>
@@ -102,7 +106,7 @@
             </div>
 
             <div class="v-labels">
-                <div class="v-title"><h1 id="titlePropertylabels">Labels plaatsen op basis van gegevens 3D model</h1></div>
+                <div class="v-title" id="divTitlePropertyLabels"><h1 id="titlePropertylabels">Labels plaatsen op basis van gegevens 3D model</h1></div>
                 <div class="v-grp">
                     <div class="dx-fieldset">
                         <div id="btnShowLabelsDivId"></div>
@@ -111,16 +115,20 @@
             </div>
 
             <div class="v-odooData">
-                <div class="v-title"><h1 id="titleVisualizeOdooData">Odoo gegevens visualiseren</h1></div>
-                <div id="textEnterOdooData">Vul gebruikersnaam en paswoord in en kies een actie</div>
-                <form>
-                    <div class="v-odoo-input">
-                        <div class="v-field-value-full-width" id="placeholderOdooUsername"></div>
-                        <div class="v-field-value-full-width" id="placeholderOdooPassword"></div>
-                    </div>
-                </form>
+                <div class="v-title" id="divTitleVisualizeOdooData"><h1 id="titleVisualizeOdooData">Odoo gegevens visualiseren</h1></div>
 
-                <div class="v-title"><h1 id="titleAction1">Actie 1: Model inkleuren volgens planningsstatus</h1></div>
+                <div class="bordered">
+                    <div id="textEnterOdooData">Vul gebruikersnaam en paswoord in en kies een actie</div>
+                    <form>
+                        <div class="v-odoo-input">
+                            <div class="v-field-value-full-width" id="placeholderOdooUsername"></div>
+                            <div class="v-field-value-full-width" id="placeholderOdooPassword"></div>
+                        </div>
+                    </form>
+                </div>
+
+                <hr />
+                <div class="v-title" id="divTitleAction1"><h1 id="titleAction1">Actie 1: Model inkleuren volgens planningsstatus</h1></div>
                 <div class="v-grp">
                     <table>
                         <tr>
@@ -198,6 +206,13 @@
                                 <td><div id="legendAvailableForTransportTitle" class="v-legendLine">xxx</div></td>
                                 <td><div id="legendAvailableForTransportDescr" class="v-legendLine">xxx</div></td>
                             </tr>
+                            <tr id="trLegendPlannedForTransport">
+                                <td><div></div></td>
+                                <td><div></div></td>
+                                <td><div></div></td>
+                                <td><div id="legendPlannedForTransportTitle" class="v-legendLine">xxx</div></td>
+                                <td><div id="legendPlannedForTransportDescr" class="v-legendLine">xxx</div></td>
+                            </tr>
                             <tr id="trLegendTransported">
                                 <td><div id="btnShowTransported"></div></td>
                                 <td><div id="btnHideTransported"></div></td>
@@ -209,13 +224,49 @@
                     </div>
                 </div>
 
-                <div class="v-title"><h1 id="titleAction2">Actie 2: Labels plaatsen bij gekende odoo elementen</h1></div>
+                <hr />
+                <div class="v-title" id="divTitleAction2"><h1 id="titleAction2">Actie 2: Labels plaatsen bij gekende odoo elementen</h1></div>
                 <div class="v-grp">
                     <div class="dx-fieldset">
                         <div id="btnSetOdooLabelsDivId"></div>
                     </div>
                 </div>
+
+                <hr />
+                <div class="v-title" id="divTitleAction3"><h1 id="titleAction3">Actie 3: Selecteren van gekende odoo elementen</h1></div>
+                <div class="v-grp">
+                    <div class="v-field-value-full-width" id="placeholderOdooSearch"></div>
+                    <div class="dx-fieldset">
+                        <div id="btnOdooSearchDivId"></div>
+                    </div>
+                </div>
+
+                <hr />
+                <div class="v-title" id="divTitleAction4"><h1 id="titleAction4">Actie 4: Get info van gekende odoo elementen</h1></div>
+                <div class="v-grp">
+                    <div class="v-field-value-full-width" id="placeholderOdooSearch"></div>
+                    <div class="dx-fieldset">
+                        <div id="btnGetOdooInfoDivId"></div>
+                    </div>
+                </div>
             </div>
+
+            <div id="transportDiv" class="v-transport">
+                <div class="v-title" id="divTitleTransport"><h1 id="titleTransport">Transport</h1></div>
+                <hr />
+                <div class="v-transportBlock">
+                    <div id="titleExistingSlips">Bestaande transportbonnen:</div>
+                    <div id="btnRefreshExistingSlipsDivId"></div>
+                    <div id="dropDownBoxExistingSlipsTransport"></div>
+                </div>
+                <hr />
+                <div class="v-transportBlock">
+                    <div id="titleCurrentSelection">Huidige selectie:</div>
+                    <div class="v-dataGridTransport" id="dataGridTransport"></div>
+                    <div id="btnCreateSlipDivId"></div>
+                </div>
+            </div>
+
         </div>
     </div>
 </body>
