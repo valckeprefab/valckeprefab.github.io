@@ -1097,8 +1097,8 @@ const popupContentTemplate = function () {
 
 const popup = $('#popup').dxPopup({
     contentTemplate: popupContentTemplate,
-    width: 800,
-    height: 280,
+    width: 300,
+    height: 500,
     container: '.dx-viewport',
     showTitle: true,
     title: 'Info',
