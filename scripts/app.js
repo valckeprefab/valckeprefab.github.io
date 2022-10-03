@@ -2457,6 +2457,37 @@ $("#btnOnlyShowAvailableForTransport").dxButton({
     },
 });
 
+//PlannedForTransport
+$("#btnShowPlannedForTransport").dxButton({
+    icon: 'images/eye.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "show these",
+    onClick: async function (data) {
+        await SetVisibility(StatusPlannedForTransport, true);
+    },
+});
+
+$("#btnHidePlannedForTransport").dxButton({
+    icon: 'images/eyeCrossed.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "hide these",
+    onClick: async function (data) {
+        await SetVisibility(StatusPlannedForTransport, false);
+    },
+});
+
+$("#btnOnlyShowPlannedForTransport").dxButton({
+    icon: 'images/showAll.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "only show these",
+    onClick: async function (data) {
+        await OnlyShowStatus(StatusPlannedForTransport);
+    },
+});
+
 //Transported
 $("#btnShowTransported").dxButton({
     icon: 'images/eye.png',
