@@ -2174,336 +2174,283 @@ async function OnlyShowStatus(status) {
 }
 
 //Existing
-$(function () {
-    $("#btnShowExisting").dxButton({
-        icon: 'images/eye.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "show these",
-        onClick: async function (data) {
-            await SetVisibility(StatusExisting, true);
-        },
-    });
+
+$("#btnShowExisting").dxButton({
+    icon: 'images/eye.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "show these",
+    onClick: async function (data) {
+        await SetVisibility(StatusExisting, true);
+    },
 });
 
-$(function () {
-    $("#btnHideExisting").dxButton({
-        icon: 'images/eyeCrossed.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "hide these",
-        onClick: async function (data) {
-            await SetVisibility(StatusExisting, false);
-        },
-    });
+$("#btnHideExisting").dxButton({
+    icon: 'images/eyeCrossed.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "hide these",
+    onClick: async function (data) {
+        await SetVisibility(StatusExisting, false);
+    },
 });
 
-$(function () {
-    $("#btnOnlyShowExisting").dxButton({
-        icon: 'images/showAll.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "only show these",
-        onClick: async function (data) {
-            await OnlyShowStatus(StatusExisting);
-        },
-    });
+$("#btnOnlyShowExisting").dxButton({
+    icon: 'images/showAll.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "only show these",
+    onClick: async function (data) {
+        await OnlyShowStatus(StatusExisting);
+    },
 });
 
 //Modelled
-$(function () {
-    $("#btnShowModelled").dxButton({
-        icon: 'images/eye.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "show these",
-        onClick: async function (data) {
-            await SetVisibility(StatusModelled, true);
-        },
-    });
+$("#btnShowModelled").dxButton({
+    icon: 'images/eye.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "show these",
+    onClick: async function (data) {
+        await SetVisibility(StatusModelled, true);
+    },
 });
 
-$(function () {
-    $("#btnHideModelled").dxButton({
-        icon: 'images/eyeCrossed.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "hide these",
-        onClick: async function (data) {
-            await SetVisibility(StatusModelled, false);
-        },
-    });
+$("#btnHideModelled").dxButton({
+    icon: 'images/eyeCrossed.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "hide these",
+    onClick: async function (data) {
+        await SetVisibility(StatusModelled, false);
+    },
 });
 
-$(function () {
-    $("#btnOnlyShowModelled").dxButton({
-        icon: 'images/showAll.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "only show these",
-        onClick: async function (data) {
-            await OnlyShowStatus(StatusModelled);
-        },
-    });
+$("#btnOnlyShowModelled").dxButton({
+    icon: 'images/showAll.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "only show these",
+    onClick: async function (data) {
+        await OnlyShowStatus(StatusModelled);
+    },
 });
 
 //OnHold
-$(function () {
-    $("#btnShowOnHold").dxButton({
-        icon: 'images/eye.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "show these",
-        onClick: async function (data) {
-            await SetVisibility(StatusOnHold, true);
-        },
-    });
+$("#btnShowOnHold").dxButton({
+    icon: 'images/eye.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "show these",
+    onClick: async function (data) {
+        await SetVisibility(StatusOnHold, true);
+    },
 });
 
-$(function () {
-    $("#btnHideOnHold").dxButton({
-        icon: 'images/eyeCrossed.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "hide these",
-        onClick: async function (data) {
-            await SetVisibility(StatusOnHold, false);
-        },
-    });
+$("#btnHideOnHold").dxButton({
+    icon: 'images/eyeCrossed.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "hide these",
+    onClick: async function (data) {
+        await SetVisibility(StatusOnHold, false);
+    },
 });
 
-$(function () {
-    $("#btnOnlyShowOnHold").dxButton({
-        icon: 'images/showAll.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "only show these",
-        onClick: async function (data) {
-            await OnlyShowStatus(StatusOnHold);
-        },
-    });
+$("#btnOnlyShowOnHold").dxButton({
+    icon: 'images/showAll.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "only show these",
+    onClick: async function (data) {
+        await OnlyShowStatus(StatusOnHold);
+    },
 });
 
 //Drawn
-$(function () {
-    $("#btnShowDrawn").dxButton({
-        icon: 'images/eye.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "show these",
-        onClick: async function (data) {
-            await SetVisibility(StatusDrawn, true);
-        },
-    });
+$("#btnShowDrawn").dxButton({
+    icon: 'images/eye.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "show these",
+    onClick: async function (data) {
+        await SetVisibility(StatusDrawn, true);
+    },
 });
 
-$(function () {
-    $("#btnHideDrawn").dxButton({
-        icon: 'images/eyeCrossed.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "hide these",
-        onClick: async function (data) {
-            await SetVisibility(StatusDrawn, false);
-        },
-    });
+$("#btnHideDrawn").dxButton({
+    icon: 'images/eyeCrossed.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "hide these",
+    onClick: async function (data) {
+        await SetVisibility(StatusDrawn, false);
+    },
 });
 
-$(function () {
-    $("#btnOnlyShowDrawn").dxButton({
-        icon: 'images/showAll.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "only show these",
-        onClick: async function (data) {
-            await OnlyShowStatus(StatusDrawn);
-        },
-    });
+$("#btnOnlyShowDrawn").dxButton({
+    icon: 'images/showAll.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "only show these",
+    onClick: async function (data) {
+        await OnlyShowStatus(StatusDrawn);
+    },
 });
 
 //Planned
-$(function () {
-    $("#btnShowPlanned").dxButton({
-        icon: 'images/eye.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "show these",
-        onClick: async function (data) {
-            await SetVisibility(StatusPlanned, true);
-        },
-    });
+$("#btnShowPlanned").dxButton({
+    icon: 'images/eye.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "show these",
+    onClick: async function (data) {
+        await SetVisibility(StatusPlanned, true);
+    },
 });
 
-$(function () {
-    $("#btnHidePlanned").dxButton({
-        icon: 'images/eyeCrossed.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "hide these",
-        onClick: async function (data) {
-            await SetVisibility(StatusPlanned, false);
-        },
-    });
+$("#btnHidePlanned").dxButton({
+    icon: 'images/eyeCrossed.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "hide these",
+    onClick: async function (data) {
+        await SetVisibility(StatusPlanned, false);
+    },
 });
 
-$(function () {
-    $("#btnOnlyShowPlanned").dxButton({
-        icon: 'images/showAll.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "only show these",
-        onClick: async function (data) {
-            await OnlyShowStatus(StatusPlanned);
-        },
-    });
+$("#btnOnlyShowPlanned").dxButton({
+    icon: 'images/showAll.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "only show these",
+    onClick: async function (data) {
+        await OnlyShowStatus(StatusPlanned);
+    },
 });
 
 //Demoulded
-$(function () {
-    $("#btnShowDemoulded").dxButton({
-        icon: 'images/eye.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "show these",
-        onClick: async function (data) {
-            await SetVisibility(StatusDemoulded, true);
-        },
-    });
+$("#btnShowDemoulded").dxButton({
+    icon: 'images/eye.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "show these",
+    onClick: async function (data) {
+        await SetVisibility(StatusDemoulded, true);
+    },
 });
 
-$(function () {
-    $("#btnHideDemoulded").dxButton({
-        icon: 'images/eyeCrossed.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "hide these",
-        onClick: async function (data) {
-            await SetVisibility(StatusDemoulded, false);
-        },
-    });
+$("#btnHideDemoulded").dxButton({
+    icon: 'images/eyeCrossed.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "hide these",
+    onClick: async function (data) {
+        await SetVisibility(StatusDemoulded, false);
+    },
 });
 
-$(function () {
-    $("#btnOnlyShowDemoulded").dxButton({
-        icon: 'images/showAll.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "only show these",
-        onClick: async function (data) {
-            await OnlyShowStatus(StatusDemoulded);
-        },
-    });
+$("#btnOnlyShowDemoulded").dxButton({
+    icon: 'images/showAll.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "only show these",
+    onClick: async function (data) {
+        await OnlyShowStatus(StatusDemoulded);
+    },
 });
 
 //ProductionEnded
-$(function () {
-    $("#btnShowProductionEnded").dxButton({
-        icon: 'images/eye.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "show these",
-        onClick: async function (data) {
-            await SetVisibility(StatusProductionEnded, true);
-        },
-    });
+$("#btnShowProductionEnded").dxButton({
+    icon: 'images/eye.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "show these",
+    onClick: async function (data) {
+        await SetVisibility(StatusProductionEnded, true);
+    },
 });
 
-$(function () {
-    $("#btnHideProductionEnded").dxButton({
-        icon: 'images/eyeCrossed.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "hide these",
-        onClick: async function (data) {
-            await SetVisibility(StatusProductionEnded, false);
-        },
-    });
+$("#btnHideProductionEnded").dxButton({
+    icon: 'images/eyeCrossed.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "hide these",
+    onClick: async function (data) {
+        await SetVisibility(StatusProductionEnded, false);
+    },
 });
 
-$(function () {
-    $("#btnOnlyShowProductionEnded").dxButton({
-        icon: 'images/showAll.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "only show these",
-        onClick: async function (data) {
-            await OnlyShowStatus(StatusProductionEnded);
-        },
-    });
+$("#btnOnlyShowProductionEnded").dxButton({
+    icon: 'images/showAll.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "only show these",
+    onClick: async function (data) {
+        await OnlyShowStatus(StatusProductionEnded);
+    },
 });
 
 //AvailableForTransport
-$(function () {
-    $("#btnShowAvailableForTransport").dxButton({
-        icon: 'images/eye.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "show these",
-        onClick: async function (data) {
-            await SetVisibility(StatusAvailableForTransport, true);
-        },
-    });
+$("#btnShowAvailableForTransport").dxButton({
+    icon: 'images/eye.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "show these",
+    onClick: async function (data) {
+        await SetVisibility(StatusAvailableForTransport, true);
+    },
 });
 
-$(function () {
-    $("#btnHideAvailableForTransport").dxButton({
-        icon: 'images/eyeCrossed.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "hide these",
-        onClick: async function (data) {
-            await SetVisibility(StatusAvailableForTransport, false);
-        },
-    });
+$("#btnHideAvailableForTransport").dxButton({
+    icon: 'images/eyeCrossed.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "hide these",
+    onClick: async function (data) {
+        await SetVisibility(StatusAvailableForTransport, false);
+    },
 });
 
-$(function () {
-    $("#btnOnlyShowAvailableForTransport").dxButton({
-        icon: 'images/showAll.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "only show these",
-        onClick: async function (data) {
-            await OnlyShowStatus(StatusAvailableForTransport);
-        },
-    });
+$("#btnOnlyShowAvailableForTransport").dxButton({
+    icon: 'images/showAll.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "only show these",
+    onClick: async function (data) {
+        await OnlyShowStatus(StatusAvailableForTransport);
+    },
 });
 
 //Transported
-$(function () {
-    $("#btnShowTransported").dxButton({
-        icon: 'images/eye.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "show these",
-        onClick: async function (data) {
-            await SetVisibility(StatusTransported, true);
-        },
-    });
+$("#btnShowTransported").dxButton({
+    icon: 'images/eye.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "show these",
+    onClick: async function (data) {
+        await SetVisibility(StatusTransported, true);
+    },
 });
 
-$(function () {
-    $("#btnHideTransported").dxButton({
-        icon: 'images/eyeCrossed.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "hide these",
-        onClick: async function (data) {
-            await SetVisibility(StatusTransported, false);
-        },
-    });
+$("#btnHideTransported").dxButton({
+    icon: 'images/eyeCrossed.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "hide these",
+    onClick: async function (data) {
+        await SetVisibility(StatusTransported, false);
+    },
 });
 
-$(function () {
-    $("#btnOnlyShowTransported").dxButton({
-        icon: 'images/showAll.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "only show these",
-        onClick: async function (data) {
-            await OnlyShowStatus(StatusTransported);
-        },
-    });
+$("#btnOnlyShowTransported").dxButton({
+    icon: 'images/showAll.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "only show these",
+    onClick: async function (data) {
+        await OnlyShowStatus(StatusTransported);
+    },
 });
 //#endregion
 
