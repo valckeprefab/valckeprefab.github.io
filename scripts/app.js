@@ -265,7 +265,7 @@ const textUi = {
     },
     titleAction3:
     {
-        nl: "Actie 3: Selecteren van gekende odoo elementen",
+        nl: "Actie 3: Selecteren van gekende odoo merken",
         fr: "Action 3 : Sélectionner les assemblages connus d'Odoo",
         en: "Action 3: Select assemblies known by Odoo"
     },
@@ -412,6 +412,12 @@ const textUi = {
         nl: "Maak nieuwe transportbon van huidige selectie",
         fr: "Créer un nouveau bon de livraison à partir de la sélection actuelle",
         en: "Create new delivery slip from current selection",
+    },
+    btnCreatingSlip:
+    {
+        nl: "Bezig met nieuwe transportbon aan te maken",
+        fr: "En cours de créer un nouveau bon de livraison",
+        en: "Creating new delivery slip",
     },
     errorMsgNoAssemblySelection:
     {
@@ -580,6 +586,12 @@ const textUi = {
         nl: "Merk bestaat niet op Odoo",
         fr: "Assemblage n'existe pas sur Odoo",
         en: "Assembly does not exist on Odoo"
+    },
+    titleAction4:
+    {
+        nl: "Actie 4: Toon info van gekende odoo merken",
+        fr: "Action 4 : Afficher info des assemblages connus d'Odoo",
+        en: "Action 4: Show Odoo data of known assemblies"
     },
 };
 
@@ -761,7 +773,7 @@ function GetPosAndRank(str, isStart) {
 
 function GetQueryGroupItem(prefix, start, end) {
     return {
-        Prefix: prefix,
+        Prefix: prefix.toUpperCase(),
         StartPos: start.Pos,
         StartRank: start.Rank,
         EndPos: end.Pos,
@@ -771,7 +783,7 @@ function GetQueryGroupItem(prefix, start, end) {
 
 function GetQueryGroupItemByPrefix(prefix) {
     return {
-        Prefix: prefix,
+        Prefix: prefix.toUpperCase(),
         StartPos: 1,
         StartRank: 1,
         EndPos: 99999,
@@ -1017,6 +1029,8 @@ $("#btnGetOdooInfoDivId").dxButton({
         data.component.option('text', getTextById("btnGetOdooInfo"));
         buttonIndicator.option('visible', true);
         try {
+            await CheckAssemblySelection();
+
             const selection = await API.viewer.getSelection();
             const selector = {
                 modelObjectIds: selection
@@ -1248,77 +1262,77 @@ async function canReadDeliverySlips() {
     return false;
 }
 
-$(function () {
-    $("#btnSetColorFromStatusDivId").dxButton({
-        stylingMode: "outlined",
-        text: getTextById("btnSetColorFromStatus"),
-        type: "success",
-        template(data, container) {
-            $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
-            buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
-                visible: false,
-            }).dxLoadIndicator('instance');
-        },
-        onClick: async function (data) {
-            modelIsColored = false;
-            data.component.option('text', getTextById("btnSetColorFromStatusSetting"));
-            buttonIndicator.option('visible', true);
-            document.getElementById("legend").style.display = 'block';
-            document.getElementById("trLegendExisting").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusExisting).Color);
-            document.getElementById("trLegendModelled").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusModelled).Color);
-            document.getElementById("trLegendOnHold").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusOnHold).Color);
-            document.getElementById("trLegendDrawn").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusDrawn).Color);
-            document.getElementById("trLegendPlanned").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusPlanned).Color);
-            document.getElementById("trLegendDemoulded").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusDemoulded).Color);
-            document.getElementById("trLegendProductionEnded").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusProductionEnded).Color);
-            document.getElementById("trLegendAvailableForTransport").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusAvailableForTransport).Color);
-            document.getElementById("trLegendPlannedForTransport").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusPlannedForTransport).Color);
-            document.getElementById("trLegendTransported").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusTransported).Color);
-            await canReadDeliverySlips();
-            document.getElementById("transportDiv").style.display = hasAccesToTransport ? 'block' : 'none';
+$("#btnSetColorFromStatusDivId").dxButton({
+    stylingMode: "outlined",
+    text: getTextById("btnSetColorFromStatus"),
+    type: "success",
+    template(data, container) {
+        $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+        buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+            visible: false,
+        }).dxLoadIndicator('instance');
+    },
+    onClick: async function (data) {
+        modelIsColored = false;
+        data.component.option('text', getTextById("btnSetColorFromStatusSetting"));
+        buttonIndicator.option('visible', true);
+        document.getElementById("legend").style.display = 'block';
+        document.getElementById("trLegendExisting").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusExisting).Color);
+        document.getElementById("trLegendModelled").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusModelled).Color);
+        document.getElementById("trLegendOnHold").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusOnHold).Color);
+        document.getElementById("trLegendDrawn").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusDrawn).Color);
+        document.getElementById("trLegendPlanned").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusPlanned).Color);
+        document.getElementById("trLegendDemoulded").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusDemoulded).Color);
+        document.getElementById("trLegendProductionEnded").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusProductionEnded).Color);
+        document.getElementById("trLegendAvailableForTransport").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusAvailableForTransport).Color);
+        document.getElementById("trLegendPlannedForTransport").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusPlannedForTransport).Color);
+        document.getElementById("trLegendTransported").style.backgroundColor = getColorString(ObjectStatuses.find(o => o.Status === StatusTransported).Color);
+        await canReadDeliverySlips();
+        document.getElementById("transportDiv").style.display = hasAccesToTransport ? 'block' : 'none';
 
-            try {
-                //var debugInfo = "";
-                //Get project name
-                var projectNumber = await GetProjectNumber();
-                if (projectNumber == undefined)
-                    return;
+        try {
+            //var debugInfo = "";
+            //Get project name
+            var projectNumber = await GetProjectNumber();
+            if (projectNumber == undefined)
+                return;
 
-                //debugInfo = debugInfo.concat("<br />Project number: " + projectNumber);
-                //console.log(debugInfo);
+            //debugInfo = debugInfo.concat("<br />Project number: " + projectNumber);
+            //console.log(debugInfo);
 
-                //Authenticate with MUK API
-                var token = await getToken();
+            //Authenticate with MUK API
+            var token = await getToken();
 
-                //Get project ID
-                var id = await GetProjectId(projectNumber);
+            //Get project ID
+            var id = await GetProjectId(projectNumber);
 
-                ClearObjectStatusesGuids();
-                var referenceDate = new Date();
-                var referenceToday = checkBoxToday.dxCheckBox("instance").option("value");
-                //console.log("referenceToday: " + referenceToday);
-                if (!Boolean(referenceToday)) {
-                    referenceDate = new Date(referenceDatePicker.dxDateBox("instance").option("value"));
-                    //console.log("referenceDate: " + referenceDate);
-                }
-                referenceDate.setHours(23);
-                referenceDate.setMinutes(59);
-                referenceDate.setSeconds(59);
+            ClearObjectStatusesGuids();
+            var referenceDate = new Date();
+            var referenceToday = checkBoxToday.dxCheckBox("instance").option("value");
+            //console.log("referenceToday: " + referenceToday);
+            if (!Boolean(referenceToday)) {
+                referenceDate = new Date(referenceDatePicker.dxDateBox("instance").option("value"));
+                //console.log("referenceDate: " + referenceDate);
+            }
+            referenceDate.setHours(23);
+            referenceDate.setMinutes(59);
+            referenceDate.setSeconds(59);
 
-                //Get concrete assembly info
-                //console.log("Start: Getting concrete assembly info");
-                var processedAssemblyIds = [];
-                var ended = 0;
-                var lastId = -1;
+            //Get concrete assembly info
+            var guidsOnSlipsDraft = [];
+            var ended = 0;
+            var lastId = -1;
+            if (hasAccesToTransport) {
                 while (ended != 1) { //loop cuz only fetchLimit records get fetched at a time
                     await $.ajax({
                         type: "GET",
                         url: odooURL + "/api/v1/search_read",
                         headers: { "Authorization": "Bearer " + token },
                         data: {
-                            model: "trimble.connect.main",
-                            domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"],["state","!=","cancelled"]]',
-                            fields: '["id", "mark_id", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "state", "mark_available"]',
+                            model: "vpb.delivery.slip.line",
+                            //domain: '[["trimble_connect_id.project_id.id", "=", "' + id + '"],["slip_id.state", "=", "draft"],["id", ">", "' + lastId + '"]]',
+                            domain: '[["trimble_connect_id.project_id.id", "=", "' + id + '"],["slip_id.state", "=", "draft"],["id", ">", "' + lastId + '"]]',
+                            fields: '["id", "trimble_connect_id"]',
                             order: 'id',
                         },
                         success: function (data) {
@@ -1328,348 +1342,379 @@ $(function () {
                             }
                             for (const record of data) {
                                 lastId = record.id;
-                                var status = getStatus(record, referenceDate);
-                                var guidArr = ObjectStatuses.find(o => o.Status === status);
-                                guidArr.Guids.push(record.name);
-                                guidArr.CompressedIfcGuids.push(Guid.fromFullToCompressed(record.name));
-                                if (record.mark_id[0] != undefined)
-                                    processedAssemblyIds.push(record.mark_id[0]);
+                                guidsOnSlipsDraft.push(record.trimble_connect_id[1]);
                             }
                         }
                     });
                 }
-                //console.log("Finished: Getting concrete assembly info");
+            }
 
-                //--Get steel assembly info
-                //Assume that assemblies, which are not entered into the trimble.connect.main table, are steel assemblies 
-                //=> get all assemblies from project.master_marks
-                //and filter out those that are entered into the trimble.connect.main table
-                //result: unprocessedAssemblies
-                //console.log("Start: Getting unprocessedAssemblies");
-                var unprocessedAssemblies = []; //modelled steel assemblies
-                ended = 0;
-                lastId = -1;
-                while (ended != 1) { //loop cuz only fetchLimit records get fetched at a time
-                    await $.ajax({
-                        type: "GET",
-                        url: odooURL + "/api/v1/search_read",
-                        headers: { "Authorization": "Bearer " + token },
-                        data: {
-                            model: "project.master_marks",
-                            domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"]]',
-                            fields: '["id", "mark_prefix", "mark_ref", "create_date", "mark_qty"]',
-                            order: 'id',
-                        },
-                        success: function (data) {
-                            if (data.length == 0) { //no more records
-                                ended = 1;
-                                return;
+            //console.log("Start: Getting concrete assembly info");
+            var processedAssemblyIds = [];
+            ended = 0;
+            lastId = -1;
+            while (ended != 1) { //loop cuz only fetchLimit records get fetched at a time
+                await $.ajax({
+                    type: "GET",
+                    url: odooURL + "/api/v1/search_read",
+                    headers: { "Authorization": "Bearer " + token },
+                    data: {
+                        model: "trimble.connect.main",
+                        domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"],["state","!=","cancelled"]]',
+                        fields: '["id", "mark_id", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "state", "mark_available"]',
+                        order: 'id',
+                    },
+                    success: function (data) {
+                        if (data.length == 0) { //no more records
+                            ended = 1;
+                            return;
+                        }
+                        for (const record of data) {
+                            lastId = record.id;
+                            var status = getStatus(record, referenceDate);
+                            if (status === StatusAvailableForTransport && guidsOnSlipsDraft.indexOf(record.name) > -1) {
+                                status = StatusPlannedForTransport;
                             }
-                            for (const record of data) {
-                                lastId = record.id;
-                                if (!processedAssemblyIds.includes(record.id) && GetDateFromString(record.create_date) <= referenceDate) {
-                                    for (var i = 0; i < record.mark_qty; i++) {
-                                        var unprocessedAssembly = {
-                                            Prefix: record.mark_prefix,
-                                            AssemblyPos: record.mark_ref,
-                                            Status: StatusDrawn,
-                                            AssemblyId: record.id,
-                                        }
-                                        unprocessedAssemblies.push(unprocessedAssembly);
+                            var guidArr = ObjectStatuses.find(o => o.Status === status);
+                            guidArr.Guids.push(record.name);
+                            guidArr.CompressedIfcGuids.push(Guid.fromFullToCompressed(record.name));
+                            if (record.mark_id[0] != undefined)
+                                processedAssemblyIds.push(record.mark_id[0]);
+                        }
+                    }
+                });
+            }
+            //console.log("Finished: Getting concrete assembly info");
+
+            
+
+            //--Get steel assembly info
+            //Assume that assemblies, which are not entered into the trimble.connect.main table, are steel assemblies 
+            //=> get all assemblies from project.master_marks
+            //and filter out those that are entered into the trimble.connect.main table
+            //result: unprocessedAssemblies
+            //console.log("Start: Getting unprocessedAssemblies");
+            var unprocessedAssemblies = []; //modelled steel assemblies
+            ended = 0;
+            lastId = -1;
+            while (ended != 1) { //loop cuz only fetchLimit records get fetched at a time
+                await $.ajax({
+                    type: "GET",
+                    url: odooURL + "/api/v1/search_read",
+                    headers: { "Authorization": "Bearer " + token },
+                    data: {
+                        model: "project.master_marks",
+                        domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"]]',
+                        fields: '["id", "mark_prefix", "mark_ref", "create_date", "mark_qty"]',
+                        order: 'id',
+                    },
+                    success: function (data) {
+                        if (data.length == 0) { //no more records
+                            ended = 1;
+                            return;
+                        }
+                        for (const record of data) {
+                            lastId = record.id;
+                            if (!processedAssemblyIds.includes(record.id) && GetDateFromString(record.create_date) <= referenceDate) {
+                                for (var i = 0; i < record.mark_qty; i++) {
+                                    var unprocessedAssembly = {
+                                        Prefix: record.mark_prefix,
+                                        AssemblyPos: record.mark_ref,
+                                        Status: StatusDrawn,
+                                        AssemblyId: record.id,
                                     }
+                                    unprocessedAssemblies.push(unprocessedAssembly);
                                 }
                             }
                         }
-                    });
-                }
-                //console.log("Finished: Getting unprocessedAssemblies");
-
-                //console.log("Start: Getting project.mark_steel_production info");
-                ended = 0;
-                lastId = -1;
-                while (ended != 1) { //loop cuz only fetchLimit records get fetched at a time
-                    await $.ajax({
-                        type: "GET",
-                        url: odooURL + "/api/v1/search_read",
-                        headers: { "Authorization": "Bearer " + token },
-                        data: {
-                            model: "project.mark_steel_production",
-                            domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"]]',
-                            fields: '["id", "upper_id", "date_delivered"]',
-                            order: 'id',
-                        },
-                        success: function (data) {
-                            if (data.length == 0) { //no more records
-                                ended = 1;
-                                return;
-                            }
-                            for (const record of data) {
-                                lastId = record.id;
-                                var unprocessedUnplannedAssembly = unprocessedAssemblies.find(x => x.AssemblyId == record.upper_id[0] && x.Status === StatusDrawn);
-                                if (unprocessedUnplannedAssembly != undefined) {
-                                    if (record.date_delivered != false && GetDateFromString(record.date_delivered) <= referenceDate)
-                                        unprocessedUnplannedAssembly.Status = StatusProductionEnded;
-                                    else
-                                        unprocessedUnplannedAssembly.Status = StatusPlanned;
-                                }
-                            }
-                        }
-                    });
-                }
-                //console.log("Finished: Getting project.mark_steel_production info");
-
-                //console.log("Start: Getting project.mark_steel_pack info");
-                var steelPacks = [];
-                ended = 0;
-                lastId = -1;
-                while (ended != 1) { //loop cuz only fetchLimit records get fetched at a time
-                    await $.ajax({
-                        type: "GET",
-                        url: odooURL + "/api/v1/search_read",
-                        headers: { "Authorization": "Bearer " + token },
-                        data: {
-                            model: "project.mark_steel_pack",
-                            domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"]]',
-                            fields: '["id", "mark_ids", "date_ready", "date_done"]', //mark_id = pack item id
-                            order: 'id',
-                        },
-                        success: function (data) {
-                            if (data.length == 0) { //no more records
-                                ended = 1;
-                                return;
-                            }
-                            for (const record of data) {
-                                lastId = record.id;
-                                if (record.mark_ids.length > 0) {
-                                    var dateReady = new Date(3000, 0, 1);
-                                    if (record.date_ready != false)
-                                        dateReady = GetDateFromString(record.date_ready);
-                                    var dateDone = new Date(3000, 0, 1);
-                                    if (record.date_done != false)
-                                        dateDone = GetDateFromString(record.date_done);
-                                    var steelPack = {
-                                        OdooId: record.id,
-                                        MarkIds: record.mark_ids,
-                                        DateReady: dateReady,
-                                        DateDone: dateDone,
-                                    };
-                                    steelPacks.push(steelPack);
-                                }
-                            }
-                        }
-                    });
-                }
-                //console.log("Finished: Getting project.mark_steel_pack info");
-
-                //get steel pack items
-                //console.log("Start: Getting project.mark_steel_pack_items info");
-                var steelPackItems = [];
-                for (const steelPack of steelPacks) {
-                    await $.ajax({
-                        type: "GET",
-                        url: odooURL + "/api/v1/search_read",
-                        headers: { "Authorization": "Bearer " + token },
-                        data: {
-                            model: "project.mark_steel_pack_items",
-                            domain: '[["upper_id.id", "=", "' + steelPack.OdooId + '"]]',
-                            fields: '["id", "mark_id", "qty"]', //mark_id = pack item id
-                            order: 'id',
-                        },
-                        success: function (data) {
-                            if (data.length == 0) { //no more records
-                                ended = 1;
-                                return;
-                            }
-                            for (const record of data) {
-                                lastId = record.id;
-                                if (record.qty > 0) {
-                                    var steelPackItem = {
-                                        OdooId: record.id,
-                                        AssemblyId: record.mark_id[0],
-                                        Quantity: record.qty,
-                                    };
-                                    steelPackItems.push(steelPackItem);
-                                }
-                            }
-                        }
-                    });
-                }
-                //console.log("Finished: Getting project.mark_steel_pack_items info");
-
-                //console.log("Start: Processing steel pack info");
-                for (const steelPack of steelPacks) {
-                    const itemsInPack = steelPackItems.filter(x => steelPack.MarkIds.includes(x.OdooId));
-                    for (const item of itemsInPack) {
-                        //console.log(item);
-                        for (var i = 0; i < item.Quantity; i++) {
-                            var unprocessedAssembly = unprocessedAssemblies.find(x => x.AssemblyId == item.AssemblyId
-                                && x.Status === StatusProductionEnded);
-                            //console.log(unprocessedAssembly);
-                            if (unprocessedAssembly != undefined) {
-                                if (steelPack.DateReady <= referenceDate)
-                                    unprocessedAssembly.Status = StatusAvailableForTransport;
-                                if (steelPack.DateDone <= referenceDate)
-                                    unprocessedAssembly.Status = StatusTransported;
-                            }
-                        }
                     }
-                }
-                //console.log(unprocessedAssemblies);
-                //console.log("Finished: Processing steel pack info");
-
-                const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
-
-                //runtimeIds = [17062, 17065, ...] = ids used by viewer
-                //objectIds = compressed IFC guids = ['28DCGNPlH98vcQNyNhB4sQ', '0fKOmd_6PFgOiexu4H1vtU', ...] = can be used to map runtimeId to original IFC
-
-                //find objects by assemblypos and add to status objects
-                var sliceLength = 5000;
-                for (const mobjects of mobjectsArr) {
-                    var modelId = mobjects.modelId;
-                    var tempObjectRuntimeIdsPerStatus = [];
-                    for (const objStatus of ObjectStatuses) {
-                        var tempObjStatus = {
-                            Status: objStatus.Status,
-                            ObjectRuntimeIds: [],
-                        };
-                        tempObjectRuntimeIdsPerStatus.push(tempObjStatus);
-                    }
-
-                    const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-                    for (var i = 0; i < objectsRuntimeIds.length; i += sliceLength) {
-                        var objectsRuntimeIdsSliced = objectsRuntimeIds.slice(i, i + sliceLength);
-                        const objectPropertiesArr = await API.viewer.getObjectProperties(modelId, objectsRuntimeIdsSliced);
-                        for (const objproperties of objectPropertiesArr) {
-                            var propMerknummer = objproperties.properties.flatMap(p => p.properties).find(p => p.name === "MERKNUMMER");
-                            if (propMerknummer === undefined) continue;
-                            var merkNummer = propMerknummer.value;
-                            if (merkNummer.endsWith("(?)"))
-                                merkNummer = merkNummer.substring(0, merkNummer.length - 3);
-                            var unprocessedAssembly = unprocessedAssemblies.find(a => a.AssemblyPos === merkNummer);
-                            if (unprocessedAssembly !== undefined) {
-                                var tempArray = tempObjectRuntimeIdsPerStatus.find(x => x.Status === unprocessedAssembly.Status);
-                                tempArray.ObjectRuntimeIds.push(objproperties.id)
-                                var index = unprocessedAssemblies.indexOf(unprocessedAssembly);
-                                unprocessedAssemblies.splice(index, 1);
-                            }
-                        }
-                    }
-
-                    for (const tempObjects of tempObjectRuntimeIdsPerStatus) {
-                        if (tempObjects.ObjectRuntimeIds.length > 0) {
-                            const tempObjectsIfcIds = await API.viewer.convertToObjectIds(modelId, tempObjects.ObjectRuntimeIds);
-                            var objectStatus = ObjectStatuses.find(o => o.Status === tempObjects.Status);
-                            objectStatus.Guids = objectStatus.Guids.concat(tempObjectsIfcIds.map(c => Guid.fromCompressedToFull(c)));
-                            objectStatus.CompressedIfcGuids = objectStatus.CompressedIfcGuids.concat(tempObjectsIfcIds);
-                        }
-                    }
-                }
-
-                var objectStatusModelled = ObjectStatuses.find(o => o.Status === StatusModelled);
-                var unplannedIfcIds = [];
-                for (const mobjects of mobjectsArr) {
-                    var modelId = mobjects.modelId;
-                    const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-                    const objectsIfcIds = await API.viewer.convertToObjectIds(modelId, objectsRuntimeIds);
-
-                    var compressedIfcGuidsWithKnownStatus = [];
-                    for (const objStatus of ObjectStatuses) {
-                        compressedIfcGuidsWithKnownStatus = compressedIfcGuidsWithKnownStatus.concat(objStatus.CompressedIfcGuids);
-                    }
-                    var compressedIfcGuidsWithKnownStatusSet = new Set(compressedIfcGuidsWithKnownStatus);
-
-                    unplannedIfcIds = unplannedIfcIds.concat(objectsIfcIds.filter(x => !compressedIfcGuidsWithKnownStatusSet.has(x)));
-
-                    for (const objStatus of ObjectStatuses) {
-                        var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, objStatus.CompressedIfcGuids);
-                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: objStatus.Color });
-                    }
-                }
-
-                //will also include existing assemblies
-                objectStatusModelled.CompressedIfcGuids = Array.from(unplannedIfcIds);
-                objectStatusModelled.Guids = objectStatusModelled.CompressedIfcGuids.map(c => Guid.fromCompressedToFull(c));
-
-                const mobjectsExisting = await API.viewer.getObjects({ parameter: { properties: { 'Default.MERKPREFIX': 'BESTAAND' } } });
-                for (const mobjects of mobjectsExisting) {
-                    var modelId = mobjects.modelId;
-                    const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-                    if (objectsRuntimeIds.length == 0)
-                        continue;
-                    var objectStatusExisting = ObjectStatuses.find(o => o.Status === StatusExisting);
-                    objectStatusExisting.CompressedIfcGuids = objectStatusExisting.CompressedIfcGuids.concat(await API.viewer.convertToObjectIds(modelId, objectsRuntimeIds));
-                    objectStatusExisting.Guids = objectStatusExisting.Guids.concat(objectStatusExisting.CompressedIfcGuids.map(i => Guid.fromCompressedToFull(i)));
-
-                    //remove existing from modelled
-                    var compressedIfcGuidsWithStatusExistingSet = new Set(objectStatusExisting.CompressedIfcGuids);
-                    objectStatusModelled.CompressedIfcGuids = Array.from(objectStatusModelled.CompressedIfcGuids.filter(x => !compressedIfcGuidsWithStatusExistingSet.has(x)));
-                    var guidsWithStatusExistingSet = new Set(objectStatusExisting.Guids);
-                    objectStatusModelled.Guids = Array.from(objectStatusModelled.Guids.filter(x => !guidsWithStatusExistingSet.has(x)));
-
-                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: objectStatusExisting.Color });
-                }
-
-                for (const mobjects of mobjectsArr) {
-                    var modelId = mobjects.modelId;
-                    const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-                    //get overlapping runtimeIds of both collections
-                    var runtimeIdsModelled = await API.viewer.convertToObjectRuntimeIds(modelId, objectStatusModelled.CompressedIfcGuids);
-                    const filteredRuntimeIds = objectsRuntimeIds.filter(i => runtimeIdsModelled.includes(i));
-
-                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: filteredRuntimeIds }] }, { color: objectStatusModelled.Color });
-                }
-
-                modelIsColored = true;
+                });
             }
-            catch (e) {
-                DevExpress.ui.notify(e);
+            //console.log("Finished: Getting unprocessedAssemblies");
+
+            //console.log("Start: Getting project.mark_steel_production info");
+            ended = 0;
+            lastId = -1;
+            while (ended != 1) { //loop cuz only fetchLimit records get fetched at a time
+                await $.ajax({
+                    type: "GET",
+                    url: odooURL + "/api/v1/search_read",
+                    headers: { "Authorization": "Bearer " + token },
+                    data: {
+                        model: "project.mark_steel_production",
+                        domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"]]',
+                        fields: '["id", "upper_id", "date_delivered"]',
+                        order: 'id',
+                    },
+                    success: function (data) {
+                        if (data.length == 0) { //no more records
+                            ended = 1;
+                            return;
+                        }
+                        for (const record of data) {
+                            lastId = record.id;
+                            var unprocessedUnplannedAssembly = unprocessedAssemblies.find(x => x.AssemblyId == record.upper_id[0] && x.Status === StatusDrawn);
+                            if (unprocessedUnplannedAssembly != undefined) {
+                                if (record.date_delivered != false && GetDateFromString(record.date_delivered) <= referenceDate)
+                                    unprocessedUnplannedAssembly.Status = StatusProductionEnded;
+                                else
+                                    unprocessedUnplannedAssembly.Status = StatusPlanned;
+                            }
+                        }
+                    }
+                });
             }
-            buttonIndicator.option('visible', false);
-            data.component.option('text', getTextById("btnSetColorFromStatus"));
-        },
-    });
+            //console.log("Finished: Getting project.mark_steel_production info");
+
+            //console.log("Start: Getting project.mark_steel_pack info");
+            var steelPacks = [];
+            ended = 0;
+            lastId = -1;
+            while (ended != 1) { //loop cuz only fetchLimit records get fetched at a time
+                await $.ajax({
+                    type: "GET",
+                    url: odooURL + "/api/v1/search_read",
+                    headers: { "Authorization": "Bearer " + token },
+                    data: {
+                        model: "project.mark_steel_pack",
+                        domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"]]',
+                        fields: '["id", "mark_ids", "date_ready", "date_done"]', //mark_id = pack item id
+                        order: 'id',
+                    },
+                    success: function (data) {
+                        if (data.length == 0) { //no more records
+                            ended = 1;
+                            return;
+                        }
+                        for (const record of data) {
+                            lastId = record.id;
+                            if (record.mark_ids.length > 0) {
+                                var dateReady = new Date(3000, 0, 1);
+                                if (record.date_ready != false)
+                                    dateReady = GetDateFromString(record.date_ready);
+                                var dateDone = new Date(3000, 0, 1);
+                                if (record.date_done != false)
+                                    dateDone = GetDateFromString(record.date_done);
+                                var steelPack = {
+                                    OdooId: record.id,
+                                    MarkIds: record.mark_ids,
+                                    DateReady: dateReady,
+                                    DateDone: dateDone,
+                                };
+                                steelPacks.push(steelPack);
+                            }
+                        }
+                    }
+                });
+            }
+            //console.log("Finished: Getting project.mark_steel_pack info");
+
+            //get steel pack items
+            //console.log("Start: Getting project.mark_steel_pack_items info");
+            var steelPackItems = [];
+            for (const steelPack of steelPacks) {
+                await $.ajax({
+                    type: "GET",
+                    url: odooURL + "/api/v1/search_read",
+                    headers: { "Authorization": "Bearer " + token },
+                    data: {
+                        model: "project.mark_steel_pack_items",
+                        domain: '[["upper_id.id", "=", "' + steelPack.OdooId + '"]]',
+                        fields: '["id", "mark_id", "qty"]', //mark_id = pack item id
+                        order: 'id',
+                    },
+                    success: function (data) {
+                        if (data.length == 0) { //no more records
+                            ended = 1;
+                            return;
+                        }
+                        for (const record of data) {
+                            lastId = record.id;
+                            if (record.qty > 0) {
+                                var steelPackItem = {
+                                    OdooId: record.id,
+                                    AssemblyId: record.mark_id[0],
+                                    Quantity: record.qty,
+                                };
+                                steelPackItems.push(steelPackItem);
+                            }
+                        }
+                    }
+                });
+            }
+            //console.log("Finished: Getting project.mark_steel_pack_items info");
+
+            //console.log("Start: Processing steel pack info");
+            for (const steelPack of steelPacks) {
+                const itemsInPack = steelPackItems.filter(x => steelPack.MarkIds.includes(x.OdooId));
+                for (const item of itemsInPack) {
+                    //console.log(item);
+                    for (var i = 0; i < item.Quantity; i++) {
+                        var unprocessedAssembly = unprocessedAssemblies.find(x => x.AssemblyId == item.AssemblyId
+                            && x.Status === StatusProductionEnded);
+                        //console.log(unprocessedAssembly);
+                        if (unprocessedAssembly != undefined) {
+                            if (steelPack.DateReady <= referenceDate)
+                                unprocessedAssembly.Status = StatusAvailableForTransport;
+                            if (steelPack.DateDone <= referenceDate)
+                                unprocessedAssembly.Status = StatusTransported;
+                        }
+                    }
+                }
+            }
+            //console.log(unprocessedAssemblies);
+            //console.log("Finished: Processing steel pack info");
+
+            const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
+
+            //runtimeIds = [17062, 17065, ...] = ids used by viewer
+            //objectIds = compressed IFC guids = ['28DCGNPlH98vcQNyNhB4sQ', '0fKOmd_6PFgOiexu4H1vtU', ...] = can be used to map runtimeId to original IFC
+
+            //find objects by assemblypos and add to status objects
+            var sliceLength = 5000;
+            for (const mobjects of mobjectsArr) {
+                var modelId = mobjects.modelId;
+                var tempObjectRuntimeIdsPerStatus = [];
+                for (const objStatus of ObjectStatuses) {
+                    var tempObjStatus = {
+                        Status: objStatus.Status,
+                        ObjectRuntimeIds: [],
+                    };
+                    tempObjectRuntimeIdsPerStatus.push(tempObjStatus);
+                }
+
+                const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+                for (var i = 0; i < objectsRuntimeIds.length; i += sliceLength) {
+                    var objectsRuntimeIdsSliced = objectsRuntimeIds.slice(i, i + sliceLength);
+                    const objectPropertiesArr = await API.viewer.getObjectProperties(modelId, objectsRuntimeIdsSliced);
+                    for (const objproperties of objectPropertiesArr) {
+                        var propMerknummer = objproperties.properties.flatMap(p => p.properties).find(p => p.name === "MERKNUMMER");
+                        if (propMerknummer === undefined) continue;
+                        var merkNummer = propMerknummer.value;
+                        if (merkNummer.endsWith("(?)"))
+                            merkNummer = merkNummer.substring(0, merkNummer.length - 3);
+                        var unprocessedAssembly = unprocessedAssemblies.find(a => a.AssemblyPos === merkNummer);
+                        if (unprocessedAssembly !== undefined) {
+                            var tempArray = tempObjectRuntimeIdsPerStatus.find(x => x.Status === unprocessedAssembly.Status);
+                            tempArray.ObjectRuntimeIds.push(objproperties.id)
+                            var index = unprocessedAssemblies.indexOf(unprocessedAssembly);
+                            unprocessedAssemblies.splice(index, 1);
+                        }
+                    }
+                }
+
+                for (const tempObjects of tempObjectRuntimeIdsPerStatus) {
+                    if (tempObjects.ObjectRuntimeIds.length > 0) {
+                        const tempObjectsIfcIds = await API.viewer.convertToObjectIds(modelId, tempObjects.ObjectRuntimeIds);
+                        var objectStatus = ObjectStatuses.find(o => o.Status === tempObjects.Status);
+                        objectStatus.Guids = objectStatus.Guids.concat(tempObjectsIfcIds.map(c => Guid.fromCompressedToFull(c)));
+                        objectStatus.CompressedIfcGuids = objectStatus.CompressedIfcGuids.concat(tempObjectsIfcIds);
+                    }
+                }
+            }
+
+            var objectStatusModelled = ObjectStatuses.find(o => o.Status === StatusModelled);
+            var unplannedIfcIds = [];
+            for (const mobjects of mobjectsArr) {
+                var modelId = mobjects.modelId;
+                const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+                const objectsIfcIds = await API.viewer.convertToObjectIds(modelId, objectsRuntimeIds);
+
+                var compressedIfcGuidsWithKnownStatus = [];
+                for (const objStatus of ObjectStatuses) {
+                    compressedIfcGuidsWithKnownStatus = compressedIfcGuidsWithKnownStatus.concat(objStatus.CompressedIfcGuids);
+                }
+                var compressedIfcGuidsWithKnownStatusSet = new Set(compressedIfcGuidsWithKnownStatus);
+
+                unplannedIfcIds = unplannedIfcIds.concat(objectsIfcIds.filter(x => !compressedIfcGuidsWithKnownStatusSet.has(x)));
+
+                for (const objStatus of ObjectStatuses) {
+                    var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, objStatus.CompressedIfcGuids);
+                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: objStatus.Color });
+                }
+            }
+
+            //will also include existing assemblies
+            objectStatusModelled.CompressedIfcGuids = Array.from(unplannedIfcIds);
+            objectStatusModelled.Guids = objectStatusModelled.CompressedIfcGuids.map(c => Guid.fromCompressedToFull(c));
+
+            const mobjectsExisting = await API.viewer.getObjects({ parameter: { properties: { 'Default.MERKPREFIX': 'BESTAAND' } } });
+            for (const mobjects of mobjectsExisting) {
+                var modelId = mobjects.modelId;
+                const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+                if (objectsRuntimeIds.length == 0)
+                    continue;
+                var objectStatusExisting = ObjectStatuses.find(o => o.Status === StatusExisting);
+                objectStatusExisting.CompressedIfcGuids = objectStatusExisting.CompressedIfcGuids.concat(await API.viewer.convertToObjectIds(modelId, objectsRuntimeIds));
+                objectStatusExisting.Guids = objectStatusExisting.Guids.concat(objectStatusExisting.CompressedIfcGuids.map(i => Guid.fromCompressedToFull(i)));
+
+                //remove existing from modelled
+                var compressedIfcGuidsWithStatusExistingSet = new Set(objectStatusExisting.CompressedIfcGuids);
+                objectStatusModelled.CompressedIfcGuids = Array.from(objectStatusModelled.CompressedIfcGuids.filter(x => !compressedIfcGuidsWithStatusExistingSet.has(x)));
+                var guidsWithStatusExistingSet = new Set(objectStatusExisting.Guids);
+                objectStatusModelled.Guids = Array.from(objectStatusModelled.Guids.filter(x => !guidsWithStatusExistingSet.has(x)));
+
+                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: objectStatusExisting.Color });
+            }
+
+            for (const mobjects of mobjectsArr) {
+                var modelId = mobjects.modelId;
+                const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+                //get overlapping runtimeIds of both collections
+                var runtimeIdsModelled = await API.viewer.convertToObjectRuntimeIds(modelId, objectStatusModelled.CompressedIfcGuids);
+                const filteredRuntimeIds = objectsRuntimeIds.filter(i => runtimeIdsModelled.includes(i));
+
+                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: filteredRuntimeIds }] }, { color: objectStatusModelled.Color });
+            }
+
+            modelIsColored = true;
+        }
+        catch (e) {
+            DevExpress.ui.notify(e);
+        }
+        buttonIndicator.option('visible', false);
+        data.component.option('text', getTextById("btnSetColorFromStatus"));
+    },
 });
 
-$(function () {
-    $("#btnShowAllColoredDivId").dxButton({
-        stylingMode: "outlined",
-        text: getTextById("btnShowAllColored"),
-        type: "success",
-        template(data, container) {
-            $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
-            buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
-                visible: false,
-            }).dxLoadIndicator('instance');
-        },
-        onClick: async function (data) {
-            modelIsColored = false;
-            data.component.option('text', getTextById("btnShowAllColored"));
-            buttonIndicator.option('visible', true);
-            try {
-                const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
+$("#btnShowAllColoredDivId").dxButton({
+    stylingMode: "outlined",
+    text: getTextById("btnShowAllColored"),
+    type: "success",
+    template(data, container) {
+        $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+        buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+            visible: false,
+        }).dxLoadIndicator('instance');
+    },
+    onClick: async function (data) {
+        modelIsColored = false;
+        data.component.option('text', getTextById("btnShowAllColored"));
+        buttonIndicator.option('visible', true);
+        try {
+            const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
 
-                for (const mobjects of mobjectsArr) {
-                    var modelId = mobjects.modelId;
-                    const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-                    const modelCompressedIfcGuids = await API.viewer.convertToObjectIds(modelId, objectsRuntimeIds);
-                    const modelCompressedIfcGuidsSet = new Set(modelCompressedIfcGuids);
+            for (const mobjects of mobjectsArr) {
+                var modelId = mobjects.modelId;
+                const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+                const modelCompressedIfcGuids = await API.viewer.convertToObjectIds(modelId, objectsRuntimeIds);
+                const modelCompressedIfcGuidsSet = new Set(modelCompressedIfcGuids);
 
-                    for (const objStatus of ObjectStatuses) {
-                        var statusCompressedIfcGuidsInModel = Array.from(objStatus.CompressedIfcGuids.filter(x => modelCompressedIfcGuidsSet.has(x)));
-                        var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, statusCompressedIfcGuidsInModel);
-                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { visible: true });
-                    }
+                for (const objStatus of ObjectStatuses) {
+                    var statusCompressedIfcGuidsInModel = Array.from(objStatus.CompressedIfcGuids.filter(x => modelCompressedIfcGuidsSet.has(x)));
+                    var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, statusCompressedIfcGuidsInModel);
+                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { visible: true });
                 }
+            }
 
-                modelIsColored = true;
-            }
-            catch (e) {
-                DevExpress.ui.notify(e);
-            }
-            buttonIndicator.option('visible', false);
-            data.component.option('text', getTextById("btnShowAllColored"));
-        },
-    });
+            modelIsColored = true;
+        }
+        catch (e) {
+            DevExpress.ui.notify(e);
+        }
+        buttonIndicator.option('visible', false);
+        data.component.option('text', getTextById("btnShowAllColored"));
+    },
 });
 
 function removeLeadingZeroes(stringwithzeroes) {
@@ -1757,366 +1802,356 @@ async function getAssemblyNamesByCompressedGuids(compressedGuids) {
     return assemblies;
 }
 
-$(function () {
-    $("#btnSetOdooLabelsDivId").dxButton({
-        stylingMode: "outlined",
-        text: getTextById("btnSetOdooLabels"),
-        type: "success",
-        template(data, container) {
-            $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
-            buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
-                visible: false,
-            }).dxLoadIndicator('instance');
-        },
-        onClick: async function (data) {
-            data.component.option('text', getTextById("btnSetOdooLabelsSetting"));
-            buttonIndicator.option('visible', true);
-            try {
-                await CheckAssemblySelection();
+$("#btnSetOdooLabelsDivId").dxButton({
+    stylingMode: "outlined",
+    text: getTextById("btnSetOdooLabels"),
+    type: "success",
+    template(data, container) {
+        $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+        buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+            visible: false,
+        }).dxLoadIndicator('instance');
+    },
+    onClick: async function (data) {
+        data.component.option('text', getTextById("btnSetOdooLabelsSetting"));
+        buttonIndicator.option('visible', true);
+        try {
+            await CheckAssemblySelection();
 
-                var username = odooUsernameTextbox.dxTextBox("instance").option("value");
-                var password = odooPasswordTextbox.dxTextBox("instance").option("value");
-                if (typeof username !== 'string' || typeof password !== 'string' || username === "" || password === "") {
-                    console.log("no username and/or password found");
-                    throw getTextById("errorMsgUsernamePassword");
-                }
+            var username = odooUsernameTextbox.dxTextBox("instance").option("value");
+            var password = odooPasswordTextbox.dxTextBox("instance").option("value");
+            if (typeof username !== 'string' || typeof password !== 'string' || username === "" || password === "") {
+                console.log("no username and/or password found");
+                throw getTextById("errorMsgUsernamePassword");
+            }
 
-                let jsonArray = "[";
-                const selection = await API.viewer.getSelection();
-                const selector = {
-                    modelObjectIds: selection
-                };
-                const modelspecs = await API.viewer.getModels();
-                const mobjectsArr = await API.viewer.getObjects(selector);
-                var nmbrOfAssembliesFound = 0;
-                for (const mobjects of mobjectsArr) {
-                    //console.log(modelspecs);
-                    const modelspec = modelspecs.find(s => s.id === mobjects.modelId);
-                    //console.log(modelspec);
-                    const modelPos = modelspec.placement.position;
-                    //console.log(modelPos);
-                    const objectRuntimeIds = mobjects.objects.map(o => o.id); //o.id = runtimeId = number
-                    const objectIds = await API.viewer.convertToObjectIds(mobjects.modelId, objectRuntimeIds);//objectIds = compressed ifc ids
-                    const objPropertiesArr = await API.viewer.getObjectProperties(mobjects.modelId, objectRuntimeIds);
-                    //console.log(objectRuntimeIds);
-                    var assemblyNames = await getAssemblyNamesByCompressedGuids(objectIds);
-                    //console.log(assemblyNames);
-                    for (const objproperties of objPropertiesArr) {
-                        let cogX = 0.0;
-                        let cogY = 0.0;
-                        let cogZ = 0.0;
-                        let guid = "";
-                        let propertiesFound = 0;
-                        for (const propertyset of objproperties.properties) {
-                            for (const property of propertyset.properties) {
-                                const propertyName = property.name;
-                                const propertyValue = property.value;
-                                if (typeof propertyName !== "undefined" && typeof propertyValue !== "undefined") {
-                                    if (propertyName === "COG_X") {
-                                        cogX = propertyValue;
-                                        propertiesFound++;
-                                    }
-                                    else if (propertyName === "COG_Y") {
-                                        cogY = propertyValue;
-                                        propertiesFound++;
-                                    }
-                                    else if (propertyName === "COG_Z") {
-                                        cogZ = propertyValue;
-                                        propertiesFound++;
-                                    }
-                                    else if (propertyName === "GUID") {
-                                        guid = propertyValue;
-                                        propertiesFound++;
-                                    }
+            let jsonArray = "[";
+            const selection = await API.viewer.getSelection();
+            const selector = {
+                modelObjectIds: selection
+            };
+            const modelspecs = await API.viewer.getModels();
+            const mobjectsArr = await API.viewer.getObjects(selector);
+            var nmbrOfAssembliesFound = 0;
+            for (const mobjects of mobjectsArr) {
+                //console.log(modelspecs);
+                const modelspec = modelspecs.find(s => s.id === mobjects.modelId);
+                //console.log(modelspec);
+                const modelPos = modelspec.placement.position;
+                //console.log(modelPos);
+                const objectRuntimeIds = mobjects.objects.map(o => o.id); //o.id = runtimeId = number
+                const objectIds = await API.viewer.convertToObjectIds(mobjects.modelId, objectRuntimeIds);//objectIds = compressed ifc ids
+                const objPropertiesArr = await API.viewer.getObjectProperties(mobjects.modelId, objectRuntimeIds);
+                //console.log(objectRuntimeIds);
+                var assemblyNames = await getAssemblyNamesByCompressedGuids(objectIds);
+                //console.log(assemblyNames);
+                for (const objproperties of objPropertiesArr) {
+                    let cogX = 0.0;
+                    let cogY = 0.0;
+                    let cogZ = 0.0;
+                    let guid = "";
+                    let propertiesFound = 0;
+                    for (const propertyset of objproperties.properties) {
+                        for (const property of propertyset.properties) {
+                            const propertyName = property.name;
+                            const propertyValue = property.value;
+                            if (typeof propertyName !== "undefined" && typeof propertyValue !== "undefined") {
+                                if (propertyName === "COG_X") {
+                                    cogX = propertyValue;
+                                    propertiesFound++;
+                                }
+                                else if (propertyName === "COG_Y") {
+                                    cogY = propertyValue;
+                                    propertiesFound++;
+                                }
+                                else if (propertyName === "COG_Z") {
+                                    cogZ = propertyValue;
+                                    propertiesFound++;
+                                }
+                                else if (propertyName === "GUID") {
+                                    guid = propertyValue;
+                                    propertiesFound++;
                                 }
                             }
                         }
-                        if (propertiesFound != 4) {
-                            continue;
-                        }
-
-                        //console.log("searching in assemblyNames for " + objproperties.id);
-                        var assemblyNameObj = assemblyNames.find(x => x.Guid.toUpperCase() === guid.toUpperCase());
-                        //console.log("assemblyNameObj: " + assemblyNameObj);
-
-                        if (assemblyNameObj == undefined) {
-                            continue;
-                        }
-
-                        var assemblyName = assemblyNameObj.AssemblyName;
-
-                        jsonArray = jsonArray.concat("{");
-                        jsonArray = jsonArray.concat("\"color\": {\"r\": 60,\"g\": 203,\"b\": 62,\"a\": 255}, ");
-                        jsonArray = jsonArray.concat("\"start\": ");
-                        jsonArray = jsonArray.concat("{");
-                        jsonArray = jsonArray.concat("\"positionX\": ");
-                        jsonArray = jsonArray.concat(modelPos.x + cogX);
-                        jsonArray = jsonArray.concat(",");
-                        jsonArray = jsonArray.concat("\"positionY\": ");
-                        jsonArray = jsonArray.concat(modelPos.y + cogY);
-                        jsonArray = jsonArray.concat(",");
-                        jsonArray = jsonArray.concat("\"positionZ\": ");
-                        jsonArray = jsonArray.concat(modelPos.z + cogZ);
-                        jsonArray = jsonArray.concat(",");
-                        jsonArray = jsonArray.concat("\"modelId\": ");
-                        jsonArray = jsonArray.concat("\"");
-                        jsonArray = jsonArray.concat(mobjects.modelId);
-                        jsonArray = jsonArray.concat("\"");
-                        jsonArray = jsonArray.concat(",");
-                        jsonArray = jsonArray.concat("\"objectId\": ");
-                        jsonArray = jsonArray.concat(objproperties.id);
-                        jsonArray = jsonArray.concat("}");
-                        jsonArray = jsonArray.concat(",");
-                        jsonArray = jsonArray.concat("\"end\": ");
-                        jsonArray = jsonArray.concat("{");
-                        jsonArray = jsonArray.concat("\"positionX\": ");
-                        jsonArray = jsonArray.concat(modelPos.x + cogX);
-                        jsonArray = jsonArray.concat(",");
-                        jsonArray = jsonArray.concat("\"positionY\": ");
-                        jsonArray = jsonArray.concat(modelPos.y + cogY);
-                        jsonArray = jsonArray.concat(",");
-                        jsonArray = jsonArray.concat("\"positionZ\": ");
-                        jsonArray = jsonArray.concat(modelPos.z + cogZ);
-                        jsonArray = jsonArray.concat(",");
-                        jsonArray = jsonArray.concat("\"objectId\": null");
-                        jsonArray = jsonArray.concat("}");
-                        jsonArray = jsonArray.concat(",");
-                        jsonArray = jsonArray.concat("\"text\": ");
-                        jsonArray = jsonArray.concat("\"");
-                        jsonArray = jsonArray.concat(assemblyName);
-                        jsonArray = jsonArray.concat("\"");
-                        jsonArray = jsonArray.concat("}");
-                        jsonArray = jsonArray.concat(",");
                     }
-                    nmbrOfAssembliesFound++;
-                }
+                    if (propertiesFound != 4) {
+                        continue;
+                    }
 
-                jsonArray = jsonArray = jsonArray.slice(0, -1);
-                jsonArray = jsonArray.concat("]");
-                API.markup.removeMarkups();
-                if (nmbrOfAssembliesFound > 0) {
-                    API.markup.addTextMarkup(JSON.parse(jsonArray));
+                    //console.log("searching in assemblyNames for " + objproperties.id);
+                    var assemblyNameObj = assemblyNames.find(x => x.Guid.toUpperCase() === guid.toUpperCase());
+                    //console.log("assemblyNameObj: " + assemblyNameObj);
+
+                    if (assemblyNameObj == undefined) {
+                        continue;
+                    }
+
+                    var assemblyName = assemblyNameObj.AssemblyName;
+
+                    jsonArray = jsonArray.concat("{");
+                    jsonArray = jsonArray.concat("\"color\": {\"r\": 60,\"g\": 203,\"b\": 62,\"a\": 255}, ");
+                    jsonArray = jsonArray.concat("\"start\": ");
+                    jsonArray = jsonArray.concat("{");
+                    jsonArray = jsonArray.concat("\"positionX\": ");
+                    jsonArray = jsonArray.concat(modelPos.x + cogX);
+                    jsonArray = jsonArray.concat(",");
+                    jsonArray = jsonArray.concat("\"positionY\": ");
+                    jsonArray = jsonArray.concat(modelPos.y + cogY);
+                    jsonArray = jsonArray.concat(",");
+                    jsonArray = jsonArray.concat("\"positionZ\": ");
+                    jsonArray = jsonArray.concat(modelPos.z + cogZ);
+                    jsonArray = jsonArray.concat(",");
+                    jsonArray = jsonArray.concat("\"modelId\": ");
+                    jsonArray = jsonArray.concat("\"");
+                    jsonArray = jsonArray.concat(mobjects.modelId);
+                    jsonArray = jsonArray.concat("\"");
+                    jsonArray = jsonArray.concat(",");
+                    jsonArray = jsonArray.concat("\"objectId\": ");
+                    jsonArray = jsonArray.concat(objproperties.id);
+                    jsonArray = jsonArray.concat("}");
+                    jsonArray = jsonArray.concat(",");
+                    jsonArray = jsonArray.concat("\"end\": ");
+                    jsonArray = jsonArray.concat("{");
+                    jsonArray = jsonArray.concat("\"positionX\": ");
+                    jsonArray = jsonArray.concat(modelPos.x + cogX);
+                    jsonArray = jsonArray.concat(",");
+                    jsonArray = jsonArray.concat("\"positionY\": ");
+                    jsonArray = jsonArray.concat(modelPos.y + cogY);
+                    jsonArray = jsonArray.concat(",");
+                    jsonArray = jsonArray.concat("\"positionZ\": ");
+                    jsonArray = jsonArray.concat(modelPos.z + cogZ);
+                    jsonArray = jsonArray.concat(",");
+                    jsonArray = jsonArray.concat("\"objectId\": null");
+                    jsonArray = jsonArray.concat("}");
+                    jsonArray = jsonArray.concat(",");
+                    jsonArray = jsonArray.concat("\"text\": ");
+                    jsonArray = jsonArray.concat("\"");
+                    jsonArray = jsonArray.concat(assemblyName);
+                    jsonArray = jsonArray.concat("\"");
+                    jsonArray = jsonArray.concat("}");
+                    jsonArray = jsonArray.concat(",");
                 }
-                else {
-                    DevExpress.ui.notify(getTextById("errorMsgNoOdooAssembliesFound"));
-                }
+                nmbrOfAssembliesFound++;
             }
-            catch (e) {
-                DevExpress.ui.notify(e);
-                console.log(e);
+
+            jsonArray = jsonArray = jsonArray.slice(0, -1);
+            jsonArray = jsonArray.concat("]");
+            API.markup.removeMarkups();
+            if (nmbrOfAssembliesFound > 0) {
+                API.markup.addTextMarkup(JSON.parse(jsonArray));
             }
-            buttonIndicator.option('visible', false);
-            data.component.option('text', getTextById("btnSetOdooLabels"));
-        },
-    });
+            else {
+                DevExpress.ui.notify(getTextById("errorMsgNoOdooAssembliesFound"));
+            }
+        }
+        catch (e) {
+            DevExpress.ui.notify(e);
+            console.log(e);
+        }
+        buttonIndicator.option('visible', false);
+        data.component.option('text', getTextById("btnSetOdooLabels"));
+    },
 });
 
 var idsPerPrefixPerModelId = [];
-$(function () {
-    $("#btnShowKnownPrefixesDivId").dxButton({
-        stylingMode: "outlined",
-        text: getTextById("btnShowKnownPrefixes"),
-        type: "success",
-        template(data, container) {
-            $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
-            buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
-                visible: false,
-            }).dxLoadIndicator('instance');
-        },
-        onClick: async function (data) {
-            data.component.option('text', getTextById("btnShowKnownPrefixesFiltering"));
-            buttonIndicator.option('visible', true);
-            try {
-                const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
-                var sliceLength = 5000;
-                for (const mobjects of mobjectsArr) {
-                    var modelId = mobjects.modelId;
-                    const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
-                    if (idsPerPrefixPerModelId.find(o => o.ModelId === modelId) !== undefined) {
-                        continue;
-                    }
-                    var idsPerPrefix = [];
-                    for (var i = 0; i < objectsRuntimeIds.length; i += sliceLength) {
-                        //var cntr = 0;
-                        var objectsRuntimeIdsSliced = objectsRuntimeIds.slice(i, i + sliceLength);
-                        const objectPropertiesArr = await API.viewer.getObjectProperties(modelId, objectsRuntimeIdsSliced);
-                        //console.log("objectPropertiesArr: " + objectPropertiesArr);
-                        //console.log("objectPropertiesArr.length: " + objectPropertiesArr.length);
-                        for (const objproperties of objectPropertiesArr) {
-                            //objproperties type: ObjectProperties, heeft id van object en array met propertysets
-                            //objproperties.properties : PropertySet[]
-                            //PropertySet.set is not included in the query
-                            //console.log("objproperties.properties.length: " + objproperties.properties.length);
-                            //var psetDefault = objproperties.properties.find(s => s.name === "Default");
-                            //if (psetDefault === undefined) continue;
-                            //console.log("psetDefault: " + psetDefault.name);
-                            //var propPrefix = psetDefault.properties.find(p => p.name === "MERKPREFIX");
-                            var propPrefix = objproperties.properties.flatMap(p => p.properties).find(p => p.name === "MERKPREFIX");
-                            if (propPrefix === undefined) continue;
-                            //console.log("propPrefix: " + propPrefix.name + " " + propPrefix.value);
-                            if (!prefixes.includes(propPrefix.value)) continue;
-                            var prefixArr = idsPerPrefix.find(p => p.Prefix === propPrefix.value);
-                            if (prefixArr !== undefined) {
-                                prefixArr.ObjectRuntimeIds.push(objproperties.id);
-                                //cntr++;
-                            }
-                            else {
-                                idsPerPrefix.push(
-                                    {
-                                        Prefix: propPrefix.value,
-                                        ObjectRuntimeIds: [objproperties.id]
-                                    }
-                                );
-                                //cntr++;
-                            }
+$("#btnShowKnownPrefixesDivId").dxButton({
+    stylingMode: "outlined",
+    text: getTextById("btnShowKnownPrefixes"),
+    type: "success",
+    template(data, container) {
+        $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+        buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+            visible: false,
+        }).dxLoadIndicator('instance');
+    },
+    onClick: async function (data) {
+        data.component.option('text', getTextById("btnShowKnownPrefixesFiltering"));
+        buttonIndicator.option('visible', true);
+        try {
+            const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
+            var sliceLength = 5000;
+            for (const mobjects of mobjectsArr) {
+                var modelId = mobjects.modelId;
+                const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
+                if (idsPerPrefixPerModelId.find(o => o.ModelId === modelId) !== undefined) {
+                    continue;
+                }
+                var idsPerPrefix = [];
+                for (var i = 0; i < objectsRuntimeIds.length; i += sliceLength) {
+                    //var cntr = 0;
+                    var objectsRuntimeIdsSliced = objectsRuntimeIds.slice(i, i + sliceLength);
+                    const objectPropertiesArr = await API.viewer.getObjectProperties(modelId, objectsRuntimeIdsSliced);
+                    //console.log("objectPropertiesArr: " + objectPropertiesArr);
+                    //console.log("objectPropertiesArr.length: " + objectPropertiesArr.length);
+                    for (const objproperties of objectPropertiesArr) {
+                        //objproperties type: ObjectProperties, heeft id van object en array met propertysets
+                        //objproperties.properties : PropertySet[]
+                        //PropertySet.set is not included in the query
+                        //console.log("objproperties.properties.length: " + objproperties.properties.length);
+                        //var psetDefault = objproperties.properties.find(s => s.name === "Default");
+                        //if (psetDefault === undefined) continue;
+                        //console.log("psetDefault: " + psetDefault.name);
+                        //var propPrefix = psetDefault.properties.find(p => p.name === "MERKPREFIX");
+                        var propPrefix = objproperties.properties.flatMap(p => p.properties).find(p => p.name === "MERKPREFIX");
+                        if (propPrefix === undefined) continue;
+                        //console.log("propPrefix: " + propPrefix.name + " " + propPrefix.value);
+                        if (!prefixes.includes(propPrefix.value)) continue;
+                        var prefixArr = idsPerPrefix.find(p => p.Prefix === propPrefix.value);
+                        if (prefixArr !== undefined) {
+                            prefixArr.ObjectRuntimeIds.push(objproperties.id);
+                            //cntr++;
                         }
-                        //console.log("i: " + i + " - cntr: " + cntr);
+                        else {
+                            idsPerPrefix.push(
+                                {
+                                    Prefix: propPrefix.value,
+                                    ObjectRuntimeIds: [objproperties.id]
+                                }
+                            );
+                            //cntr++;
+                        }
                     }
-                    //console.log("new ids pushed for model " + modelId + " (#: " + idsPerPrefix.length + " )");
-                    idsPerPrefixPerModelId.push({ ModelId: modelId, IdsPerPrefix: idsPerPrefix });
+                    //console.log("i: " + i + " - cntr: " + cntr);
                 }
+                //console.log("new ids pushed for model " + modelId + " (#: " + idsPerPrefix.length + " )");
+                idsPerPrefixPerModelId.push({ ModelId: modelId, IdsPerPrefix: idsPerPrefix });
+            }
 
-                //set all objects invisible
-                //for (const mobjects of mobjectsArr) {
-                //    var modelId = mobjects.modelId;
-                //    const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-                //    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
-                //}
+            //set all objects invisible
+            //for (const mobjects of mobjectsArr) {
+            //    var modelId = mobjects.modelId;
+            //    const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+            //    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
+            //}
 
-                //show only known prefixes
-                for (const modelIdDict of idsPerPrefixPerModelId) {
-                    var modelId = modelIdDict.ModelId;
-                    //console.log("Showing objects of model " + modelId);
-                    var runtimeIdsToShow = [];
-                    for (const idsPerPrefix of modelIdDict.IdsPerPrefix) {
-                        runtimeIdsToShow = runtimeIdsToShow.concat(idsPerPrefix.ObjectRuntimeIds);
-                    }
-                    //console.log("runtimeIdsToShow.length " + runtimeIdsToShow.length);
-                    if (runtimeIdsToShow.length > 0) {
-                        //console.log("change to visible");
-                        //console.log("runtimeIdsToShow[0]" + runtimeIdsToShow[0]);
-                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsToShow }] }, { visible: true });
-                    }
+            //show only known prefixes
+            for (const modelIdDict of idsPerPrefixPerModelId) {
+                var modelId = modelIdDict.ModelId;
+                //console.log("Showing objects of model " + modelId);
+                var runtimeIdsToShow = [];
+                for (const idsPerPrefix of modelIdDict.IdsPerPrefix) {
+                    runtimeIdsToShow = runtimeIdsToShow.concat(idsPerPrefix.ObjectRuntimeIds);
+                }
+                //console.log("runtimeIdsToShow.length " + runtimeIdsToShow.length);
+                if (runtimeIdsToShow.length > 0) {
+                    //console.log("change to visible");
+                    //console.log("runtimeIdsToShow[0]" + runtimeIdsToShow[0]);
+                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsToShow }] }, { visible: true });
                 }
             }
-            catch (e) {
-                console.log(e);
-                DevExpress.ui.notify(e);
-            }
-            buttonIndicator.option('visible', false);
-            data.component.option('text', getTextById("btnShowKnownPrefixes"));
-        },
-    });
+        }
+        catch (e) {
+            console.log(e);
+            DevExpress.ui.notify(e);
+        }
+        buttonIndicator.option('visible', false);
+        data.component.option('text', getTextById("btnShowKnownPrefixes"));
+    },
 });
 
-$(function () {
-    $("#btnSelectByFilterDivId").dxButton({
-        stylingMode: "outlined",
-        text: getTextById("btnSelectByFilter"),
-        type: "success",
-        template(data, container) {
-            $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
-            buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
-                visible: false,
-            }).dxLoadIndicator('instance');
-        },
-        onClick: async function (data) {
-            data.component.option('text', getTextById("btnSelectByFilterSelecting"));
-            buttonIndicator.option('visible', true);
-            try {
-                //console.log("btnSelectByFilterDivId button clicked")
-                await API.viewer.setSettings({ assemblySelection : true });
-                await SetSelectionByFilter();
-            }
-            catch (e) {
-                DevExpress.ui.notify(e);
-            }
-            buttonIndicator.option('visible', false);
-            data.component.option('text', getTextById("btnSelectByFilter"));
-        },
-    });
+$("#btnSelectByFilterDivId").dxButton({
+    stylingMode: "outlined",
+    text: getTextById("btnSelectByFilter"),
+    type: "success",
+    template(data, container) {
+        $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+        buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+            visible: false,
+        }).dxLoadIndicator('instance');
+    },
+    onClick: async function (data) {
+        data.component.option('text', getTextById("btnSelectByFilterSelecting"));
+        buttonIndicator.option('visible', true);
+        try {
+            //console.log("btnSelectByFilterDivId button clicked")
+            await API.viewer.setSettings({ assemblySelection : true });
+            await SetSelectionByFilter();
+        }
+        catch (e) {
+            DevExpress.ui.notify(e);
+        }
+        buttonIndicator.option('visible', false);
+        data.component.option('text', getTextById("btnSelectByFilter"));
+    },
 });
 
-$(function () {
-    $("#showGridAndArrows").dxButton({
-        stylingMode: "outlined",
-        text: "Toon stramien en montagepijlen",
-        type: "success",
-        template(data, container) {
-            $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
-            buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
-                visible: false,
-            }).dxLoadIndicator('instance');
-        },
-        onClick: async function (data) {
-            data.component.option('text', 'Bezig met stramien en montagepijlen te zoeken');
-            buttonIndicator.option('visible', true);
-            try {
-                console.log("start");
+$("#showGridAndArrows").dxButton({
+    stylingMode: "outlined",
+    text: "Toon stramien en montagepijlen",
+    type: "success",
+    template(data, container) {
+        $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+        buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+            visible: false,
+        }).dxLoadIndicator('instance');
+    },
+    onClick: async function (data) {
+        data.component.option('text', 'Bezig met stramien en montagepijlen te zoeken');
+        buttonIndicator.option('visible', true);
+        try {
+            console.log("start");
 
-                //Show Grids
-                const mobjectsArrGrids = await API.viewer.getObjects(getPropSelectorByPropnameAndValue("Presentation Layers.Layer", "Grid 0.0"));
-                console.log("mobjectsArrGrids.length: " + mobjectsArrGrids.length);
-                console.log("mobjectsArrGrids[0].objects.length: " + mobjectsArrGrids[0].objects.length);
-                if (mobjectsArrGrids.length > 0) {
-                    await API.viewer.setObjectState(mobjectsArrGrids, true);
-                }
-
-                //Show Arrows
-                const mobjectsArrPijlen = await API.viewer.getObjects(getPropSelectorByPropnameAndValue("Tekla Common.Finish", "MONTAGE"));
-                console.log("mobjectsArrPijlen.length: " + mobjectsArrPijlen.length);
-                console.log("mobjectsArrPijlen[0].objects.length: " + mobjectsArrPijlen[0].objects.length);
-                if (mobjectsArrGrids.length > 0) {
-                    await API.viewer.setObjectState(mobjectsArrPijlen, true);
-                }
-
-                //await API.viewer.setSelection(mobjectsArrGrids, "add");
-                //await API.viewer.setSelection(mobjectsArrPijlen, "add");
-
-                console.log("end");
+            //Show Grids
+            const mobjectsArrGrids = await API.viewer.getObjects(getPropSelectorByPropnameAndValue("Presentation Layers.Layer", "Grid 0.0"));
+            console.log("mobjectsArrGrids.length: " + mobjectsArrGrids.length);
+            console.log("mobjectsArrGrids[0].objects.length: " + mobjectsArrGrids[0].objects.length);
+            if (mobjectsArrGrids.length > 0) {
+                await API.viewer.setObjectState(mobjectsArrGrids, true);
             }
-            catch (e) {
-                DevExpress.ui.notify(e);
+
+            //Show Arrows
+            const mobjectsArrPijlen = await API.viewer.getObjects(getPropSelectorByPropnameAndValue("Tekla Common.Finish", "MONTAGE"));
+            console.log("mobjectsArrPijlen.length: " + mobjectsArrPijlen.length);
+            console.log("mobjectsArrPijlen[0].objects.length: " + mobjectsArrPijlen[0].objects.length);
+            if (mobjectsArrGrids.length > 0) {
+                await API.viewer.setObjectState(mobjectsArrPijlen, true);
             }
-            buttonIndicator.option('visible', false);
-            data.component.option('text', "Toon stramien en montagepijlen");
-        },
-    });
+
+            //await API.viewer.setSelection(mobjectsArrGrids, "add");
+            //await API.viewer.setSelection(mobjectsArrPijlen, "add");
+
+            console.log("end");
+        }
+        catch (e) {
+            DevExpress.ui.notify(e);
+        }
+        buttonIndicator.option('visible', false);
+        data.component.option('text', "Toon stramien en montagepijlen");
+    },
 });
 
 async function CheckAssemblySelection() {
     const settings = await API.viewer.getSettings();
     if (!settings.assemblySelection) {
-        DevExpress.ui.notify(errorMsgNoAssemblySelection);
+        DevExpress.ui.notify(getTextById("errorMsgNoAssemblySelection"));
     }
 }
 
-$(function () {
-    $("#btnShowLabelsDivId").dxButton({
-        stylingMode: "outlined",
-        text: getTextById("btnShowLabels"),
-        type: "success",
-        template(data, container) {
-            $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
-            buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
-                visible: false,
-            }).dxLoadIndicator('instance');
-        },
-        onClick: async function (data) {
-            data.component.option('text', getTextById("btnShowLabelsShowing"));
-            buttonIndicator.option('visible', true);
-            try {
-                await CheckAssemblySelection();
-                await addTextMarkups();
-            }
-            catch (e) {
-                DevExpress.ui.notify(e);
-            }
-            buttonIndicator.option('visible', false);
-            data.component.option('text', getTextById("btnShowLabels"));
-        },
-    });
+$("#btnShowLabelsDivId").dxButton({
+    stylingMode: "outlined",
+    text: getTextById("btnShowLabels"),
+    type: "success",
+    template(data, container) {
+        $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+        buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+            visible: false,
+        }).dxLoadIndicator('instance');
+    },
+    onClick: async function (data) {
+        data.component.option('text', getTextById("btnShowLabelsShowing"));
+        buttonIndicator.option('visible', true);
+        try {
+            await CheckAssemblySelection();
+            await addTextMarkups();
+        }
+        catch (e) {
+            DevExpress.ui.notify(e);
+        }
+        buttonIndicator.option('visible', false);
+        data.component.option('text', getTextById("btnShowLabels"));
+    },
 });
 
 var titlesShown = true;
@@ -2174,336 +2209,283 @@ async function OnlyShowStatus(status) {
 }
 
 //Existing
-$(function () {
-    $("#btnShowExisting").dxButton({
-        icon: 'images/eye.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "show these",
-        onClick: async function (data) {
-            await SetVisibility(StatusExisting, true);
-        },
-    });
+
+$("#btnShowExisting").dxButton({
+    icon: 'images/eye.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "show these",
+    onClick: async function (data) {
+        await SetVisibility(StatusExisting, true);
+    },
 });
 
-$(function () {
-    $("#btnHideExisting").dxButton({
-        icon: 'images/eyeCrossed.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "hide these",
-        onClick: async function (data) {
-            await SetVisibility(StatusExisting, false);
-        },
-    });
+$("#btnHideExisting").dxButton({
+    icon: 'images/eyeCrossed.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "hide these",
+    onClick: async function (data) {
+        await SetVisibility(StatusExisting, false);
+    },
 });
 
-$(function () {
-    $("#btnOnlyShowExisting").dxButton({
-        icon: 'images/showAll.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "only show these",
-        onClick: async function (data) {
-            await OnlyShowStatus(StatusExisting);
-        },
-    });
+$("#btnOnlyShowExisting").dxButton({
+    icon: 'images/showAll.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "only show these",
+    onClick: async function (data) {
+        await OnlyShowStatus(StatusExisting);
+    },
 });
 
 //Modelled
-$(function () {
-    $("#btnShowModelled").dxButton({
-        icon: 'images/eye.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "show these",
-        onClick: async function (data) {
-            await SetVisibility(StatusModelled, true);
-        },
-    });
+$("#btnShowModelled").dxButton({
+    icon: 'images/eye.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "show these",
+    onClick: async function (data) {
+        await SetVisibility(StatusModelled, true);
+    },
 });
 
-$(function () {
-    $("#btnHideModelled").dxButton({
-        icon: 'images/eyeCrossed.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "hide these",
-        onClick: async function (data) {
-            await SetVisibility(StatusModelled, false);
-        },
-    });
+$("#btnHideModelled").dxButton({
+    icon: 'images/eyeCrossed.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "hide these",
+    onClick: async function (data) {
+        await SetVisibility(StatusModelled, false);
+    },
 });
 
-$(function () {
-    $("#btnOnlyShowModelled").dxButton({
-        icon: 'images/showAll.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "only show these",
-        onClick: async function (data) {
-            await OnlyShowStatus(StatusModelled);
-        },
-    });
+$("#btnOnlyShowModelled").dxButton({
+    icon: 'images/showAll.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "only show these",
+    onClick: async function (data) {
+        await OnlyShowStatus(StatusModelled);
+    },
 });
 
 //OnHold
-$(function () {
-    $("#btnShowOnHold").dxButton({
-        icon: 'images/eye.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "show these",
-        onClick: async function (data) {
-            await SetVisibility(StatusOnHold, true);
-        },
-    });
+$("#btnShowOnHold").dxButton({
+    icon: 'images/eye.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "show these",
+    onClick: async function (data) {
+        await SetVisibility(StatusOnHold, true);
+    },
 });
 
-$(function () {
-    $("#btnHideOnHold").dxButton({
-        icon: 'images/eyeCrossed.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "hide these",
-        onClick: async function (data) {
-            await SetVisibility(StatusOnHold, false);
-        },
-    });
+$("#btnHideOnHold").dxButton({
+    icon: 'images/eyeCrossed.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "hide these",
+    onClick: async function (data) {
+        await SetVisibility(StatusOnHold, false);
+    },
 });
 
-$(function () {
-    $("#btnOnlyShowOnHold").dxButton({
-        icon: 'images/showAll.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "only show these",
-        onClick: async function (data) {
-            await OnlyShowStatus(StatusOnHold);
-        },
-    });
+$("#btnOnlyShowOnHold").dxButton({
+    icon: 'images/showAll.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "only show these",
+    onClick: async function (data) {
+        await OnlyShowStatus(StatusOnHold);
+    },
 });
 
 //Drawn
-$(function () {
-    $("#btnShowDrawn").dxButton({
-        icon: 'images/eye.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "show these",
-        onClick: async function (data) {
-            await SetVisibility(StatusDrawn, true);
-        },
-    });
+$("#btnShowDrawn").dxButton({
+    icon: 'images/eye.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "show these",
+    onClick: async function (data) {
+        await SetVisibility(StatusDrawn, true);
+    },
 });
 
-$(function () {
-    $("#btnHideDrawn").dxButton({
-        icon: 'images/eyeCrossed.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "hide these",
-        onClick: async function (data) {
-            await SetVisibility(StatusDrawn, false);
-        },
-    });
+$("#btnHideDrawn").dxButton({
+    icon: 'images/eyeCrossed.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "hide these",
+    onClick: async function (data) {
+        await SetVisibility(StatusDrawn, false);
+    },
 });
 
-$(function () {
-    $("#btnOnlyShowDrawn").dxButton({
-        icon: 'images/showAll.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "only show these",
-        onClick: async function (data) {
-            await OnlyShowStatus(StatusDrawn);
-        },
-    });
+$("#btnOnlyShowDrawn").dxButton({
+    icon: 'images/showAll.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "only show these",
+    onClick: async function (data) {
+        await OnlyShowStatus(StatusDrawn);
+    },
 });
 
 //Planned
-$(function () {
-    $("#btnShowPlanned").dxButton({
-        icon: 'images/eye.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "show these",
-        onClick: async function (data) {
-            await SetVisibility(StatusPlanned, true);
-        },
-    });
+$("#btnShowPlanned").dxButton({
+    icon: 'images/eye.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "show these",
+    onClick: async function (data) {
+        await SetVisibility(StatusPlanned, true);
+    },
 });
 
-$(function () {
-    $("#btnHidePlanned").dxButton({
-        icon: 'images/eyeCrossed.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "hide these",
-        onClick: async function (data) {
-            await SetVisibility(StatusPlanned, false);
-        },
-    });
+$("#btnHidePlanned").dxButton({
+    icon: 'images/eyeCrossed.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "hide these",
+    onClick: async function (data) {
+        await SetVisibility(StatusPlanned, false);
+    },
 });
 
-$(function () {
-    $("#btnOnlyShowPlanned").dxButton({
-        icon: 'images/showAll.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "only show these",
-        onClick: async function (data) {
-            await OnlyShowStatus(StatusPlanned);
-        },
-    });
+$("#btnOnlyShowPlanned").dxButton({
+    icon: 'images/showAll.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "only show these",
+    onClick: async function (data) {
+        await OnlyShowStatus(StatusPlanned);
+    },
 });
 
 //Demoulded
-$(function () {
-    $("#btnShowDemoulded").dxButton({
-        icon: 'images/eye.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "show these",
-        onClick: async function (data) {
-            await SetVisibility(StatusDemoulded, true);
-        },
-    });
+$("#btnShowDemoulded").dxButton({
+    icon: 'images/eye.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "show these",
+    onClick: async function (data) {
+        await SetVisibility(StatusDemoulded, true);
+    },
 });
 
-$(function () {
-    $("#btnHideDemoulded").dxButton({
-        icon: 'images/eyeCrossed.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "hide these",
-        onClick: async function (data) {
-            await SetVisibility(StatusDemoulded, false);
-        },
-    });
+$("#btnHideDemoulded").dxButton({
+    icon: 'images/eyeCrossed.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "hide these",
+    onClick: async function (data) {
+        await SetVisibility(StatusDemoulded, false);
+    },
 });
 
-$(function () {
-    $("#btnOnlyShowDemoulded").dxButton({
-        icon: 'images/showAll.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "only show these",
-        onClick: async function (data) {
-            await OnlyShowStatus(StatusDemoulded);
-        },
-    });
+$("#btnOnlyShowDemoulded").dxButton({
+    icon: 'images/showAll.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "only show these",
+    onClick: async function (data) {
+        await OnlyShowStatus(StatusDemoulded);
+    },
 });
 
 //ProductionEnded
-$(function () {
-    $("#btnShowProductionEnded").dxButton({
-        icon: 'images/eye.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "show these",
-        onClick: async function (data) {
-            await SetVisibility(StatusProductionEnded, true);
-        },
-    });
+$("#btnShowProductionEnded").dxButton({
+    icon: 'images/eye.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "show these",
+    onClick: async function (data) {
+        await SetVisibility(StatusProductionEnded, true);
+    },
 });
 
-$(function () {
-    $("#btnHideProductionEnded").dxButton({
-        icon: 'images/eyeCrossed.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "hide these",
-        onClick: async function (data) {
-            await SetVisibility(StatusProductionEnded, false);
-        },
-    });
+$("#btnHideProductionEnded").dxButton({
+    icon: 'images/eyeCrossed.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "hide these",
+    onClick: async function (data) {
+        await SetVisibility(StatusProductionEnded, false);
+    },
 });
 
-$(function () {
-    $("#btnOnlyShowProductionEnded").dxButton({
-        icon: 'images/showAll.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "only show these",
-        onClick: async function (data) {
-            await OnlyShowStatus(StatusProductionEnded);
-        },
-    });
+$("#btnOnlyShowProductionEnded").dxButton({
+    icon: 'images/showAll.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "only show these",
+    onClick: async function (data) {
+        await OnlyShowStatus(StatusProductionEnded);
+    },
 });
 
 //AvailableForTransport
-$(function () {
-    $("#btnShowAvailableForTransport").dxButton({
-        icon: 'images/eye.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "show these",
-        onClick: async function (data) {
-            await SetVisibility(StatusAvailableForTransport, true);
-        },
-    });
+$("#btnShowAvailableForTransport").dxButton({
+    icon: 'images/eye.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "show these",
+    onClick: async function (data) {
+        await SetVisibility(StatusAvailableForTransport, true);
+    },
 });
 
-$(function () {
-    $("#btnHideAvailableForTransport").dxButton({
-        icon: 'images/eyeCrossed.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "hide these",
-        onClick: async function (data) {
-            await SetVisibility(StatusAvailableForTransport, false);
-        },
-    });
+$("#btnHideAvailableForTransport").dxButton({
+    icon: 'images/eyeCrossed.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "hide these",
+    onClick: async function (data) {
+        await SetVisibility(StatusAvailableForTransport, false);
+    },
 });
 
-$(function () {
-    $("#btnOnlyShowAvailableForTransport").dxButton({
-        icon: 'images/showAll.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "only show these",
-        onClick: async function (data) {
-            await OnlyShowStatus(StatusAvailableForTransport);
-        },
-    });
+$("#btnOnlyShowAvailableForTransport").dxButton({
+    icon: 'images/showAll.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "only show these",
+    onClick: async function (data) {
+        await OnlyShowStatus(StatusAvailableForTransport);
+    },
 });
 
 //Transported
-$(function () {
-    $("#btnShowTransported").dxButton({
-        icon: 'images/eye.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "show these",
-        onClick: async function (data) {
-            await SetVisibility(StatusTransported, true);
-        },
-    });
+$("#btnShowTransported").dxButton({
+    icon: 'images/eye.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "show these",
+    onClick: async function (data) {
+        await SetVisibility(StatusTransported, true);
+    },
 });
 
-$(function () {
-    $("#btnHideTransported").dxButton({
-        icon: 'images/eyeCrossed.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "hide these",
-        onClick: async function (data) {
-            await SetVisibility(StatusTransported, false);
-        },
-    });
+$("#btnHideTransported").dxButton({
+    icon: 'images/eyeCrossed.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "hide these",
+    onClick: async function (data) {
+        await SetVisibility(StatusTransported, false);
+    },
 });
 
-$(function () {
-    $("#btnOnlyShowTransported").dxButton({
-        icon: 'images/showAll.png',
-        stylingMode: "text",
-        type: "back",
-        hint: "only show these",
-        onClick: async function (data) {
-            await OnlyShowStatus(StatusTransported);
-        },
-    });
+$("#btnOnlyShowTransported").dxButton({
+    icon: 'images/showAll.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "only show these",
+    onClick: async function (data) {
+        await OnlyShowStatus(StatusTransported);
+    },
 });
 //#endregion
 
@@ -3670,101 +3652,140 @@ async function SelectGuids(guids) {
     }
 }
 
-$(function () {
-    $("#btnCreateSlipDivId").dxButton({
-        stylingMode: "outlined",
-        text: getTextById("btnCreateSlip"),
-        type: "success",
-        template(data, container) {
-            $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
-            buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
-                visible: false,
-            }).dxLoadIndicator('instance');
-        },
-        onClick: async function (data) {
-            modelIsColored = false;
-            data.component.option('text', getTextById("btnCreateSlip"));
-            buttonIndicator.option('visible', true);
-            try {
-                //Get project name
-                var projectNumber = await GetProjectNumber();
-                if (projectNumber == undefined)
-                    return;
 
-                //Authenticate with MUK API
-                var token = await getToken();
+$("#btnCreateSlipDivId").dxButton({
+    stylingMode: "outlined",
+    text: getTextById("btnCreateSlip"),
+    type: "success",
+    template(data, container) {
+        $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+        buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+            visible: false,
+        }).dxLoadIndicator('instance');
+    },
+    onClick: async function (data) {
+        modelIsColored = false;
+        data.component.option('text', getTextById("btnCreatingSlip"));
+        buttonIndicator.option('visible', true);
 
-                //Get project ID
-                var id = await GetProjectId(projectNumber);
+        try {
+            //Get project name
+            var projectNumber = await GetProjectNumber();
+            if (projectNumber == undefined)
+                return;
 
-                if (prefixDetails.length == 0)
-                {
-                    await fillPrefixDetails();
+            //Authenticate with MUK API
+            var token = await getToken();
+
+            //Get project ID
+            var id = await GetProjectId(projectNumber);
+
+            if (prefixDetails.length == 0)
+            {
+                await fillPrefixDetails();
+            }
+
+            //console.log("projectId: " + id);
+            //console.log(selectedObjects);
+            var deliverySlipId = -1;
+            await $.ajax({
+                type: "POST",
+                url: odooURL + "/api/v1/create",
+                headers: { "Authorization": "Bearer " + token },
+                data: {
+                    model: "vpb.delivery.slip",
+                    values: '{"project_id": ' + id + '}',
+                },
+                success: function (odooData) {
+                    deliverySlipId = odooData[0];
                 }
+            });
 
-                //console.log("projectId: " + id);
-                //console.log(selectedObjects);
-                var deliverySlipId = -1;
+            //console.log("deliverySlipId:");
+            //console.log(deliverySlipId);
+            if (deliverySlipId == undefined || deliverySlipId == -1)
+                throw "Deliveryslip was not created";
+
+            var objStatusPlannedForTransport = ObjectStatuses.find(x => x.Status === StatusPlannedForTransport);
+            for (var selectedObject of selectedObjects) {
+                if (selectedObject.OdooPmmId == -1 || selectedObject.OdooTcmId == -1 || !selectedObject.Valid)
+                    continue;
+
+                //console.log("selectedObject.OdooPmmId:");
+                //console.log(selectedObject.OdooPmmId);
+                //console.log("selectedObject.OdooTcmId:");
+                //console.log(selectedObject.OdooTcmId);
+
+                var prefixDetail = prefixDetails.find(x => x.Prefix === selectedObject.Prefix);
+                var valuesStr = '{"slip_id": ' + deliverySlipId
+                    + ', "mark_id": ' + selectedObject.OdooPmmId
+                    + ', "trimble_connect_id": ' + selectedObject.OdooTcmId
+                    + ', "name": "' + selectedObject.OdooCode + '"'
+                    + ', "product_qty": 1';
+                if (prefixDetail != undefined)
+                    valuesStr = valuesStr + ', "product_id": ' + prefixDetail.ProductId;
+                valuesStr = valuesStr + '}';
+                //console.log(valuesStr);
                 await $.ajax({
                     type: "POST",
                     url: odooURL + "/api/v1/create",
                     headers: { "Authorization": "Bearer " + token },
                     data: {
-                        model: "vpb.delivery.slip",
-                        values: '{"project_id": ' + id + '}',
+                        model: "vpb.delivery.slip.line",
+                        values: valuesStr,
                     },
-                    success: function (odooData) {
-                        deliverySlipId = odooData[0];
+                    success: async function (odooData) {
+                        var deliverySlipLineId = odooData[0];
+
+                        //TODO: take reference date into account
+                        var guidToChange = selectedObject.Guid;
+                        const mobjectsArr = await API.viewer.getObjects({ parameter: { properties: { 'Default.GUID': guidToChange } } });
+
+                        var compressedIfcGuids = [];
+                        var compressedIfcGuid = Guid.fromFullToCompressed(guidToChange);
+                        compressedIfcGuids.push(compressedIfcGuid);
+                        //remove element from previous status
+                        for (const objStatus of ObjectStatuses) {
+                            var index = objStatus.CompressedIfcGuids.indexOf(compressedIfcGuid);
+                            if (index != -1) {
+                                objStatus.CompressedIfcGuids.splice(index, 1);
+                                console.log("Assembly " + guidToChange + " removed from CompressedIfcGuids as " + objStatus.Status);
+                            }
+                            index = objStatus.Guids.indexOf(guidToChange);
+                            if (index != -1) {
+                                objStatus.Guids.splice(index, 1);
+                                console.log("Assembly " + guidToChange + " removed from Guids as " + objStatus.Status);
+                            }
+                        }
+                        //add element to new status
+                        var objStatus = objStatusPlannedForTransport;
+                        objStatus.Guids.push(guidToChange);
+                        objStatus.CompressedIfcGuids.push(compressedIfcGuid);
+                        console.log("Assembly " + guidToChange + " added as " + status);
+
+                        for (const mobjects of mobjectsArr) {
+                            var modelId = mobjects.modelId;
+                            var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedIfcGuids);
+                            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: objStatus.Color });
+                        }
+
+                        //console.log("deliverySlipLineId:");
+                        //console.log(deliverySlipLineId);
                     }
                 });
-
-                //console.log("deliverySlipId:");
-                //console.log(deliverySlipId);
-                if (deliverySlipId == undefined || deliverySlipId == -1)
-                    throw "Deliveryslip was not created";
-
-                for (var selectedObject of selectedObjects) {
-                    if (selectedObject.OdooPmmId == -1 || selectedObject.OdooTcmId == -1 || !selectedObject.Valid)
-                        continue;
-
-                    //console.log("selectedObject.OdooPmmId:");
-                    //console.log(selectedObject.OdooPmmId);
-                    //console.log("selectedObject.OdooTcmId:");
-                    //console.log(selectedObject.OdooTcmId);
-
-                    var prefixDetail = prefixDetails.find(x => x.Prefix === selectedObject.Prefix);
-                    var valuesStr = '{"slip_id": ' + deliverySlipId
-                        + ', "mark_id": ' + selectedObject.OdooPmmId
-                        + ', "trimble_connect_id": ' + selectedObject.OdooTcmId
-                        + ', "name": "' + selectedObject.OdooCode + '"'
-                        + ', "product_qty": 1';
-                    if (prefixDetail != undefined)
-                        valuesStr = valuesStr + ', "product_id": ' + prefixDetail.ProductId;
-                    valuesStr = valuesStr + '}';
-                    //console.log(valuesStr);
-                    await $.ajax({
-                        type: "POST",
-                        url: odooURL + "/api/v1/create",
-                        headers: { "Authorization": "Bearer " + token },
-                        data: {
-                            model: "vpb.delivery.slip.line",
-                            values: valuesStr,
-                        },
-                        success: function (odooData) {
-                            var deliverySlipLineId = odooData[0];
-                            //console.log("deliverySlipLineId:");
-                            //console.log(deliverySlipLineId);
-                        }
-                    });
-                }
             }
-            catch (e) {
-                DevExpress.ui.notify(e);
-            }
-            buttonIndicator.option('visible', false);
-            data.component.option('text', getTextById("btnCreateSlip"));
-        },
-    });
+
+            await refreshExistingSlips();
+
+            await API.viewer.setSelection(undefined, 'remove');
+        }
+        catch (e) {
+            DevExpress.ui.notify(e);
+        }
+
+        buttonIndicator.option('visible', false);
+        data.component.option('text', getTextById("btnCreateSlip"));
+    },
 });
 
 // https://github.com/jsdbroughton/ifc-guid/blob/master/Guid.js
