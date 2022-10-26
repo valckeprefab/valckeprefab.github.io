@@ -1872,17 +1872,16 @@ async function visualizeFreights() {
             var maxZ = Math.max(...zValues);
             var deltaZ = maxZ - minZ;
 
-            if (freight.Surface < deltaX * deltaY || deltaZ > 400) {
-                jsonArray += jsonFreight;
-            }
-            else {
+            console.log(freight);
+            if (freight.Surface > deltaX * deltaY && deltaZ <= 400) {
                 var avgX = xValues.reduce((a, b) => a + b, 0) / xValues.length;
                 var avgY = xValues.reduce((a, b) => a + b, 0) / yValues.length;
                 var avgZ = xValues.reduce((a, b) => a + b, 0) / zValues.length;
                 var coordinates = { x: avgX, y: avgY, z: avgZ };
                 var labelText = freight.FreightNumber;
-                jsonArray += getMarkupJson(colorToUse, coordinates, modelId, runtimeIds[0], labelText) + ",";
+                jsonFreight = getMarkupJson(colorToUse, coordinates, modelId, runtimeIds[0], labelText) + ",";
             }
+            jsonArray += jsonFreight;
         }
     }
 
