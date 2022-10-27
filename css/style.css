@@ -166,3 +166,13 @@ bordered{
     /*height: 440px;*/
     /*width: 800px;*/
 }
+
+.v-production {
+    background-color: rgba(255, 100, 255, 0.25);
+    padding: 5px 0 1px 10px;
+    display: none;
+}
+
+.v-productionBlock {
+    padding: 5px 10px 5px 5px;
+}
