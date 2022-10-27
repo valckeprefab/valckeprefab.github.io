@@ -3354,6 +3354,9 @@ $("#btnSetOdooLabelsDivId").dxButton({
                 throw getTextById("errorMsgUsernamePassword");
             }
 
+            var selectedItem = labelContentTypes.dxSelectBox("instance").option("selectedItem");
+            var possibleSelectBoxValues = getLabelContentOdooTypes();
+
             let jsonArray = "[";
             const selection = await API.viewer.getSelection();
             const selector = {
@@ -3388,8 +3391,7 @@ $("#btnSetOdooLabelsDivId").dxButton({
                     var color = assemblyNameObj.AssemblyQuantity > 1 ? { r: 255, g: 0, b: 0, a: 255 } : { r: 60, g: 203, b: 62, a: 255 };
                     var coordinates = { x: modelPos.x + cogX.value, y: modelPos.y + cogY.value, z: modelPos.z + cogZ.value };
                     var labelText = "";
-                    var selectedItem = labelContentTypes.dxSelectBox("instance").option("selectedItem");
-                    if (selectedItem === labelContentTypes[0]) {
+                    if (selectedItem === possibleSelectBoxValues[0]) {
                         var assemblyNameObj = assemblyNames.find(x => x.Guid.toUpperCase() === guid.value.toUpperCase());
                         if (assemblyNameObj != undefined)
                             labelText = assemblyNameObj.AssemblyName;
