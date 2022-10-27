@@ -833,9 +833,6 @@ async function addTextMarkups() {
         DevExpress.ui.notify(e);
     }
 }
-buttonIndicator.option('visible', false);
-data.component.option('text', getTextById("btnSetOdooLabels"));
-}
 
 async function canReadDeliverySlips() {
     try {
