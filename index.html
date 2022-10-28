@@ -107,6 +107,14 @@
 
             <div class="v-labels">
                 <div class="v-title" id="divTitlePropertyLabels"><h1 id="titlePropertylabels">Labels plaatsen op basis van gegevens 3D model</h1></div>
+                <div class="dx-fieldset">
+                    <div class="dx-field">
+                        <div class="v-field-label" id="titleLabelContent">Labelinhoud</div>
+                        <div class="v-field-value">
+                            <div id="labelContentSelection"></div>
+                        </div>
+                    </div>
+                </div>
                 <div class="v-grp">
                     <div class="dx-fieldset">
                         <div id="btnShowLabelsDivId"></div>
@@ -228,6 +236,14 @@
                 <div class="v-title" id="divTitleAction2"><h1 id="titleAction2">Actie 2: Labels plaatsen bij gekende odoo elementen</h1></div>
                 <div class="v-grp">
                     <div class="dx-fieldset">
+                        <div class="dx-field">
+                            <div class="v-field-label" id="titleLabelContentOdoo">Labelinhoud</div>
+                            <div class="v-field-value">
+                                <div id="labelContentOdooSelection"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dx-fieldset">
                         <div id="btnSetOdooLabelsDivId"></div>
                     </div>
                 </div>
@@ -249,6 +265,14 @@
                         <div id="btnGetOdooInfoDivId"></div>
                     </div>
                 </div>
+
+                <hr />
+                <div class="v-title" id="divTitleAction5"><h1 id="titleAction5">Actie 5: Visualiseer vrachten</h1></div>
+                <div class="v-grp">
+                    <div class="dx-fieldset">
+                        <div id="btnVisualizeFreightsDivId"></div>
+                    </div>
+                </div>
             </div>
 
             <div id="transportDiv" class="v-transport">
@@ -267,6 +291,32 @@
                 </div>
             </div>
 
+            <div id="productionDiv" class="v-production">
+                <div class="v-title" id="divTitleProduction"><h1 id="titleProduction">Productie</h1></div>
+                <hr />
+                <div class="v-grp">
+                    <div class="dx-fieldset">
+                        <div id="btnVisualizeTTDivId"></div>
+                    </div>
+                    <div class="dx-fieldset">
+                        <div id="btnVisualizeWDivId"></div>
+                    </div>
+                </div>
+                <hr />
+                <div id="freightsDiv">
+                    <div class="v-productionBlock">
+                        <div id="titleExistingFreights">Bestaande vrachten:</div>
+                        <div id="btnRefreshExistingFreightsDivId"></div>
+                        <div id="dropDownBoxExistingFreightsProduction"></div>
+                    </div>
+                    <hr />
+                    <div class="v-productionBlock">
+                        <div id="titleCurrentSelectionProduction">Huidige selectie:</div>
+                        <div class="v-dataGridProduction" id="dataGridProduction"></div>
+                        <div id="btnCreateFreightDivId"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </body>
