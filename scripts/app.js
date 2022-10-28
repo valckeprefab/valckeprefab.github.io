@@ -845,7 +845,7 @@ async function addTextMarkups() {
             await API.markup.addTextMarkup(JSON.parse(jsonArray));
         }
         else {
-            DevExpress.ui.notify("not a valid selection");
+            DevExpress.ui.notify("No relevant assemblies found to add labels.");
         }
     }
     catch (e) {
@@ -1297,6 +1297,10 @@ function getOdooDrawingUrl(projectNumber, drawingName) {
     return `${odooURL.replace('https', 'http')}:8080/bib/${projectNumber}/merken/${drawingName}`;
 }
 
+function getOdooSlipUrl(slipId) {
+    return `${odooURL}/web#id=${slipId}&action=3552&model=vpb.delivery.slip&view_type=form&cids=1&menu_id=2270`;
+}
+
 function getPropSelector() {
     return {
         parameter: {
@@ -1557,6 +1561,8 @@ async function selectionChanged(data) {
                     Valid: false,
                     Profile: "",
                     ReinforcementType: "",
+                    SlipName: "",
+                    OdooSlipId: -1,
                 });
             }
         }
@@ -1667,6 +1673,85 @@ async function selectionChanged(data) {
                         }
                     }
                 });
+
+                var transportedObjects = tempSelectedObjects;//.filter(x => !x.Valid);
+                //console.log("transportedObjects: ");
+                //console.log(transportedObjects);
+                for (var k = 0; k < transportedObjects.length; k += fetchLimit) { //loop cuz only fetchLimit records get fetched at a time
+                    var domainSliplines = "";
+
+                    for (var l = k; l < transportedObjects.length && l < k + fetchLimit; l++) {
+                        var filterArrStr = `["trimble_connect_id.id", "=", "${transportedObjects[l].OdooTcmId}"]`;
+                        if (l > k) {
+                            domainSliplines = '"|", ' + filterArrStr + ',' + domainSliplines;
+                        }
+                        else {
+                            domainSliplines = filterArrStr;
+                        }
+                    }
+                    domainSliplines = `[["trimble_connect_id.project_id.id", "=", "${projectId}"],["slip_id.state", "!=", "cancel"],${domainSliplines}]`;
+                    //console.log("domainSliplines: ");
+                    //console.log(domainSliplines);
+
+                    await $.ajax({
+                        type: "GET",
+                        url: odooURL + "/api/v1/search_read",
+                        headers: { "Authorization": "Bearer " + token },
+                        data: {
+                            model: "vpb.delivery.slip.line",
+                            domain: domainSliplines,
+                            fields: '["id", "slip_id", "trimble_connect_id", "name"]',
+                        },
+                        success: function (odooData) {
+                            //console.log("odooData sliplines: ");
+                            //console.log(odooData);
+                            for (var record of odooData) {
+                                var object = tempSelectedObjects.find(x => x.OdooTcmId == record.trimble_connect_id[0]);
+                                //console.log("object: ");
+                                //console.log(object);
+                                if (object != undefined) {
+                                    object.OdooSlipId = record.slip_id[0];
+                                    object.SlipName = record.slip_id[1];
+                                    object.Valid = false;
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                //var objectsOnSlips = [...new Set(tempSelectedObjects.filter(x => x.OdooSlipId != -1))];
+                //for (var k = 0; k < objectsOnSlips.length; k += fetchLimit) { //loop cuz only fetchLimit records get fetched at a time
+                //    var domainSlips = "";
+
+                //    for (var l = k; l < objectsOnSlips.length && l < k + fetchLimit; l++) {
+                //        var filterArrStr = `'["id", "=", "${objectsOnSlips[l].OdooSlipId}"]`;
+                //        if (l > k) {
+                //            domainSlips = '"|", ' + filterArrStr + ',' + domainSlips;
+                //        }
+                //        else {
+                //            domainSlips = filterArrStr;
+                //        }
+                //    }
+
+                //    await $.ajax({
+                //        type: "GET",
+                //        url: odooURL + "/api/v1/search_read",
+                //        headers: { "Authorization": "Bearer " + token },
+                //        data: {
+                //            model: "vpb.delivery.slip",
+                //            domain: domainSlips,
+                //            fields: '["id", "name"]',
+                //        },
+                //        success: function (odooData) {
+                //            for (var record of odooData) {
+                //                var objects = tempSelectedObjects.filter(x => x.OdooSlipId == record.id);
+                //                for (var object of objects) {
+                //                    object.SlipName = record.name;
+                //                }
+                //            }
+                //        }
+                //    });
+                //}
             }
             else {
                 //console.log("no records found in trimble.connect.main");
@@ -4214,6 +4299,23 @@ var dataGridTransport = $("#dataGridTransport").dxDataGrid({
         format: {
             type: "fixedPoint",
             precision: 0
+        },
+    }, {
+        dataField: 'Profile',
+        caption: 'Profiel',
+        dataType: 'number',
+        width: 160,
+        format: {
+            type: "fixedPoint",
+            precision: 0
+        },
+    }, {
+        dataField: 'SlipName',
+        caption: 'Bon',
+        width: 60,
+        cellTemplate(container, options) {
+            $(`<a href="${getOdooSlipUrl(options.data.OdooSlipId)}" target="_blank" rel="noopener noreferrer">${options.value}</a>`)
+                .appendTo(container);
         },
     },
     ],
