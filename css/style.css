@@ -40,10 +40,6 @@ body .dx-popup-content .custom-item {
     width: 100%;
 }
 
-.v-dataGridTransport {
-    width: 100%;
-}
-
 .v-field-label2 {
     font-family: 'Segoe UI Light', 'Helvetica Neue Light', 'Segoe UI', 'Helvetica Neue', 'Trebuchet MS', Verdana;
     font-weight: 200;
@@ -167,6 +163,10 @@ bordered{
     /*width: 800px;*/
 }
 
+.v-dataGridTransport {
+    width: 100%;
+}
+
 .v-production {
     background-color: rgba(255, 100, 255, 0.25);
     padding: 5px 0 1px 10px;
@@ -180,4 +180,8 @@ bordered{
 #dataGridProduction {
     /*height: 440px;*/
     /*width: 800px;*/
+}
+
+.v-dataGridProduction {
+    width: 100%;
 }
