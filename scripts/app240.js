@@ -4311,12 +4311,12 @@ var dataGridTransport = $("#dataGridTransport").dxDataGrid({
     }, {
         dataField: 'SlipName',
         caption: 'Bon',
-            width: 60,
-            cellTemplate(container, options) {
-                $(`<a>${options.value}</a>`)
-                    .append($('<a>', { href: getOdooSlipUrl(options.data.OdooSlipId), target: "_blank", rel: "noopener noreferrer" }))
-                    .appendTo(container);
-            },
+        width: 60,
+        cellTemplate(container, options) {
+            $(`<a>${options.value}</a>`)
+                .append($('<a>', { href: getOdooSlipUrl(options.data.OdooSlipId), target: "_blank", rel: "noopener noreferrer" }))
+                .appendTo(container);
+        },
     },
     ],
     summary: {
