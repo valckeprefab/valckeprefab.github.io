@@ -1706,7 +1706,7 @@ async function selectionChanged(data) {
                                 console.log("object: ");
                                 console.log(object);
                                 if (object != undefined) {
-                                    object.SlipName = record.slip_id[1];
+                                    object.OdooSlipId = record.slip_id[0];
                                     object.SlipName = record.slip_id[1];
                                 }
                             }
