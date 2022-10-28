@@ -3011,7 +3011,7 @@ $("#btnOdooSearchDivId").dxButton({
 
 $("#btnVisualizeTTDivId").dxButton({
     stylingMode: "outlined",
-    text: "Visualiseer TT",
+    text: "Visualiseer TT(T)",
     type: "success",
     template(data, container) {
         $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
@@ -3023,9 +3023,12 @@ $("#btnVisualizeTTDivId").dxButton({
         data.component.option('text', 'Bezig met visualiseren');
         buttonIndicator.option('visible', true);
 
+        await colorNonStandardWidth('TT', 2400);
+
+        await colorNonStandardWidth('TTT', 1800);
 
         buttonIndicator.option('visible', false);
-        data.component.option('text', 'Visualiseer TT');
+        data.component.option('text', 'Visualiseer TT(T)');
     },
 });
 
@@ -3043,11 +3046,42 @@ $("#btnVisualizeWDivId").dxButton({
         data.component.option('text', 'Bezig met visualiseren');
         buttonIndicator.option('visible', true);
 
+        await colorNonStandardWidth('W', 1200);
 
         buttonIndicator.option('visible', false);
         data.component.option('text', 'Visualiseer W');
     },
 });
+
+async function colorNonStandardWidth(prefix, standardWidth) {
+    const objectsW = await API.viewer.getObjects({ parameter: { properties: { 'Default.MERKPREFIX': prefix } } });
+    for (const mobjects of objectsW) {
+        var modelId = mobjects.modelId;
+        const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+        if (objectsRuntimeIds.length == 0)
+            continue;
+        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: { r: 0, g: 255, b: 0 } });
+    }
+
+    const objectsWStandard = await API.viewer.getObjects({ parameter: { properties: { 'Default.MERKPREFIX': prefix, 'Default.WIDTH': standardWidth } } });
+    for (const mobjects of objectsWStandard) {
+        var modelId = mobjects.modelId;
+        const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+        if (objectsRuntimeIds.length == 0)
+            continue;
+        const objectPropertiesArr = await API.viewer.getObjectProperties(modelId, objectsRuntimeIds);
+        var objectsRuntimeIdsToColor = [];
+        for (const objproperties of objectPropertiesArr) {
+            var width = objproperties.properties.flatMap(p => p.properties).find(p => p.name === "WIDTH");
+            if (width != undefined && width.value != standardWidth) {
+                objectsRuntimeIdsToColor.push(objproperties.id);
+            }
+        }
+        console.log(objectsRuntimeIdsToColor);
+        if (objectsRuntimeIdsToColor.length > 0)
+            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIdsToColor }] }, { color: { r: 255, g: 0, b: 0 } });
+    }
+}
 
 $("#btnRefreshExistingSlipsDivId").dxButton({
     stylingMode: "outlined",
