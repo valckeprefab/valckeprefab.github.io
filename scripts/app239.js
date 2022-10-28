@@ -4313,7 +4313,7 @@ var dataGridTransport = $("#dataGridTransport").dxDataGrid({
         caption: 'Bon',
         width: 60,
         cellTemplate(container, options) {
-            $('<div>')//<a href="${url}" target="_blank" rel="noopener noreferrer">
+            $('<div>')
                 .append($('<a>', { href: getOdooSlipUrl(options.value), target: "_blank", rel: "noopener noreferrer" })) 
                 .appendTo(container);
         },
