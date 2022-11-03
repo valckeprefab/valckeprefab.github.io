@@ -175,6 +175,7 @@ bordered{
 
 .v-productionBlock {
     padding: 5px 10px 5px 5px;
+    clear:both;
 }
 
 #dataGridProduction {
@@ -188,4 +189,12 @@ bordered{
 
 .v-freightNmbr {
     display: inline-block;
+}
+
+.v-menuNavigationButtonsFreights {
+    float: left;
+}
+
+.v-menuCrudButtonsFreights {
+    float: right;
 }
