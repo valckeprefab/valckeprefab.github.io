@@ -185,3 +185,7 @@ bordered{
 .v-dataGridProduction {
     width: 100%;
 }
+
+.v-freightNmbr {
+    display: inline-block;
+}
