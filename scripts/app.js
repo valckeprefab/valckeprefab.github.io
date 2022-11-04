@@ -869,17 +869,19 @@ async function setAccesBooleans() {
             },
             success: function () {
                 hasAccesToTransport = true;
-                var username = odooUsernameTextbox.dxTextBox("instance").option("value");
-                if (username == 'krecour' || username == 'mhemeryck' || username == 'jrodenbach' || username == 'sys_mrp_user')
-                    hasAccesToFreights = true;
             }
         });
-
-        hasAccesToProduction = true;
     }
     catch (ex) {
 
     }
+
+    var username = odooUsernameTextbox.dxTextBox("instance").option("value");
+    if (username == 'sys_mrp_user')
+        hasAccesToFreights = true;
+
+    hasAccesToProduction = true;
+
     return false;
 }
 
@@ -1190,6 +1192,39 @@ function getDateShortString(date) {
     return dayName + " " + [(dd > 9 ? '' : '0') + dd, (mm > 9 ? '' : '0') + mm, date.getFullYear(),].join('-');
 };
 
+async function getElementsInFreight(freightnumber) {
+    //Get project name
+    var projectNumber = await getProjectNumber();
+    if (projectNumber == undefined)
+        return;
+
+    //Authenticate with MUK API
+    var token = await getToken();
+
+    //Get project ID
+    var projectId = await GetProjectId(projectNumber);
+
+    //Get elements
+    var elements = [];
+    await $.ajax({
+        type: "GET",
+        url: odooURL + "/api/v1/search_read",
+        headers: { "Authorization": "Bearer " + token },
+        data: {
+            model: "trimble.connect.main",
+            domain: `[["project_id.id", "=", "${projectId}"], ["freight", "=", "${freightnumber}"], ["mark_id.mark_prefix", "=", "W"]]`,
+            fields: '["id", "name"]',
+        },
+        success: function (data) {
+            for (const record of data) {
+                elements.push({ Guid: record.name, OdooId: record.id, Freight: freightnumber});
+            }
+        }
+    });
+
+    return elements;
+}
+
 function getFilterTypes() {
     var userLang = getUserLang();
     if (filterTypes[userLang] !== undefined) {
@@ -1198,6 +1233,44 @@ function getFilterTypes() {
     else {
         return filterTypes.en;
     }
+}
+
+async function getFreightNumbers() {
+    //Get project name
+    var projectNumber = await getProjectNumber();
+    if (projectNumber == undefined)
+        return;
+
+    //Authenticate with MUK API
+    var token = await getToken();
+
+    //Get project ID
+    var projectId = await GetProjectId(projectNumber);
+
+    //Get freightnumbers
+    var freights = [];
+    await $.ajax({
+        type: "GET",
+        url: odooURL + "/api/v1/search_read",
+        headers: { "Authorization": "Bearer " + token },
+        data: {
+            model: "trimble.connect.main",
+            domain: `[["project_id.id", "=", "${projectId}"], ["freight", ">", "0"], ["mark_id.mark_prefix", "=", "W"]]`,
+            fields: '["freight"]',
+        },
+        success: function (data) {
+            for (const record of data) {
+                freights.push(record.freight);
+            }
+        }
+    });
+
+    //sort by integer value https://stackoverflow.com/questions/1063007/how-to-sort-an-array-of-integers-correctly
+    freights.sort(function (a, b) {
+        return a - b;
+    });
+
+    return [...new Set(freights)];
 }
 
 function getLabelContentTypes() {
@@ -1441,6 +1514,15 @@ const popupContentTemplate = function () {
     }
 };
 
+const popupContentTemplateLegend = function (items) {
+    var content = $('<div>');
+    for (item of items) {
+        content.append($(`</p><span style="background-color:rgb(${item.Color.r},${item.Color.g},${item.Color.b})">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span> : ${item.Text}</span></p>`));
+    }
+
+    return content;
+};
+
 function removeLeadingZeroes(stringwithzeroes) {
     return stringwithzeroes.replace(/^0+/, "");
 }
@@ -1558,7 +1640,8 @@ async function selectionChanged(data) {
                     AssemblyName: "",
                     AvailableForTransport: false,
                     DateTransported: "",
-                    Valid: false,
+                    ValidForNewSlip: false,
+                    ValidForNewFreight: false,
                     Profile: "",
                     ReinforcementType: "",
                     SlipName: "",
@@ -1614,7 +1697,7 @@ async function selectionChanged(data) {
                 data: {
                     model: "trimble.connect.main",
                     domain: domainTrimbleConnectMain,
-                    fields: '["id", "mark_id", "name", "rank", "mark_available", "date_transported"]',
+                    fields: '["id", "mark_id", "name", "rank", "mark_available", "date_transported", "freight"]',
                 },
                 success: function (odooData) {
                     //console.log("trimble.connect.main");
@@ -1636,6 +1719,7 @@ async function selectionChanged(data) {
                             selectedObject.OdooCode = record.mark_id[1];
                             selectedObject.DateTransported = record.date_transported ? getDateFromString(record.date_transported) : "";
                             selectedObject.AvailableForTransport = record.mark_available;
+                            selectedObject.ValidForNewFreight = record.freight == 0;
                         }
                         cntr++;
                         recordsAdded++;
@@ -1666,7 +1750,7 @@ async function selectionChanged(data) {
                                 object.PosNmbr = record.mark_ranking;
                                 object.Prefix = record.mark_prefix;
                                 object.AssemblyName = record.mark_prefix + record.mark_ranking + "." + object.Rank;
-                                object.Valid = object.AvailableForTransport && object.DateTransported === "";
+                                object.ValidForNewSlip = object.AvailableForTransport && object.DateTransported === "";
                                 object.Profile = record.mark_profile;
                                 object.ReinforcementType = record.mark_reinf_type ? record.mark_reinf_type : "";
                             }
@@ -1674,7 +1758,7 @@ async function selectionChanged(data) {
                     }
                 });
 
-                var transportedObjects = tempSelectedObjects;//.filter(x => !x.Valid);
+                var transportedObjects = tempSelectedObjects;//.filter(x => !x.ValidForNewSlip);
                 //console.log("transportedObjects: ");
                 //console.log(transportedObjects);
                 for (var k = 0; k < transportedObjects.length; k += fetchLimit) { //loop cuz only fetchLimit records get fetched at a time
@@ -1712,7 +1796,7 @@ async function selectionChanged(data) {
                                 if (object != undefined) {
                                     object.OdooSlipId = record.slip_id[0];
                                     object.SlipName = record.slip_id[1];
-                                    object.Valid = false;
+                                    object.ValidForNewSlip = false;
                                 }
                             }
                         }
@@ -2176,102 +2260,107 @@ async function getRecentOdooData() {
     if (!modelIsColored)
         return;
 
-    //Authenticate with MUK API
-    var token = await getToken();
+    try {
+        //Authenticate with MUK API
+        var token = await getToken();
 
-    //var debugInfo = "";
-    //Get project name
-    var projectNumber = await getProjectNumber();
-    if (projectNumber == undefined)
-        return;
+        //var debugInfo = "";
+        //Get project name
+        var projectNumber = await getProjectNumber();
+        if (projectNumber == undefined)
+            return;
 
-    //Get project ID
-    var id = await GetProjectId(projectNumber);
+        //Get project ID
+        var id = await GetProjectId(projectNumber);
 
-    if (lastUpdate === "") {
-        await $.ajax({
-            type: "GET",
-            url: odooURL + "/api/v1/search_read",
-            headers: { "Authorization": "Bearer " + token },
-            data: {
-                model: "trimble.connect.main",
-                domain: '[["project_id.id", "=", "' + id + '"]]',
-                order: 'write_date desc',
-                limit: 1,
-                fields: '["id", "write_date"]'
-            },
-            success: function (data) {
-                if (data.length > 0) {
-                    lastUpdate = data[0].write_date;
-                    lastUpdate = addASecond(lastUpdate);
-                    //console.log("Last update: " + lastUpdate);
-                }
-            }
-        });
-    }
-    else {
-        await $.ajax({
-            type: "GET",
-            url: odooURL + "/api/v1/search_read",
-            headers: { "Authorization": "Bearer " + token },
-            data: {
-                model: "trimble.connect.main",
-                domain: '[["project_id.id", "=", "' + id + '"],["write_date",">=","' + lastUpdate + '"]]',
-                order: 'write_date desc',
-                fields: '["id", "write_date", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "state", "mark_available"]',
-            },
-            success: async function (data) {
-                var date = getStringFromDate(new Date());
-                if (data.length > 0) {
-                    console.log(date + ": " + data.length + " updated records found.");
-                    lastUpdate = data[0].write_date;
-                    lastUpdate = addASecond(lastUpdate);
-
-                    var referenceDate = new Date();
-                    referenceDate.setHours(23);
-                    referenceDate.setMinutes(59);
-                    referenceDate.setSeconds(59);
-                    for (const record of data) {
-                        var status = getStatus(record, referenceDate);
-                        var color = getColorByStatus(status);
-
-                        const mobjectsArr = await API.viewer.getObjects({ parameter: { properties: { 'Default.GUID': record.name } } });
-                        //console.log("mobjectsArr length: " + mobjectsArr.length);
-
-                        var compressedIfcGuids = [];
-                        var compressedIfcGuid = Guid.fromFullToCompressed(record.name);
-                        compressedIfcGuids.push(compressedIfcGuid);
-                        //remove element from previous status
-                        for (const objStatus of objectStatuses) {
-                            var index = objStatus.CompressedIfcGuids.indexOf(compressedIfcGuid);
-                            if (index != -1) {
-                                objStatus.CompressedIfcGuids.splice(index, 1);
-                                console.log("Assembly " + record.name + " removed from CompressedIfcGuids as " + objStatus.Status);
-                            }
-                            index = objStatus.Guids.indexOf(record.name);
-                            if (index != -1) {
-                                objStatus.Guids.splice(index, 1);
-                                console.log("Assembly " + record.name + " removed from Guids as " + objStatus.Status);
-                            }
-                        }
-                        //add element to new status
-                        var objStatus = objectStatuses.find(o => o.Status === status);
-                        objStatus.Guids.push(record.name);
-                        objStatus.CompressedIfcGuids.push(compressedIfcGuid);
-                        console.log("Assembly " + record.name + " added as " + status);
-
-                        for (const mobjects of mobjectsArr) {
-                            var modelId = mobjects.modelId;
-                            var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedIfcGuids);
-                            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: color });
-                        }
+        if (lastUpdate === "") {
+            await $.ajax({
+                type: "GET",
+                url: odooURL + "/api/v1/search_read",
+                headers: { "Authorization": "Bearer " + token },
+                data: {
+                    model: "trimble.connect.main",
+                    domain: '[["project_id.id", "=", "' + id + '"]]',
+                    order: 'write_date desc',
+                    limit: 1,
+                    fields: '["id", "write_date"]'
+                },
+                success: function (data) {
+                    if (data.length > 0) {
+                        lastUpdate = data[0].write_date;
+                        lastUpdate = addASecond(lastUpdate);
+                        //console.log("Last update: " + lastUpdate);
                     }
                 }
-                else {
-                    console.log(date + ": no updated records found.");
+            });
+        }
+        else {
+            await $.ajax({
+                type: "GET",
+                url: odooURL + "/api/v1/search_read",
+                headers: { "Authorization": "Bearer " + token },
+                data: {
+                    model: "trimble.connect.main",
+                    domain: '[["project_id.id", "=", "' + id + '"],["write_date",">=","' + lastUpdate + '"]]',
+                    order: 'write_date desc',
+                    fields: '["id", "write_date", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "state", "mark_available"]',
+                },
+                success: async function (data) {
+                    var date = getStringFromDate(new Date());
+                    if (data.length > 0) {
+                        console.log(date + ": " + data.length + " updated records found.");
+                        lastUpdate = data[0].write_date;
+                        lastUpdate = addASecond(lastUpdate);
+
+                        var referenceDate = new Date();
+                        referenceDate.setHours(23);
+                        referenceDate.setMinutes(59);
+                        referenceDate.setSeconds(59);
+                        for (const record of data) {
+                            var status = getStatus(record, referenceDate);
+                            var color = getColorByStatus(status);
+
+                            const mobjectsArr = await API.viewer.getObjects({ parameter: { properties: { 'Default.GUID': record.name } } });
+                            //console.log("mobjectsArr length: " + mobjectsArr.length);
+
+                            var compressedIfcGuids = [];
+                            var compressedIfcGuid = Guid.fromFullToCompressed(record.name);
+                            compressedIfcGuids.push(compressedIfcGuid);
+                            //remove element from previous status
+                            for (const objStatus of objectStatuses) {
+                                var index = objStatus.CompressedIfcGuids.indexOf(compressedIfcGuid);
+                                if (index != -1) {
+                                    objStatus.CompressedIfcGuids.splice(index, 1);
+                                    console.log("Assembly " + record.name + " removed from CompressedIfcGuids as " + objStatus.Status);
+                                }
+                                index = objStatus.Guids.indexOf(record.name);
+                                if (index != -1) {
+                                    objStatus.Guids.splice(index, 1);
+                                    console.log("Assembly " + record.name + " removed from Guids as " + objStatus.Status);
+                                }
+                            }
+                            //add element to new status
+                            var objStatus = objectStatuses.find(o => o.Status === status);
+                            objStatus.Guids.push(record.name);
+                            objStatus.CompressedIfcGuids.push(compressedIfcGuid);
+                            console.log("Assembly " + record.name + " added as " + status);
+
+                            for (const mobjects of mobjectsArr) {
+                                var modelId = mobjects.modelId;
+                                var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedIfcGuids);
+                                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: color });
+                            }
+                        }
+                    }
+                    else {
+                        console.log(date + ": no updated records found.");
+                    }
                 }
-            }
-        });
+            });
+        }
+    }
+    catch (e) {
+        console.log(e);
     }
 }
 
@@ -2439,9 +2528,395 @@ const propertyValueTextBox = $('#placeholderPropertyValue').dxTextBox({
     placeholder: getTextById("phPropertyvalue"),
 });
 
+const freightNumberBox = $('#placeholderFreightNmbr').dxNumberBox({
+    width: 50,
+    onValueChanged: async function (data) {
+        var elementsInFreight = await getElementsInFreight(data.value);
+        var guids = elementsInFreight.map(x => x.Guid);
+        await selectGuids(guids);
+    },
+});
+
 //#endregion
 
 //#region buttons
+
+async function colorPanelsByPrefix() {
+    var allObjects = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
+    for (const mobjects of allObjects) {
+        var modelId = mobjects.modelId;
+        const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
+    }
+
+    var colorPerPrefix = [
+        {
+            Prefix: "PV",
+            Color: { r: 211, g: 211, b: 211, a: 255 }
+        },
+        {
+            Prefix: "PS",
+            Color: { r: 255, g: 255, b: 0, a: 255 }
+        },
+        {
+            Prefix: "KM",
+            Color: { r: 128, g: 0, b: 255, a: 255 }
+        },
+        {
+            Prefix: "PLAAT",
+            Color: { r: 0, g: 0, b: 255, a: 255 }
+        }
+    ];
+
+    var legendItems = [];
+    for (var colorPrefix of colorPerPrefix) {
+        var elementsColored = false;
+        const objectsPrefix = await API.viewer.getObjects({ parameter: { properties: { 'Default.MERKPREFIX': colorPrefix.Prefix } } });
+        for (const mobjects of objectsPrefix) {
+            var modelId = mobjects.modelId;
+            const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+            if (objectsRuntimeIds.length == 0)
+                continue;
+            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: colorPrefix.Color, visible: true });
+            elementsColored = true;
+        }
+
+        if (elementsColored)
+            legendItems.push({ Text: colorPrefix.Prefix, Color: colorPrefix.Color });
+    }
+
+    popup.option({
+        contentTemplate: () => popupContentTemplateLegend(legendItems),
+        height: 100 + legendItems.length * 30
+    });
+    popup.show();
+}
+
+async function colorPanelsByFinish() {
+    //Authenticate with MUK API
+    var token = await getToken();
+
+    //Get project name
+    var projectNumber = await getProjectNumber();
+
+    //Get project ID
+    var projectId = await GetProjectId(projectNumber);
+
+    var finishes = [];
+    await $.ajax({
+        type: "GET",
+        url: odooURL + "/api/v1/search_read",
+        headers: { "Authorization": "Bearer " + token },
+        data: {
+            model: "project.master_marks",
+            domain: `[["project_id.id", "=", "${projectId}"], ["mark_comment", "ilike", "S%"], 
+                    "|", ["mark_prefix", "=", "PV"], "|", ["mark_prefix", "=", "PS"], "|", ["mark_prefix", "=", "KM"], ["mark_prefix", "=", "PLAAT"]]`,
+            fields: '["id", "mark_comment"]',
+        },
+        success: function (data) {
+            for (const record of data) {
+                if (!finishes.includes(record.mark_comment))
+                    finishes.push(record.mark_comment)
+            }
+        }
+    });
+
+    finishes = [...new Set(finishes)];
+
+    var guidsPerFinish = [];
+    for (var finish of finishes) {
+        await $.ajax({
+            type: "GET",
+            url: odooURL + "/api/v1/search_read",
+            headers: { "Authorization": "Bearer " + token },
+            data: {
+                model: "trimble.connect.main",
+                domain: `[["project_id.id", "=", "${projectId}"], ["mark_id.mark_comment", "=", "${finish}"]]`,
+                fields: '["id", "name"]',
+            },
+            success: function (data) {
+                var guids = [];
+                for (const record of data) {
+                    guids.push(record.name);
+                }
+                guidsPerFinish.push({ Finish: finish, Guids: guids });
+            }
+        });
+    }
+
+    var allObjects = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
+    for (const mobjects of allObjects) {
+        var modelId = mobjects.modelId;
+        const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
+    }
+
+    var cntr = 0;
+    var legendItems = [];
+    for (var guidsFinish of guidsPerFinish) {
+        var elementsColored = false;
+        var models = await API.viewer.getModels("loaded");
+        if (guidsFinish.Guids.length == 0)
+            continue;
+        var compressedGuids = guidsFinish.Guids.map(x => Guid.fromFullToCompressed(x));
+        for (var model of models) {
+            var runtimeIds = await API.viewer.convertToObjectRuntimeIds(model.id, compressedGuids);
+            if (runtimeIds != undefined && runtimeIds.length > 0) {
+                var colorToUse = freightColors[cntr % freightColors.length];
+                colorToUse.a = 255;
+                cntr++;
+                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: colorToUse, visible: true });
+                elementsColored = true;
+            }
+        }
+
+        if (elementsColored)
+            legendItems.push({ Text: guidsFinish.Finish, Color: colorToUse });
+    }
+
+    popup.option({
+        contentTemplate: () => popupContentTemplateLegend(legendItems),
+        height: 100 + legendItems.length * 30
+    });
+    popup.show();
+}
+
+async function colorPanelsByMaterial(){
+    //Authenticate with MUK API
+    var token = await getToken();
+
+    //Get project name
+    var projectNumber = await getProjectNumber();
+
+    //Get project ID
+    var projectId = await GetProjectId(projectNumber);
+
+    var materials = [];
+    await $.ajax({
+        type: "GET",
+        url: odooURL + "/api/v1/search_read",
+        headers: { "Authorization": "Bearer " + token },
+        data: {
+            model: "project.master_marks",
+            domain: `[["project_id.id", "=", "${projectId}"], 
+                    "|", ["mark_prefix", "=", "PV"], "|", ["mark_prefix", "=", "PS"], "|", ["mark_prefix", "=", "KM"], ["mark_prefix", "=", "PLAAT"]]`,
+            fields: '["id", "mark_material"]',
+        },
+        success: function (data) {
+            for (const record of data) {
+                if (!materials.includes(record.mark_material))
+                    materials.push(record.mark_material)
+            }
+        }
+    });
+
+    materials = [...new Set(materials)];
+
+    var guidsPerMaterial = [];
+    for (var material of materials) {
+        await $.ajax({
+            type: "GET",
+            url: odooURL + "/api/v1/search_read",
+            headers: { "Authorization": "Bearer " + token },
+            data: {
+                model: "trimble.connect.main",
+                domain: `[["project_id.id", "=", "${projectId}"], ["mark_id.mark_material", "=", "${material}"]]`,
+                fields: '["id", "name"]',
+            },
+            success: function (data) {
+                var guids = [];
+                for (const record of data) {
+                    guids.push(record.name);
+                }
+                guidsPerMaterial.push({ Material: material, Guids: guids });
+            }
+        });
+    }
+
+    var allObjects = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
+    for (const mobjects of allObjects) {
+        var modelId = mobjects.modelId;
+        const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
+    }
+
+    var cntr = 0;
+    var legendItems = [];
+    for (var guidsMaterial of guidsPerMaterial) {
+        var elementsColored = false;
+        var models = await API.viewer.getModels("loaded");
+        if (guidsMaterial.Guids.length == 0)
+            continue;
+        var compressedGuids = guidsMaterial.Guids.map(x => Guid.fromFullToCompressed(x));
+        for (var model of models) {
+            var runtimeIds = await API.viewer.convertToObjectRuntimeIds(model.id, compressedGuids);
+            if (runtimeIds != undefined && runtimeIds.length > 0) {
+                var colorToUse = freightColors[cntr % freightColors.length];
+                colorToUse.a = 255;
+                cntr++;
+                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: colorToUse, visible: true });
+                elementsColored = true;
+            }
+        }
+
+        if (elementsColored)
+            legendItems.push({ Text: guidsMaterial.Material, Color: colorToUse });
+    }
+
+    popup.option({
+        contentTemplate: () => popupContentTemplateLegend(legendItems),
+        height: 100 + legendItems.length * 30
+    });
+    popup.show();
+}
+
+$('#btnVisualizePTypesDivId').dxButton({
+    stylingMode: "outlined",
+    text: 'Visualiseer panelen: prefixen',
+    type: "success",
+    onClick: async function (data) {
+        await colorPanelsByPrefix();
+    },
+});
+
+$('#btnVisualizePFinishDivId').dxButton({
+    stylingMode: "outlined",
+    text: 'Visualiseer panelen: afwerking',
+    type: "success",
+    onClick: async function (data) {
+        await colorPanelsByFinish();
+    },
+});
+
+$('#btnVisualizePMaterialDivId').dxButton({
+    stylingMode: "outlined",
+    text: 'Visualiseer panelen: materialen',
+    type: "success",
+    onClick: async function (data) {
+        await colorPanelsByMaterial();
+    },
+});
+
+$('#btnFirstFreightsDivId').dxButton({
+    icon: 'chevrondoubleleft',
+    onClick: async function (data) {
+        var freightNumbers = await getFreightNumbers();
+        var freightNumber = 0;
+        if (freightNumbers.length > 0)
+            freightNumber = freightNumbers[0];
+        freightNumberBox.dxNumberBox("instance").option('value', freightNumber);
+    },
+});
+
+$('#btnPreviousFreightsDivId').dxButton({
+    icon: 'chevronleft',
+    onClick: async function (data) {
+        var previousFreightNumber = freightNumberBox.dxNumberBox("instance").option("value");
+        var freightNumbers = await getFreightNumbers();
+        var freightNumber = freightNumbers.findLast(x => x < previousFreightNumber);
+        if (freightNumber != undefined)
+        {
+            freightNumberBox.dxNumberBox("instance").option('value', freightNumber);
+        }
+    },
+});
+
+$('#btnNextFreightsDivId').dxButton({
+    icon: 'chevronright',
+    onClick: async function (data) {
+        var previousFreightNumber = freightNumberBox.dxNumberBox("instance").option("value");
+        var freightNumbers = await getFreightNumbers();
+        var freightNumber = freightNumbers.find(x => x > previousFreightNumber);
+        if (freightNumber != undefined) {
+            freightNumberBox.dxNumberBox("instance").option('value', freightNumber);
+        }
+    },
+});
+
+$('#btnLastFreightsDivId').dxButton({
+    icon: 'chevrondoubleright',
+    onClick: async function (data) {
+        var freightNumbers = await getFreightNumbers();
+        var freightNumber = 0;
+        if (freightNumbers.length > 0)
+            freightNumber = freightNumbers[freightNumbers.length - 1];
+        freightNumberBox.dxNumberBox("instance").option('value', freightNumber); 
+    },
+});
+
+async function setOdooFreightNumber(ids, freightnumber) {
+    //Authenticate with MUK API
+    var token = await getToken();
+
+    await $.ajax({
+        type: "PUT",
+        url: odooURL + "/api/v1/write",
+        headers: { "Authorization": "Bearer " + token },
+        data: {
+            model: "trimble.connect.main",
+            values: `{"freight": "${freightnumber}"}`,
+            ids: `[${ids.join(',')}]`
+        },
+        success: function (odooData) {
+            console.log(odooData);
+        }
+    });
+}
+
+$('#btnSaveFreightDivId').dxButton({
+    icon: 'save',
+    onClick: async function (data) {
+        //-- get alle elements with current freight number
+        var freightNumber = freightNumberBox.dxNumberBox("instance").option("value");
+        var elementsToModify = await getElementsInFreight(freightNumber);
+        //-- remove freight number (set as 0)
+        for (var ele of elementsToModify)
+            ele.Freight = 0;
+        //-- set freight number of selected
+        for (var ele of selectedObjects) {
+            var existingEle = elementsToModify.find(x => x.Guid === ele.Guid);
+            if (existingEle == undefined) {
+                elementsToModify.push({
+                    Guid: ele.Guid,
+                    OdooId: ele.OdooTcmId,
+                    Freight: freightNumber
+                });
+            }
+            else {
+                existingEle.Freight = freightNumber;
+            }
+        }
+
+        var freights = [0, freightNumber];
+        for (var freight of freights) {
+            var elementsInFreight = existingEle.filter(x => x.Freight == freight);
+            if (elementsInFreight.length > 0) {
+                var ids = elementsInFreight.map(x => x.OdooId);
+                await setOdooFreightNumber(ids, freight);
+            }
+        }
+    },
+});
+
+$('#btnDeleteFreightDivId').dxButton({
+    icon: 'trash',
+    onClick: async function (data) {
+        //get alle elements with current freight number
+        var freightNumber = freightNumberBox.dxNumberBox("instance").option("value");
+        var elementsToModify = await getElementsInFreight(freightNumber);
+        //remove freight number (set as 0)
+        var ids = elementsToModify.map(x => x.OdooId);
+        await setOdooFreightNumber(ids, 0);
+    },
+});
+
+$('#btnDeleteAllFreightsDivId').dxButton({
+    text: 'Verwijdere alle',
+    onClick: async function (data) {
+        //get alle elements with a freight number
+        //remove freight number (set as 0)
+    },
+});
 
 $("#btnCreateSlipDivId").dxButton({
     stylingMode: "outlined",
@@ -2497,7 +2972,7 @@ $("#btnCreateSlipDivId").dxButton({
 
             var objStatusPlannedForTransport = objectStatuses.find(x => x.Status === StatusPlannedForTransport);
             for (var selectedObject of selectedObjects) {
-                if (selectedObject.OdooPmmId == -1 || selectedObject.OdooTcmId == -1 || !selectedObject.Valid)
+                if (selectedObject.OdooPmmId == -1 || selectedObject.OdooTcmId == -1 || !selectedObject.ValidForNewSlip)
                     continue;
 
                 //console.log("selectedObject.OdooPmmId:");
@@ -2775,6 +3250,7 @@ $("#btnGetOdooInfoDivId").dxButton({
 
             popup.option({
                 contentTemplate: () => popupContentTemplate(),
+                height: 560
             });
             popup.show();
         }
@@ -3023,9 +3499,23 @@ $("#btnVisualizeTTDivId").dxButton({
         data.component.option('text', 'Bezig met visualiseren');
         buttonIndicator.option('visible', true);
 
-        await colorNonStandardWidth('TT', 2400);
+        var standardTTWidth = 2400;
+        await colorNonStandardWidth('TT', standardTTWidth);
+        var legendItems = [
+            { Text: `TT breedte = ${standardTTWidth}`, Color: { r: 0, g: 255, b: 0 } },
+            { Text: `TT breedte < ${standardTTWidth}`, Color: { r: 255, g: 0, b: 0 } },
+        ];
 
-        await colorNonStandardWidth('TTT', 1800);
+        var standardTTTWidth = 1800;
+        await colorNonStandardWidth('TTT', 1800, false);
+        legendItems.push({ Text: `TTT breedte = ${standardTTTWidth}`, Color: { r: 0, g: 255, b: 0 } });
+        legendItems.push({ Text: `TTT breedte < ${standardTTTWidth}`, Color: { r: 255, g: 0, b: 0 } });
+
+        popup.option({
+            contentTemplate: () => popupContentTemplateLegend(legendItems),
+            height: 100 + legendItems.length * 30
+        });
+        popup.show();
 
         buttonIndicator.option('visible', false);
         data.component.option('text', 'Visualiseer TT(T)');
@@ -3046,21 +3536,41 @@ $("#btnVisualizeWDivId").dxButton({
         data.component.option('text', 'Bezig met visualiseren');
         buttonIndicator.option('visible', true);
 
-        await colorNonStandardWidth('W', 1200);
+        var standardWWidth = 1200;
+        await colorNonStandardWidth('W', standardWWidth);
+        var legendItems = [
+            { Text: `W breedte = ${standardWWidth}`, Color: { r: 0, g: 255, b: 0 } },
+            { Text: `W breedte < ${standardWWidth}`, Color: { r: 255, g: 0, b: 0 } },
+        ];
+
+        popup.option({
+            contentTemplate: () => popupContentTemplateLegend(legendItems),
+            height: 100 + legendItems.length * 30
+        });
+        popup.show();
 
         buttonIndicator.option('visible', false);
         data.component.option('text', 'Visualiseer W');
     },
 });
 
-async function colorNonStandardWidth(prefix, standardWidth) {
+async function colorNonStandardWidth(prefix, standardWidth, hideRest = true) {
+    if (hideRest) {
+        var allObjects = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
+        for (const mobjects of allObjects) {
+            var modelId = mobjects.modelId;
+            const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
+        }
+    }
+
     const objectsW = await API.viewer.getObjects({ parameter: { properties: { 'Default.MERKPREFIX': prefix } } });
     for (const mobjects of objectsW) {
         var modelId = mobjects.modelId;
         const objectsRuntimeIds = mobjects.objects.map(o => o.id);
         if (objectsRuntimeIds.length == 0)
             continue;
-        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: { r: 0, g: 255, b: 0 } });
+        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: { r: 0, g: 255, b: 0 }, visible: true });
     }
 
     const objectsWStandard = await API.viewer.getObjects({ parameter: { properties: { 'Default.MERKPREFIX': prefix, 'Default.WIDTH': standardWidth } } });
@@ -3079,7 +3589,7 @@ async function colorNonStandardWidth(prefix, standardWidth) {
         }
         console.log(objectsRuntimeIdsToColor);
         if (objectsRuntimeIdsToColor.length > 0)
-            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIdsToColor }] }, { color: { r: 255, g: 0, b: 0 } });
+            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIdsToColor }] }, { color: { r: 255, g: 0, b: 0 }, visible: true });
     }
 }
 
@@ -4320,7 +4830,6 @@ var dataGridTransport = $("#dataGridTransport").dxDataGrid({
     columns: [{
         dataField: 'AssemblyName',
         caption: getTextById("gridTitleAssembly"),
-        width: 130,
         sortOrder: 'asc',
         calculateSortValue: function (rowData) {
             return rowData.Prefix.toString().padStart(12, "0") + rowData.PosNmbr.toString().padStart(6, "0") + "." + rowData.Rank.toString().padStart(4, "0");
@@ -4329,7 +4838,7 @@ var dataGridTransport = $("#dataGridTransport").dxDataGrid({
         dataField: 'Weight',
         caption: getTextById("gridTitleWeight"),
         dataType: 'number',
-        width: 160,
+        width: 120,
         format: {
             type: "fixedPoint",
             precision: 0
@@ -4338,7 +4847,7 @@ var dataGridTransport = $("#dataGridTransport").dxDataGrid({
         dataField: 'Profile',
         caption: 'Profiel',
         dataType: 'number',
-        width: 160,
+        width: 120,
         format: {
             type: "fixedPoint",
             precision: 0
@@ -4346,7 +4855,7 @@ var dataGridTransport = $("#dataGridTransport").dxDataGrid({
     }, {
         dataField: 'SlipName',
         caption: 'Bon',
-        width: 60,
+        width: 80,
         cellTemplate(container, options) {
             $(`<a href="${getOdooSlipUrl(options.data.OdooSlipId)}" target="_blank" rel="noopener noreferrer">${options.value}</a>`)
                 .appendTo(container);
@@ -4383,7 +4892,7 @@ var dataGridTransport = $("#dataGridTransport").dxDataGrid({
     },
     onCellPrepared: function (e) {
         if (e.rowType === "data" /*&& e.column.dataField === "ProductName"*/) {
-            e.cellElement.css("color", e.data.Valid ? "white" : "red");
+            e.cellElement.css("color", e.data.ValidForNewSlip ? "white" : "red");
         }
     },
 });
@@ -4404,7 +4913,7 @@ var dataGridProduction = $("#dataGridProduction").dxDataGrid({
     columns: [{
         dataField: 'AssemblyName',
         caption: getTextById("gridTitleAssembly"),
-        width: 130,
+        width: 120,
         sortOrder: 'asc',
         calculateSortValue: function (rowData) {
             return rowData.Prefix.toString().padStart(12, "0") + rowData.PosNmbr.toString().padStart(6, "0") + "." + rowData.Rank.toString().padStart(4, "0");
@@ -4413,7 +4922,7 @@ var dataGridProduction = $("#dataGridProduction").dxDataGrid({
         dataField: 'Weight',
         caption: getTextById("gridTitleWeight"),
         dataType: 'number',
-        width: 160,
+        width: 120,
         format: {
             type: "fixedPoint",
             precision: 0
@@ -4422,7 +4931,7 @@ var dataGridProduction = $("#dataGridProduction").dxDataGrid({
         dataField: 'ReinforcementType',
         caption: 'Wapeningstype',
         dataType: 'number',
-        width: 160,
+        width: 100,
         format: {
             type: "fixedPoint",
             precision: 0
@@ -4431,7 +4940,7 @@ var dataGridProduction = $("#dataGridProduction").dxDataGrid({
         dataField: 'Profile',
         caption: 'Profiel',
         dataType: 'number',
-        width: 160,
+        width: 100,
         format: {
             type: "fixedPoint",
             precision: 0
@@ -4468,7 +4977,7 @@ var dataGridProduction = $("#dataGridProduction").dxDataGrid({
     },
     onCellPrepared: function (e) {
         if (e.rowType === "data" /*&& e.column.dataField === "ProductName"*/) {
-            e.cellElement.css("color", e.data.Valid ? "white" : "red");
+            e.cellElement.css("color", e.data.ValidForNewFreight ? "white" : "red");
         }
     },
 });
