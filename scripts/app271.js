@@ -2755,7 +2755,7 @@ async function colorPanelsByMaterial(){
 
     var legendItems = [];
     for (var guidsMaterial of guidsPerMaterial) {
-        var colorToUse = freightColors[guidsPerFinish.indexOf(guidsFinish) % freightColors.length];
+        var colorToUse = freightColors[guidsPerMaterial.indexOf(guidsMaterial) % freightColors.length];
         colorToUse.a = 255;
         var elementsColored = false;
         var models = await API.viewer.getModels();

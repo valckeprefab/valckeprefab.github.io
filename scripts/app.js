@@ -2560,7 +2560,7 @@ async function colorPanelsByPrefix() {
     for (const mobjects of allObjects) {
         var modelId = mobjects.modelId;
         const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
+        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: { r: 185, g: 122, b: 87, a: 255 }, visible: false });
     }
 
     var colorPerPrefix = [
@@ -2639,6 +2639,7 @@ async function colorPanelsByFinish() {
 
     var guidsPerFinish = [];
     for (var finish of finishes) {
+        var guids = [];
         await $.ajax({
             type: "GET",
             url: odooURL + "/api/v1/search_read",
@@ -2649,36 +2650,34 @@ async function colorPanelsByFinish() {
                 fields: '["id", "name"]',
             },
             success: function (data) {
-                var guids = [];
                 for (const record of data) {
                     guids.push(record.name);
                 }
-                guidsPerFinish.push({ Finish: finish, Guids: guids });
             }
         });
+        guidsPerFinish.push({ Finish: finish, Guids: guids });
     }
 
     var allObjects = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
     for (const mobjects of allObjects) {
         var modelId = mobjects.modelId;
         const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
+        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: { r: 185, g: 122, b: 87, a: 255 }, visible: false });
     }
 
-    var cntr = 0;
     var legendItems = [];
     for (var guidsFinish of guidsPerFinish) {
+        var colorToUse = freightColors[guidsPerFinish.indexOf(guidsFinish) % freightColors.length];
+        colorToUse.a = 255;
         var elementsColored = false;
-        var models = await API.viewer.getModels("loaded");
+        var models = await API.viewer.getModels();
         if (guidsFinish.Guids.length == 0)
             continue;
         var compressedGuids = guidsFinish.Guids.map(x => Guid.fromFullToCompressed(x));
         for (var model of models) {
-            var runtimeIds = await API.viewer.convertToObjectRuntimeIds(model.id, compressedGuids);
+            var modelId = model.id;
+            var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedGuids);
             if (runtimeIds != undefined && runtimeIds.length > 0) {
-                var colorToUse = freightColors[cntr % freightColors.length];
-                colorToUse.a = 255;
-                cntr++;
                 await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: colorToUse, visible: true });
                 elementsColored = true;
             }
@@ -2751,23 +2750,22 @@ async function colorPanelsByMaterial(){
     for (const mobjects of allObjects) {
         var modelId = mobjects.modelId;
         const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
+        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: { r: 185, g: 122, b: 87, a: 255 }, visible: false });
     }
 
-    var cntr = 0;
     var legendItems = [];
     for (var guidsMaterial of guidsPerMaterial) {
+        var colorToUse = freightColors[guidsPerMaterial.indexOf(guidsMaterial) % freightColors.length];
+        colorToUse.a = 255;
         var elementsColored = false;
-        var models = await API.viewer.getModels("loaded");
+        var models = await API.viewer.getModels();
         if (guidsMaterial.Guids.length == 0)
             continue;
         var compressedGuids = guidsMaterial.Guids.map(x => Guid.fromFullToCompressed(x));
         for (var model of models) {
-            var runtimeIds = await API.viewer.convertToObjectRuntimeIds(model.id, compressedGuids);
+            var modelId = model.id;
+            var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedGuids);
             if (runtimeIds != undefined && runtimeIds.length > 0) {
-                var colorToUse = freightColors[cntr % freightColors.length];
-                colorToUse.a = 255;
-                cntr++;
                 await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: colorToUse, visible: true });
                 elementsColored = true;
             }
@@ -2788,8 +2786,20 @@ $('#btnVisualizePTypesDivId').dxButton({
     stylingMode: "outlined",
     text: 'Visualiseer panelen: prefixen',
     type: "success",
+    template(data, container) {
+        $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+        buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+            visible: false,
+        }).dxLoadIndicator('instance');
+    },
     onClick: async function (data) {
+        data.component.option('text', "Bezig met visualiseren");
+        buttonIndicator.option('visible', true);
+
         await colorPanelsByPrefix();
+
+        buttonIndicator.option('visible', false);
+        data.component.option('text', "Visualiseer panelen: prefixen");
     },
 });
 
@@ -2797,8 +2807,20 @@ $('#btnVisualizePFinishDivId').dxButton({
     stylingMode: "outlined",
     text: 'Visualiseer panelen: afwerking',
     type: "success",
+    template(data, container) {
+        $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+        buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+            visible: false,
+        }).dxLoadIndicator('instance');
+    },
     onClick: async function (data) {
+        data.component.option('text', "Bezig met visualiseren");
+        buttonIndicator.option('visible', true);
+
         await colorPanelsByFinish();
+
+        buttonIndicator.option('visible', false);
+        data.component.option('text', "Visualiseer panelen: afwerking");
     },
 });
 
@@ -2806,8 +2828,20 @@ $('#btnVisualizePMaterialDivId').dxButton({
     stylingMode: "outlined",
     text: 'Visualiseer panelen: materialen',
     type: "success",
+    template(data, container) {
+        $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+        buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+            visible: false,
+        }).dxLoadIndicator('instance');
+    },
     onClick: async function (data) {
+        data.component.option('text', "Bezig met visualiseren");
+        buttonIndicator.option('visible', true);
+
         await colorPanelsByMaterial();
+
+        buttonIndicator.option('visible', false);
+        data.component.option('text', "Visualiseer panelen: materialen");
     },
 });
 
