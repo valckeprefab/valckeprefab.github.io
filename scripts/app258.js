@@ -2585,7 +2585,7 @@ async function colorPanelsByPrefix() {
 
     popup.option({
         contentTemplate: () => popupContentTemplateLegend(legendItems),
-        height: 100 + legendItems.length * 50
+        height: 50 + legendItems.length * 30
     });
     popup.show();
 }
@@ -2673,7 +2673,7 @@ async function colorPanelsByFinish() {
 
     popup.option({
         contentTemplate: () => popupContentTemplateLegend(legendItems),
-        height: 100 + legendItems.length * 50
+        height: 50 + legendItems.length * 30
     });
     popup.show();
 }
@@ -2761,7 +2761,7 @@ async function colorPanelsByMaterial(){
 
     popup.option({
         contentTemplate: () => popupContentTemplateLegend(legendItems),
-        height: 100 + legendItems.length * 50
+        height: 50 + legendItems.length * 30
     });
     popup.show();
 }
