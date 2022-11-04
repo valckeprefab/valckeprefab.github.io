@@ -2669,7 +2669,7 @@ async function colorPanelsByFinish() {
     var legendItems = [];
     for (var guidsFinish of guidsPerFinish) {
         var elementsColored = false;
-        var models = await API.viewer.getModels("loaded");
+        var models = await API.viewer.getModels();
         if (guidsFinish.Guids.length == 0)
             continue;
         var compressedGuids = guidsFinish.Guids.map(x => Guid.fromFullToCompressed(x));
@@ -2758,7 +2758,7 @@ async function colorPanelsByMaterial(){
     var legendItems = [];
     for (var guidsMaterial of guidsPerMaterial) {
         var elementsColored = false;
-        var models = await API.viewer.getModels("loaded");
+        var models = await API.viewer.getModels();
         if (guidsMaterial.Guids.length == 0)
             continue;
         var compressedGuids = guidsMaterial.Guids.map(x => Guid.fromFullToCompressed(x));
@@ -2788,8 +2788,20 @@ $('#btnVisualizePTypesDivId').dxButton({
     stylingMode: "outlined",
     text: 'Visualiseer panelen: prefixen',
     type: "success",
+    template(data, container) {
+        $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+        buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+            visible: false,
+        }).dxLoadIndicator('instance');
+    },
     onClick: async function (data) {
+        data.component.option('text', "Bezig met visualiseren");
+        buttonIndicator.option('visible', true);
+
         await colorPanelsByPrefix();
+
+        buttonIndicator.option('visible', false);
+        data.component.option('text', "Visualiseer panelen: prefixen");
     },
 });
 
@@ -2798,7 +2810,13 @@ $('#btnVisualizePFinishDivId').dxButton({
     text: 'Visualiseer panelen: afwerking',
     type: "success",
     onClick: async function (data) {
+        data.component.option('text', "Bezig met visualiseren");
+        buttonIndicator.option('visible', true);
+
         await colorPanelsByFinish();
+
+        buttonIndicator.option('visible', false);
+        data.component.option('text', "Visualiseer panelen: afwerking");
     },
 });
 
@@ -2807,7 +2825,13 @@ $('#btnVisualizePMaterialDivId').dxButton({
     text: 'Visualiseer panelen: materialen',
     type: "success",
     onClick: async function (data) {
+        data.component.option('text', "Bezig met visualiseren");
+        buttonIndicator.option('visible', true);
+
         await colorPanelsByMaterial();
+
+        buttonIndicator.option('visible', false);
+        data.component.option('text', "Visualiseer panelen: materialen");
     },
 });
 
