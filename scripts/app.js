@@ -792,7 +792,7 @@ async function addTextMarkups() {
             modelObjectIds: selection
         };
         var mobjectsArr = await API.viewer.getObjects(selector);
-        const modelspecs = await API.viewer.getModels();
+        const modelspecs = await API.viewer.getModels("loaded");
 
         if (selectedItem === possibleSelectBoxValues[2]) {
             //recursive doesn't work => 'temporary' workaround 
@@ -2670,7 +2670,7 @@ async function colorPanelsByFinish() {
         var colorToUse = freightColors[guidsPerFinish.indexOf(guidsFinish) % freightColors.length];
         colorToUse.a = 255;
         var elementsColored = false;
-        var models = await API.viewer.getModels();
+        var models = await API.viewer.getModels("loaded");
         if (guidsFinish.Guids.length == 0)
             continue;
         var compressedGuids = guidsFinish.Guids.map(x => Guid.fromFullToCompressed(x));
@@ -2758,7 +2758,7 @@ async function colorPanelsByMaterial(){
         var colorToUse = freightColors[guidsPerMaterial.indexOf(guidsMaterial) % freightColors.length];
         colorToUse.a = 255;
         var elementsColored = false;
-        var models = await API.viewer.getModels();
+        var models = await API.viewer.getModels("loaded");
         if (guidsMaterial.Guids.length == 0)
             continue;
         var compressedGuids = guidsMaterial.Guids.map(x => Guid.fromFullToCompressed(x));
@@ -4140,7 +4140,7 @@ $("#btnSetOdooLabelsDivId").dxButton({
             const selector = {
                 modelObjectIds: selection
             };
-            const modelspecs = await API.viewer.getModels();
+            const modelspecs = await API.viewer.getModels("loaded");
             const mobjectsArr = await API.viewer.getObjects(selector);
             var nmbrOfAssembliesFound = 0;
             for (const mobjects of mobjectsArr) {
