@@ -3635,7 +3635,7 @@ async function colorNonStandardWidth(prefix, standardWidth, hideRest = true) {
         var objectsRuntimeIdsToColor = [];
         for (const objproperties of objectPropertiesArr) {
             var width = objproperties.properties.flatMap(p => p.properties).find(p => p.name === "WIDTH");
-            if (width != undefined && width.value != standardWidth) {
+            if (width != undefined && (Math.round((width.value + Number.EPSILON) * 100) / 100) != standardWidth) {
                 objectsRuntimeIdsToColor.push(objproperties.id);
             }
         }
