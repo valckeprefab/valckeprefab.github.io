@@ -110,9 +110,9 @@ const filterTypes = {
 };
 
 const labelContentTypes = {
-    nl: ["Merk", "BS_LengteKabel", "BS_LR"],
-    fr: ["Assemblage", "BS_LongueurCable", "BS_GD"],
-    en: ["Assembly", "BS_CableLength", "BS_LR"]
+    nl: ["Merk", "BS_LengteKabel"], //, "BS_LR"
+    fr: ["Assemblage", "BS_LongueurCable"], //, "BS_GD"
+    en: ["Assembly", "BS_CableLength"] //, "BS_LR"
 };
 
 const labelContentTypesOdoo = {
@@ -531,15 +531,15 @@ const textUi = {
     },
     gridTitleTotalPieces:
     {
-        nl: "Totaal atl:",
+        nl: "Totaal:",
         fr: "Total:",
         en: "Total:"
     },
     gridTitleTotalWeight:
     {
-        nl: "Totale gewicht:",
-        fr: "Masse totale:",
-        en: "Total mass:"
+        nl: "Totaal:",
+        fr: "Totale:",
+        en: "Total:"
     },
     gridUnitNumber:
     {
@@ -794,11 +794,11 @@ async function addTextMarkups() {
         var mobjectsArr = await API.viewer.getObjects(selector);
         const modelspecs = await API.viewer.getModels("loaded");
 
-        if (selectedItem === possibleSelectBoxValues[2]) {
-            //recursive doesn't work => 'temporary' workaround 
-            var hefoogPropSelector = getPropSelectorByPropnameAndValue("Default.MERKPREFIX", "HEFOOG");
-            mobjectsArr = await API.viewer.getObjects(hefoogPropSelector);
-        }
+        //if (selectedItem === possibleSelectBoxValues[2]) {
+        //    //recursive doesn't work => 'temporary' workaround 
+        //    var hefoogPropSelector = getPropSelectorByPropnameAndValue("Default.MERKPREFIX", "HEFOOG");
+        //    mobjectsArr = await API.viewer.getObjects(hefoogPropSelector);
+        //}
         //mobjectsArr type: ModelObjects[]
         //haalt enkel gemeenschappelijk hebben property sets op
         for (const mobjects of mobjectsArr) {
@@ -836,13 +836,13 @@ async function addTextMarkups() {
                     else
                         continue;
                 }
-                else if (selectedItem === possibleSelectBoxValues[2]) {
-                    var leftRight = defaultProperties.properties.find(x => x.name === "COMMENT");
-                    if (leftRight != undefined)
-                        labelText = leftRight.value;
-                    else
-                        continue;
-                }
+                //else if (selectedItem === possibleSelectBoxValues[2]) {
+                //    var leftRight = defaultProperties.properties.find(x => x.name === "COMMENT");
+                //    if (leftRight != undefined)
+                //        labelText = leftRight.value;
+                //    else
+                //        continue;
+                //}
 
                 if (labelText != "") {
                     jsonArray += getMarkupJson(color, coordinates, mobjects.modelId, objproperties.id, labelText) + ",";
@@ -4883,6 +4883,7 @@ var dataGridTransport = $("#dataGridTransport").dxDataGrid({
         dataField: 'AssemblyName',
         caption: getTextById("gridTitleAssembly"),
         sortOrder: 'asc',
+        width: 120,
         calculateSortValue: function (rowData) {
             return rowData.Prefix.toString().padStart(12, "0") + rowData.PosNmbr.toString().padStart(6, "0") + "." + rowData.Rank.toString().padStart(4, "0");
         },
@@ -4899,7 +4900,6 @@ var dataGridTransport = $("#dataGridTransport").dxDataGrid({
         dataField: 'Profile',
         caption: 'Profiel',
         dataType: 'number',
-        width: 120,
         format: {
             type: "fixedPoint",
             precision: 0
