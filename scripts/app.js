@@ -889,7 +889,7 @@ async function setAccesBooleans() {
     }
 
     var username = odooUsernameTextbox.dxTextBox("instance").option("value");
-    if (username == 'sys_mrp_user' || username == 'krecour')
+    if (username == 'sys_mrp_user' || username == 'krecour' || username == 'mhemeryck')
         hasAccesToFreights = true;
 
     hasAccesToProduction = true;
@@ -1218,13 +1218,18 @@ async function getElementsInFreight(freightnumber) {
 
     //Get elements
     var elements = [];
+    var domain;
+    if(freightnumber != undefined)
+        domain = `[["project_id.id", "=", "${projectId}"], ["freight", "=", "${freightnumber}"], ["mark_id.mark_prefix", "=", "W"]]`;
+    else
+        domain = `[["project_id.id", "=", "${projectId}"], ["mark_id.mark_prefix", "=", "W"]]`;
     await $.ajax({
         type: "GET",
         url: odooURL + "/api/v1/search_read",
         headers: { "Authorization": "Bearer " + token },
         data: {
             model: "trimble.connect.main",
-            domain: `[["project_id.id", "=", "${projectId}"], ["freight", "=", "${freightnumber}"], ["mark_id.mark_prefix", "=", "W"]]`,
+            domain: domain,
             fields: '["id", "name"]',
         },
         success: function (data) {
@@ -1772,49 +1777,51 @@ async function selectionChanged(data) {
                     }
                 });
 
-                var transportedObjects = tempSelectedObjects;//.filter(x => !x.ValidForNewSlip);
-                //console.log("transportedObjects: ");
-                //console.log(transportedObjects);
-                for (var k = 0; k < transportedObjects.length; k += fetchLimit) { //loop cuz only fetchLimit records get fetched at a time
-                    var domainSliplines = "";
+                if (hasAccesToTransport) {
+                    var transportedObjects = tempSelectedObjects;//.filter(x => !x.ValidForNewSlip);
+                    //console.log("transportedObjects: ");
+                    //console.log(transportedObjects);
+                    for (var k = 0; k < transportedObjects.length; k += fetchLimit) { //loop cuz only fetchLimit records get fetched at a time
+                        var domainSliplines = "";
 
-                    for (var l = k; l < transportedObjects.length && l < k + fetchLimit; l++) {
-                        var filterArrStr = `["trimble_connect_id.id", "=", "${transportedObjects[l].OdooTcmId}"]`;
-                        if (l > k) {
-                            domainSliplines = '"|", ' + filterArrStr + ',' + domainSliplines;
-                        }
-                        else {
-                            domainSliplines = filterArrStr;
-                        }
-                    }
-                    domainSliplines = `[["trimble_connect_id.project_id.id", "=", "${projectId}"],["slip_id.state", "!=", "cancel"],${domainSliplines}]`;
-                    //console.log("domainSliplines: ");
-                    //console.log(domainSliplines);
-
-                    await $.ajax({
-                        type: "GET",
-                        url: odooURL + "/api/v1/search_read",
-                        headers: { "Authorization": "Bearer " + token },
-                        data: {
-                            model: "vpb.delivery.slip.line",
-                            domain: domainSliplines,
-                            fields: '["id", "slip_id", "trimble_connect_id", "name"]',
-                        },
-                        success: function (odooData) {
-                            //console.log("odooData sliplines: ");
-                            //console.log(odooData);
-                            for (var record of odooData) {
-                                var object = tempSelectedObjects.find(x => x.OdooTcmId == record.trimble_connect_id[0]);
-                                //console.log("object: ");
-                                //console.log(object);
-                                if (object != undefined) {
-                                    object.OdooSlipId = record.slip_id[0];
-                                    object.SlipName = record.slip_id[1];
-                                    object.ValidForNewSlip = false;
-                                }
+                        for (var l = k; l < transportedObjects.length && l < k + fetchLimit; l++) {
+                            var filterArrStr = `["trimble_connect_id.id", "=", "${transportedObjects[l].OdooTcmId}"]`;
+                            if (l > k) {
+                                domainSliplines = '"|", ' + filterArrStr + ',' + domainSliplines;
+                            }
+                            else {
+                                domainSliplines = filterArrStr;
                             }
                         }
-                    });
+                        domainSliplines = `[["trimble_connect_id.project_id.id", "=", "${projectId}"],["slip_id.state", "!=", "cancel"],${domainSliplines}]`;
+                        //console.log("domainSliplines: ");
+                        //console.log(domainSliplines);
+
+                        await $.ajax({
+                            type: "GET",
+                            url: odooURL + "/api/v1/search_read",
+                            headers: { "Authorization": "Bearer " + token },
+                            data: {
+                                model: "vpb.delivery.slip.line",
+                                domain: domainSliplines,
+                                fields: '["id", "slip_id", "trimble_connect_id", "name"]',
+                            },
+                            success: function (odooData) {
+                                //console.log("odooData sliplines: ");
+                                //console.log(odooData);
+                                for (var record of odooData) {
+                                    var object = tempSelectedObjects.find(x => x.OdooTcmId == record.trimble_connect_id[0]);
+                                    //console.log("object: ");
+                                    //console.log(object);
+                                    if (object != undefined) {
+                                        object.OdooSlipId = record.slip_id[0];
+                                        object.SlipName = record.slip_id[1];
+                                        object.ValidForNewSlip = false;
+                                    }
+                                }
+                            }
+                        });
+                    }
                 }
                 
                 //var objectsOnSlips = [...new Set(tempSelectedObjects.filter(x => x.OdooSlipId != -1))];
@@ -2968,6 +2975,7 @@ $('#btnDeleteAllFreightsDivId').dxButton({
     text: 'Verwijdere alle',
     onClick: async function (data) {
         //get alle elements with a freight number
+        var elementsToModify = await getElementsInFreight(undefined);
         //remove freight number (set as 0)
     },
 });
