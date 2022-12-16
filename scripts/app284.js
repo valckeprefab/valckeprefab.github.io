@@ -5,7 +5,7 @@ var fetchLimit = 80;
 
 window.onload = async function () {
     API = await Workspace.connect(window.parent, async (event, data) => {
-        console.log("Event: ", event, data);
+        //console.log("Event: ", event, data);
 
         var eventName = event.split(".").pop();
 
@@ -2964,7 +2964,6 @@ $('#btnSaveFreightDivId').dxButton({
             }
         }
 
-        console.log(`visualizing freights`);
         await visualizeFreights();
     },
 });
