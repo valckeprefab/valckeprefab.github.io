@@ -122,28 +122,28 @@ const labelContentTypesOdoo = {
 };
 
 var freightColors = [
-    { r: 230, g: 25, b: 75, a:255},
-    { r: 60, g: 180, b: 75, a: 255 },
-    { r: 255, g: 225, b: 25, a: 255 },
-    { r: 0, g: 130, b: 200, a: 255 },
-    { r: 245, g: 130, b: 48, a: 255 },
-    { r: 145, g: 30, b: 180, a: 255 },
-    { r: 70, g: 240, b: 240, a: 255 },
-    { r: 240, g: 50, b: 230, a: 255 },
-    { r: 210, g: 245, b: 60, a: 255 },
-    { r: 250, g: 190, b: 212, a: 255 },
-    { r: 0, g: 128, b: 128, a: 255 },
-    { r: 220, g: 190, b: 255, a: 255 },
-    { r: 170, g: 110, b: 40, a: 255 },
-    { r: 255, g: 250, b: 200, a: 255 },
-    { r: 128, g: 0, b: 0, a: 255 },
-    { r: 170, g: 255, b: 195, a: 255 },
-    { r: 128, g: 128, b: 0, a: 255 },
-    { r: 255, g: 215, b: 180, a: 255 },
-    { r: 0, g: 0, b: 128, a: 255 },
-    { r: 128, g: 128, b: 128, a: 255 },
-    { r: 255, g: 255, b: 255, a: 255 },
-    { r: 0, g: 0, b: 0, a: 255 },
+    { r: 230, g: 25, b: 75, a:255}, //1
+    { r: 60, g: 180, b: 75, a: 255 }, //2
+    { r: 255, g: 225, b: 25, a: 255 }, //3
+    { r: 0, g: 130, b: 200, a: 255 }, //4
+    { r: 245, g: 130, b: 48, a: 255 }, //5
+    { r: 145, g: 30, b: 180, a: 255 }, //6
+    { r: 70, g: 240, b: 240, a: 255 }, //7
+    { r: 240, g: 50, b: 230, a: 255 }, //8
+    { r: 210, g: 245, b: 60, a: 255 }, //9
+    { r: 250, g: 190, b: 212, a: 255 }, //10
+    { r: 0, g: 128, b: 128, a: 255 }, //11
+    { r: 220, g: 190, b: 255, a: 255 }, //12
+    //{ r: 170, g: 110, b: 40, a: 255 }, //13
+    { r: 255, g: 250, b: 200, a: 255 }, //14
+    { r: 128, g: 0, b: 0, a: 255 }, //15
+    { r: 170, g: 255, b: 195, a: 255 }, //16
+    //{ r: 128, g: 128, b: 0, a: 255 }, //17
+    { r: 255, g: 215, b: 180, a: 255 }, //18
+    { r: 0, g: 0, b: 128, a: 255 }, //19
+    //{ r: 128, g: 128, b: 128, a: 255 }, //20
+    { r: 255, g: 255, b: 255, a: 255 }, //21
+    { r: 0, g: 0, b: 0, a: 255 }, //22
 ];
 
 var idsPerPrefixPerModelId = [];
@@ -2029,7 +2029,7 @@ async function visualizeFreights() {
         headers: { "Authorization": "Bearer " + token },
         data: {
             model: "trimble.connect.main",
-            domain: '[["project_id.id", "=", "' + projectId + '"], ["freight", ">", "0"], ["mark_id.mark_prefix", "=", "W"]]',
+            domain: '[["project_id.id", "=", "' + projectId + '"], ["freight", ">=", "0"], ["mark_id.mark_prefix", "=", "W"]]',
             order: 'freight',
             fields: '["id", "name", "freight", "mark_id", "mark_available"]',
         },
@@ -2122,7 +2122,11 @@ async function visualizeFreights() {
             if (allRuntimeIds.length == 0)
                 continue;
             
-            var colorToUse = freightColors[freight.FreightNumber % freightColors.length];
+            var colorToUse;
+            if (freight == 0)
+                colorToUse = { r: 128, g: 128, b: 128, a: 255 };
+            else
+                colorToUse = freightColors[freight.FreightNumber % freightColors.length];
 
             //Set element color per freight
             colorToUse.a = 255;
@@ -2558,6 +2562,10 @@ const freightNumberBox = $('#placeholderFreightNmbr').dxNumberBox({
     },
 });
 
+const newFreightNumberBox = $('#placeholderNewFreightNmbr').dxNumberBox({
+    width: 50
+});
+
 //#endregion
 
 //#region buttons
@@ -2924,12 +2932,15 @@ $('#btnSaveFreightDivId').dxButton({
         //-- prevent automatic coloring from mixing with freight colors
         modelIsColored = false; 
         //-- get alle elements with current freight number
-        var freightNumber = freightNumberBox.dxNumberBox("instance").option("value");
+        var freightNumber = newFreightNumberBox.dxNumberBox("instance").option("value");
+        console.log(`setting elements with freight ${freightNumber}`);
         var elementsToModify = await getElementsInFreight(freightNumber);
+        console.log(`found ${elementsToModify.length} elements to modify`);
         //-- remove freight number (set as 0)
         for (var ele of elementsToModify)
             ele.Freight = 0;
         //-- set freight number of selected
+        console.log(`found ${selectedObjects.length} selected objects to modify`);
         for (var ele of selectedObjects) {
             var existingEle = elementsToModify.find(x => x.Guid === ele.Guid);
             if (existingEle == undefined) {
@@ -2960,6 +2971,8 @@ $('#btnSaveFreightDivId').dxButton({
 $('#btnDeleteFreightDivId').dxButton({
     icon: 'trash',
     onClick: async function (data) {
+        //-- prevent automatic coloring from mixing with freight colors
+        modelIsColored = false; 
         //get alle elements with current freight number
         var freightNumber = freightNumberBox.dxNumberBox("instance").option("value");
         var elementsToModify = await getElementsInFreight(freightNumber);
@@ -2974,9 +2987,15 @@ $('#btnDeleteFreightDivId').dxButton({
 $('#btnDeleteAllFreightsDivId').dxButton({
     text: 'Verwijdere alle',
     onClick: async function (data) {
+        //-- prevent automatic coloring from mixing with freight colors
+        modelIsColored = false; 
         //get alle elements with a freight number
         var elementsToModify = await getElementsInFreight(undefined);
         //remove freight number (set as 0)
+        var ids = elementsToModify.map(x => x.OdooId);
+        await setOdooFreightNumber(ids, 0);
+
+        await visualizeFreights();
     },
 });
 
