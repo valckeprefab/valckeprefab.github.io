@@ -889,7 +889,7 @@ async function setAccesBooleans() {
     }
 
     var username = odooUsernameTextbox.dxTextBox("instance").option("value");
-    if (username == 'sys_mrp_user')
+    if (username == 'sys_mrp_user' || username == 'krecour')
         hasAccesToFreights = true;
 
     hasAccesToProduction = true;
@@ -2914,6 +2914,8 @@ async function setOdooFreightNumber(ids, freightnumber) {
 $('#btnSaveFreightDivId').dxButton({
     icon: 'save',
     onClick: async function (data) {
+        //-- prevent automatic coloring from mixing with freight colors
+        modelIsColored = false; 
         //-- get alle elements with current freight number
         var freightNumber = freightNumberBox.dxNumberBox("instance").option("value");
         var elementsToModify = await getElementsInFreight(freightNumber);
@@ -2937,12 +2939,14 @@ $('#btnSaveFreightDivId').dxButton({
 
         var freights = [0, freightNumber];
         for (var freight of freights) {
-            var elementsInFreight = existingEle.filter(x => x.Freight == freight);
+            var elementsInFreight = elementsToModify.filter(x => x.Freight == freight);
             if (elementsInFreight.length > 0) {
                 var ids = elementsInFreight.map(x => x.OdooId);
                 await setOdooFreightNumber(ids, freight);
             }
         }
+
+        await visualizeFreights();
     },
 });
 
@@ -2955,6 +2959,8 @@ $('#btnDeleteFreightDivId').dxButton({
         //remove freight number (set as 0)
         var ids = elementsToModify.map(x => x.OdooId);
         await setOdooFreightNumber(ids, 0);
+
+        await visualizeFreights();
     },
 });
 

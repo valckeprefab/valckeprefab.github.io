@@ -889,7 +889,7 @@ async function setAccesBooleans() {
     }
 
     var username = odooUsernameTextbox.dxTextBox("instance").option("value");
-    if (username == 'sys_mrp_user')
+    if (username == 'sys_mrp_user' || username == 'krecour')
         hasAccesToFreights = true;
 
     hasAccesToProduction = true;
@@ -2959,6 +2959,8 @@ $('#btnDeleteFreightDivId').dxButton({
         //remove freight number (set as 0)
         var ids = elementsToModify.map(x => x.OdooId);
         await setOdooFreightNumber(ids, 0);
+
+        await visualizeFreights();
     },
 });
 
