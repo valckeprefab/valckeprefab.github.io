@@ -1220,9 +1220,9 @@ async function getElementsInFreight(freightnumber) {
     var elements = [];
     var domain;
     if(freightnumber != undefined)
-        domain = `[["project_id.id", "=", "${projectId}"], ["freight", "=", "${freightnumber}"], ["mark_id.mark_prefix", "=", "W"]]`;
+        domain = `[["project_id.id", "=", "${projectId}"], ["freight", "=", "${freightnumber}"]]`; //, ["mark_id.mark_prefix", "=", "W"]
     else
-        domain = `[["project_id.id", "=", "${projectId}"], ["mark_id.mark_prefix", "=", "W"]]`;
+        domain = `[["project_id.id", "=", "${projectId}"]]`; //, ["mark_id.mark_prefix", "=", "W"]
     await $.ajax({
         type: "GET",
         url: odooURL + "/api/v1/search_read",
@@ -1272,7 +1272,7 @@ async function getFreightNumbers() {
         headers: { "Authorization": "Bearer " + token },
         data: {
             model: "trimble.connect.main",
-            domain: `[["project_id.id", "=", "${projectId}"], ["freight", ">", "0"], ["mark_id.mark_prefix", "=", "W"]]`,
+            domain: `[["project_id.id", "=", "${projectId}"], ["freight", ">", "0"]]`, //, ["mark_id.mark_prefix", "=", "W"]
             fields: '["freight"]',
         },
         success: function (data) {
@@ -2029,7 +2029,7 @@ async function visualizeFreights() {
         headers: { "Authorization": "Bearer " + token },
         data: {
             model: "trimble.connect.main",
-            domain: '[["project_id.id", "=", "' + projectId + '"], ["freight", ">=", "0"], ["mark_id.mark_prefix", "=", "W"]]',
+            domain: '[["project_id.id", "=", "' + projectId + '"], ["freight", ">=", "0"]]', //, ["mark_id.mark_prefix", "=", "W"]
             order: 'freight',
             fields: '["id", "name", "freight", "mark_id", "mark_available"]',
         },
