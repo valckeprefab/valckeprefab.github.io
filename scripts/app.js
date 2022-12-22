@@ -2797,9 +2797,183 @@ async function colorPanelsByMaterial(){
     popup.show();
 }
 
+async function colorWByReinforcement() {
+    //Authenticate with MUK API
+    var token = await getToken();
+
+    //Get project name
+    var projectNumber = await getProjectNumber();
+
+    //Get project ID
+    var projectId = await GetProjectId(projectNumber);
+
+    var reinf_types = [];
+    await $.ajax({
+        type: "GET",
+        url: odooURL + "/api/v1/search_read",
+        headers: { "Authorization": "Bearer " + token },
+        data: {
+            model: "project.master_marks",
+            domain: `[["project_id.id", "=", "${projectId}"],["mark_prefix", "=", "W"]]`,
+            fields: '["id", "mark_reinf_type"]',
+        },
+        success: function (data) {
+            for (const record of data) {
+                if (!reinf_types.includes(record.mark_reinf_type))
+                    reinf_types.push(record.mark_reinf_type)
+            }
+        }
+    });
+
+    reinf_types = [...new Set(reinf_types)];
+
+    var guidsPerReinftype = [];
+    for (var reinfType of reinf_types) {
+        await $.ajax({
+            type: "GET",
+            url: odooURL + "/api/v1/search_read",
+            headers: { "Authorization": "Bearer " + token },
+            data: {
+                model: "trimble.connect.main",
+                domain: `[["project_id.id", "=", "${projectId}"], ["mark_id.mark_reinf_type", "=", "${reinfType}"]]`,
+                fields: '["id", "name"]',
+            },
+            success: function (data) {
+                var guids = [];
+                for (const record of data) {
+                    guids.push(record.name);
+                }
+                guidsPerReinftype.push({ ReinfType: reinfType, Guids: guids });
+            }
+        });
+    }
+
+    var allObjects = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
+    for (const mobjects of allObjects) {
+        var modelId = mobjects.modelId;
+        const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: { r: 185, g: 122, b: 87, a: 255 }, visible: false });
+    }
+
+    var legendItems = [];
+    for (var guidsReinftype of guidsPerReinftype) {
+        var colorToUse = freightColors[guidsPerReinftype.indexOf(guidsReinftype) % freightColors.length];
+        colorToUse.a = 255;
+        var elementsColored = false;
+        var models = await API.viewer.getModels("loaded");
+        if (guidsReinftype.Guids.length == 0)
+            continue;
+        var compressedGuids = guidsReinftype.Guids.map(x => Guid.fromFullToCompressed(x));
+        for (var model of models) {
+            var modelId = model.id;
+            var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedGuids);
+            if (runtimeIds != undefined && runtimeIds.length > 0) {
+                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: colorToUse, visible: true });
+                elementsColored = true;
+            }
+        }
+
+        if (elementsColored)
+            legendItems.push({ Text: guidsReinftype.ReinfType, Color: colorToUse });
+    }
+
+    popup.option({
+        contentTemplate: () => popupContentTemplateLegend(legendItems),
+        height: 100 + legendItems.length * 30
+    });
+    popup.show();
+}
+
+async function colorWByProfile() {
+    //Authenticate with MUK API
+    var token = await getToken();
+
+    //Get project name
+    var projectNumber = await getProjectNumber();
+
+    //Get project ID
+    var projectId = await GetProjectId(projectNumber);
+
+    var profiles = [];
+    await $.ajax({
+        type: "GET",
+        url: odooURL + "/api/v1/search_read",
+        headers: { "Authorization": "Bearer " + token },
+        data: {
+            model: "project.master_marks",
+            domain: `[["project_id.id", "=", "${projectId}"],["mark_prefix", "=", "W"]]`,
+            fields: '["id", "mark_profile"]',
+        },
+        success: function (data) {
+            for (const record of data) {
+                if (!profiles.includes(record.mark_profile))
+                    profiles.push(record.mark_profile)
+            }
+        }
+    });
+
+    profiles = [...new Set(profiles)];
+
+    var guidsPerProfile = [];
+    for (var profile of profiles) {
+        await $.ajax({
+            type: "GET",
+            url: odooURL + "/api/v1/search_read",
+            headers: { "Authorization": "Bearer " + token },
+            data: {
+                model: "trimble.connect.main",
+                domain: `[["project_id.id", "=", "${projectId}"], ["mark_id.mark_profile", "=", "${profile}"]]`,
+                fields: '["id", "name"]',
+            },
+            success: function (data) {
+                var guids = [];
+                for (const record of data) {
+                    guids.push(record.name);
+                }
+                guidsPerProfile.push({ Profile: profile, Guids: guids });
+            }
+        });
+    }
+
+    var allObjects = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
+    for (const mobjects of allObjects) {
+        var modelId = mobjects.modelId;
+        const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: { r: 185, g: 122, b: 87, a: 255 }, visible: false });
+    }
+
+    var legendItems = [];
+    for (var guidsProfile of guidsPerProfile) {
+        var colorToUse = freightColors[guidsPerProfile.indexOf(guidsProfile) % freightColors.length];
+        colorToUse.a = 255;
+        var elementsColored = false;
+        var models = await API.viewer.getModels("loaded");
+        if (guidsProfile.Guids.length == 0)
+            continue;
+        var compressedGuids = guidsProfile.Guids.map(x => Guid.fromFullToCompressed(x));
+        for (var model of models) {
+            var modelId = model.id;
+            var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedGuids);
+            if (runtimeIds != undefined && runtimeIds.length > 0) {
+                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: colorToUse, visible: true });
+                elementsColored = true;
+            }
+        }
+
+        if (elementsColored)
+            legendItems.push({ Text: guidsProfile.Profile, Color: colorToUse });
+    }
+
+    popup.option({
+        contentTemplate: () => popupContentTemplateLegend(legendItems),
+        height: 100 + legendItems.length * 30
+    });
+    popup.show();
+}
+
 $('#btnVisualizePTypesDivId').dxButton({
     stylingMode: "outlined",
-    text: 'Visualiseer panelen: prefixen',
+    text: 'Panelen: prefixen',
     type: "success",
     template(data, container) {
         $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
@@ -2814,13 +2988,13 @@ $('#btnVisualizePTypesDivId').dxButton({
         await colorPanelsByPrefix();
 
         buttonIndicator.option('visible', false);
-        data.component.option('text', "Visualiseer panelen: prefixen");
+        data.component.option('text', "Panelen: prefixen");
     },
 });
 
 $('#btnVisualizePFinishDivId').dxButton({
     stylingMode: "outlined",
-    text: 'Visualiseer panelen: afwerking',
+    text: 'Panelen: afwerking',
     type: "success",
     template(data, container) {
         $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
@@ -2835,13 +3009,13 @@ $('#btnVisualizePFinishDivId').dxButton({
         await colorPanelsByFinish();
 
         buttonIndicator.option('visible', false);
-        data.component.option('text', "Visualiseer panelen: afwerking");
+        data.component.option('text', "Panelen: afwerking");
     },
 });
 
 $('#btnVisualizePMaterialDivId').dxButton({
     stylingMode: "outlined",
-    text: 'Visualiseer panelen: materialen',
+    text: 'Panelen: materialen',
     type: "success",
     template(data, container) {
         $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
@@ -2856,7 +3030,7 @@ $('#btnVisualizePMaterialDivId').dxButton({
         await colorPanelsByMaterial();
 
         buttonIndicator.option('visible', false);
-        data.component.option('text', "Visualiseer panelen: materialen");
+        data.component.option('text', "Panelen: materialen");
     },
 });
 
@@ -3420,6 +3594,13 @@ $("#btnOdooSearchDivId").dxButton({
                 if (q.Prefix === "V") {
                     qStr = '"&",["freight", ">=", "' + q.StartPos + '"],["freight", "<=", "' + q.EndPos + '"]';
                 }
+                else if (q.Prefix === "WD")
+                {
+                    qStr = '"&",["mark_id.mark_prefix", "=", "W"],["mark_id.mark_profile", "ilike", "_' + q.StartPos + '_"]';
+                }
+                else if (q.Prefix.startsWith("WW")) {
+                    qStr = '"&",["mark_id.mark_prefix", "=", "W"],["mark_id.mark_reinf_type", "=ilike", "' + q.Prefix.substring(2) + '"]';
+                }
                 else {
                     var partPrefix = '["mark_id.mark_prefix", "=", "' + q.Prefix + '"]';
                     var partOrange = '["mark_id.mark_ranking", "=", "' + q.StartPos + '"]';
@@ -3572,7 +3753,7 @@ $("#btnOdooSearchDivId").dxButton({
 
 $("#btnVisualizeTTDivId").dxButton({
     stylingMode: "outlined",
-    text: "Visualiseer TT(T)",
+    text: "TT(T) breedtes",
     type: "success",
     template(data, container) {
         $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
@@ -3603,13 +3784,13 @@ $("#btnVisualizeTTDivId").dxButton({
         popup.show();
 
         buttonIndicator.option('visible', false);
-        data.component.option('text', 'Visualiseer TT(T)');
+        data.component.option('text', 'TT(T) breedtes');
     },
 });
 
-$("#btnVisualizeWDivId").dxButton({
+$("#btnVisualizeWWidthDivId").dxButton({
     stylingMode: "outlined",
-    text: "Visualiseer W",
+    text: "W breedtes",
     type: "success",
     template(data, container) {
         $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
@@ -3635,7 +3816,49 @@ $("#btnVisualizeWDivId").dxButton({
         popup.show();
 
         buttonIndicator.option('visible', false);
-        data.component.option('text', 'Visualiseer W');
+        data.component.option('text', 'W breedtes');
+    },
+});
+
+$("#btnVisualizeWProfileDivId").dxButton({
+    stylingMode: "outlined",
+    text: "W profielen",
+    type: "success",
+    template(data, container) {
+        $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+        buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+            visible: false,
+        }).dxLoadIndicator('instance');
+    },
+    onClick: async function (data) {
+        data.component.option('text', "Bezig met visualiseren");
+        buttonIndicator.option('visible', true);
+
+        await colorWByProfile();
+
+        buttonIndicator.option('visible', false);
+        data.component.option('text', 'W profielen');
+    },
+});
+
+$("#btnVisualizeWReinforcementDivId").dxButton({
+    stylingMode: "outlined",
+    text: "W wapening",
+    type: "success",
+    template(data, container) {
+        $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+        buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+            visible: false,
+        }).dxLoadIndicator('instance');
+    },
+    onClick: async function (data) {
+        data.component.option('text', 'Bezig met visualiseren');
+        buttonIndicator.option('visible', true);
+
+        await colorWByReinforcement();
+
+        buttonIndicator.option('visible', false);
+        data.component.option('text', 'W wapening');
     },
 });
 
