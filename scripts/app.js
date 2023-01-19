@@ -948,7 +948,7 @@ async function setAccesBooleans() {
     }
 
     var username = odooUsernameTextbox.dxTextBox("instance").option("value");
-    if (username == 'sys_mrp_user' || username == 'krecour' || username == 'mhemeryck')
+    if (username == 'sys_mrp_user' || username == 'krecour' || username == 'mhemeryck' || username == 'jrodenbach' || username == 'jmeeuw')
         hasAccesToFreights = true;
 
     hasAccesToProduction = true;
