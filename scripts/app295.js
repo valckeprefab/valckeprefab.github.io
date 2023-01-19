@@ -1279,9 +1279,9 @@ async function getElementsInFreight(freightnumber) {
     var elements = [];
     var domain;
     if(freightnumber != undefined)
-        domain = `[["project_id.id", "=", "${projectId}"], ["freight", "=", "${freightnumber}"]]`; //, ["mark_id.mark_prefix", "=", "W"]
+        domain = `[["project_id.id", "=", "${projectId}"], ["freight", "=", "${freightnumber}"], ["state","!=","cancelled"]]`; //, ["mark_id.mark_prefix", "=", "W"]
     else
-        domain = `[["project_id.id", "=", "${projectId}"]]`; //, ["mark_id.mark_prefix", "=", "W"]
+        domain = `[["project_id.id", "=", "${projectId}"], ["state","!=","cancelled"]]`; //, ["mark_id.mark_prefix", "=", "W"]
     await $.ajax({
         type: "GET",
         url: odooURL + "/api/v1/search_read",
@@ -1351,7 +1351,7 @@ async function getFreightNumbers() {
         headers: { "Authorization": "Bearer " + token },
         data: {
             model: "trimble.connect.main",
-            domain: `[["project_id.id", "=", "${projectId}"], ["freight", ">", "0"]]`, //, ["mark_id.mark_prefix", "=", "W"]
+            domain: `[["project_id.id", "=", "${projectId}"], ["freight", ">", "0"], ["state","!=","cancelled"]]`, //, ["mark_id.mark_prefix", "=", "W"]
             fields: '["freight"]',
         },
         success: function (data) {
@@ -3191,7 +3191,7 @@ $('#btnSaveFreightDivId').dxButton({
         modelIsColored = false; 
         //-- get alle elements with current freight number
         var freightNumber = newFreightNumberBox.dxNumberBox("instance").option("value");
-        freightNumber = await GetValidFreightNumber();
+        freightNumber = await GetValidFreightNumber(freightNumber);
         console.log(`setting elements with freight ${freightNumber}`);
         var elementsToModify = await getElementsInFreight(freightNumber);
         console.log(`found ${elementsToModify.length} elements to modify`);
@@ -3845,6 +3845,7 @@ $("#btnTest").dxButton({
     type: "success",
     onClick: async function (data) {
         var qsdf = await captureScreenshot();
+        console.log(Guid.fromCompressedToFull('33sq37qxr6YgHI8s0UQ3CM'));
     },
 });
 

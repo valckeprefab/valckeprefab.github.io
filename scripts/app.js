@@ -4,7 +4,7 @@ var odooDatabase = "erp_prd"
 var fetchLimit = 80;
 
 window.onload = async function () {
-    API = await Workspace.connect(window.parent, async (event, data) => {
+    API = await TrimbleConnectWorkspace.connect(window.parent, async (event, data) => {
         //console.log("Event: ", event, data);
 
         var eventName = event.split(".").pop();
@@ -146,6 +146,37 @@ var freightColors = [
     { r: 0, g: 0, b: 0, a: 255 }, //22
 ];
 
+var slabThicknessColors = [
+    {
+        Profile: "VV_150_1200",
+        Color: { r: 255, g: 255, b: 0, a: 255 }, //yellow
+    },
+    {
+        Profile: "VV_180_1200",
+        Color: { r: 0, g: 128, b: 255, a: 255 }, //blue'ish
+    },
+    {
+        Profile: "VV_200_1200",
+        Color: { r: 255, g: 255, b: 255, a: 255 }, //white
+    },
+    {
+        Profile: "VV_220_1200",
+        Color: { r: 0, g: 255, b: 0, a: 255 }, //green
+    },
+    {
+        Profile: "VV_265_1200",
+        Color: { r: 255, g: 128, b: 0, a: 255 }, //orange
+    },
+    {
+        Profile: "VV_320_1200",
+        Color: { r: 128, g: 0, b: 255, a: 255 }, //purple
+    },
+    {
+        Profile: "VV_400_1200",
+        Color: { r: 255, g: 0, b: 0, a: 255 }, //red
+    }
+];
+
 var idsPerPrefixPerModelId = [];
 
 var objectStatuses = [];
@@ -153,20 +184,48 @@ var objectStatuses = [];
 var selectionChangedIds = [];
 
 var selectedObjects = [
-    //{
-    //    ModelId: "0",
-    //    ObjectRuntimeId: 0,
-    //    ObjectId: "0",
-    //    Guid: "8d14bb4d-9b0e-4cf9-b7d7-a3740b154195",
-    //    OdooTcmId: 68560,
-    //    OdooPmmId: 150228,
-    //    Weight: 8389,
-    //    Prefix: "FM",//voor sorteren
-    //    PosNmbr: 23,
-    //    Rank: 1,
-    //    AssemblyName: "FM23",
-    //    OdooCode: "V8622.0000FM.0023"
-    //},
+    {
+        ModelId: "0",
+        ObjectRuntimeId: 0,
+        ObjectId: "0",
+        Guid: "8d14bb4d-9b0e-4cf9-b7d7-a3740b154195",
+        OdooTcmId: 68560,
+        OdooPmmId: 150228,
+        Weight: 8389,
+        Prefix: "FM",//voor sorteren
+        PosNmbr: 23,
+        Rank: 1,
+        AssemblyName: "FM23",
+        OdooCode: "V8622.0000FM.0023"
+    },
+    {
+        ModelId: "0",
+        ObjectRuntimeId: 0,
+        ObjectId: "0",
+        Guid: "8d14bb4d-9b0e-4cf9-b7d7-a3740b154195",
+        OdooTcmId: 68561,
+        OdooPmmId: 150228,
+        Weight: 8389,
+        Prefix: "FM",//voor sorteren
+        PosNmbr: 100,
+        Rank: 1,
+        AssemblyName: "FM100",
+        OdooCode: "V8622.0000FM.0023"
+    },
+    {
+        ModelId: "0",
+        ObjectRuntimeId: 0,
+        ObjectId: "0",
+        Guid: "8d14bb4d-9b0e-4cf9-b7d7-a3740b154195",
+        OdooTcmId: 68562,
+        OdooPmmId: 150228,
+        Weight: 8389,
+        Prefix: "FM",//voor sorteren
+        PosNmbr: 1600,
+        Rank: 1,
+        AssemblyName: "FM1600",
+        OdooCode: "V8622.0000FM.0023"
+    },
 ];
 
 const textUi = {
@@ -1220,9 +1279,9 @@ async function getElementsInFreight(freightnumber) {
     var elements = [];
     var domain;
     if(freightnumber != undefined)
-        domain = `[["project_id.id", "=", "${projectId}"], ["freight", "=", "${freightnumber}"]]`; //, ["mark_id.mark_prefix", "=", "W"]
+        domain = `[["project_id.id", "=", "${projectId}"], ["freight", "=", "${freightnumber}"], ["state","!=","cancelled"]]`; //, ["mark_id.mark_prefix", "=", "W"]
     else
-        domain = `[["project_id.id", "=", "${projectId}"]]`; //, ["mark_id.mark_prefix", "=", "W"]
+        domain = `[["project_id.id", "=", "${projectId}"], ["state","!=","cancelled"]]`; //, ["mark_id.mark_prefix", "=", "W"]
     await $.ajax({
         type: "GET",
         url: odooURL + "/api/v1/search_read",
@@ -1240,6 +1299,26 @@ async function getElementsInFreight(freightnumber) {
     });
 
     return elements;
+}
+
+async function GetValidFreightNumber(freightnumber) {
+    console.log(freightnumber);
+    if (freightnumber) { //https://262.ecma-international.org/5.1/#sec-9.2
+        console.log("Freightnumber is truthy");
+        return freightnumber;
+    }
+    else {
+        console.log("Freightnumber is invalid, getting next available freightnumber");
+        var freightNumbers = await getFreightNumbers();
+        console.log("Used freightnumbers:");
+        for (var i of freightNumbers)
+            console.log(i);
+        var nextFreightNumber = 1;
+        if (freightNumbers.length > 0)
+            nextFreightNumber = freightNumbers[freightNumbers.length - 1] + 1;
+        console.log(`Found next available freightnumber: ${nextFreightNumber}`);
+        return nextFreightNumber;
+    }
 }
 
 function getFilterTypes() {
@@ -1272,7 +1351,7 @@ async function getFreightNumbers() {
         headers: { "Authorization": "Bearer " + token },
         data: {
             model: "trimble.connect.main",
-            domain: `[["project_id.id", "=", "${projectId}"], ["freight", ">", "0"]]`, //, ["mark_id.mark_prefix", "=", "W"]
+            domain: `[["project_id.id", "=", "${projectId}"], ["freight", ">", "0"], ["state","!=","cancelled"]]`, //, ["mark_id.mark_prefix", "=", "W"]
             fields: '["freight"]',
         },
         success: function (data) {
@@ -1869,6 +1948,7 @@ async function selectionChanged(data) {
         //for (var o of tempSelectedObjects)
         //    selectedObjects.push(o);
         selectedObjects.push(...tempSelectedObjects);
+        clearDataGridProductionSorting();
         dataGridTransport.dxDataGrid("refresh");
         dataGridProduction.dxDataGrid("refresh");
 
@@ -2563,6 +2643,7 @@ const freightNumberBox = $('#placeholderFreightNmbr').dxNumberBox({
 });
 
 const newFreightNumberBox = $('#placeholderNewFreightNmbr').dxNumberBox({
+    value: "",
     width: 50
 });
 
@@ -2912,7 +2993,7 @@ async function colorWByProfile() {
         }
     });
 
-    profiles = [...new Set(profiles)];
+    profiles = [...new Set(profiles.sort())];
 
     var guidsPerProfile = [];
     for (var profile of profiles) {
@@ -2944,7 +3025,10 @@ async function colorWByProfile() {
 
     var legendItems = [];
     for (var guidsProfile of guidsPerProfile) {
-        var colorToUse = freightColors[guidsPerProfile.indexOf(guidsProfile) % freightColors.length];
+        var colorToUse = { r: 0, g: 0, b: 0, a: 255 };
+        var profileColorCombo = slabThicknessColors.find(x => x.Profile === guidsProfile.Profile);
+        if (profileColorCombo != undefined)
+            colorToUse = profileColorCombo.Color; // freightColors[guidsPerProfile.indexOf(guidsProfile) % freightColors.length]
         colorToUse.a = 255;
         var elementsColored = false;
         var models = await API.viewer.getModels("loaded");
@@ -2973,7 +3057,7 @@ async function colorWByProfile() {
 
 $('#btnVisualizePTypesDivId').dxButton({
     stylingMode: "outlined",
-    text: 'Panelen: prefixen',
+    text: 'P: prefixen',
     type: "success",
     template(data, container) {
         $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
@@ -2988,13 +3072,13 @@ $('#btnVisualizePTypesDivId').dxButton({
         await colorPanelsByPrefix();
 
         buttonIndicator.option('visible', false);
-        data.component.option('text', "Panelen: prefixen");
+        data.component.option('text', "P: prefixen");
     },
 });
 
 $('#btnVisualizePFinishDivId').dxButton({
     stylingMode: "outlined",
-    text: 'Panelen: afwerking',
+    text: 'P: afwerking',
     type: "success",
     template(data, container) {
         $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
@@ -3009,13 +3093,13 @@ $('#btnVisualizePFinishDivId').dxButton({
         await colorPanelsByFinish();
 
         buttonIndicator.option('visible', false);
-        data.component.option('text', "Panelen: afwerking");
+        data.component.option('text', "P: afwerking");
     },
 });
 
 $('#btnVisualizePMaterialDivId').dxButton({
     stylingMode: "outlined",
-    text: 'Panelen: materialen',
+    text: 'P: materialen',
     type: "success",
     template(data, container) {
         $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
@@ -3030,7 +3114,7 @@ $('#btnVisualizePMaterialDivId').dxButton({
         await colorPanelsByMaterial();
 
         buttonIndicator.option('visible', false);
-        data.component.option('text', "Panelen: materialen");
+        data.component.option('text', "P: materialen");
     },
 });
 
@@ -3107,6 +3191,7 @@ $('#btnSaveFreightDivId').dxButton({
         modelIsColored = false; 
         //-- get alle elements with current freight number
         var freightNumber = newFreightNumberBox.dxNumberBox("instance").option("value");
+        freightNumber = await GetValidFreightNumber(freightNumber);
         console.log(`setting elements with freight ${freightNumber}`);
         var elementsToModify = await getElementsInFreight(freightNumber);
         console.log(`found ${elementsToModify.length} elements to modify`);
@@ -3295,6 +3380,9 @@ $("#btnCreateSlipDivId").dxButton({
             }
 
             await refreshExistingSlips();
+
+            var snapshot = await API.viewer.getSnapshot();
+            console.log(snapshot);
 
             await API.viewer.setSelection(undefined, 'remove');
         }
@@ -3750,6 +3838,38 @@ $("#btnOdooSearchDivId").dxButton({
         data.component.option('text', getTextById("btnOdooSearch"));
     },
 });
+
+$("#btnTest").dxButton({
+    stylingMode: "outlined",
+    text: "Test",
+    type: "success",
+    onClick: async function (data) {
+        var qsdf = await captureScreenshot();
+        console.log(Guid.fromCompressedToFull('33sq37qxr6YgHI8s0UQ3CM'));
+    },
+});
+
+const captureScreenshot = async () => {
+    try {
+        const canvas = document.createElement("canvas");
+        const screenshot = new Image();
+        var options = { preferCurrentTab: true, video:true };
+        const captureStream = await navigator.mediaDevices.getDisplayMedia(options);
+        var track = captureStream.getVideoTracks()[0];
+        let imageCapture = new ImageCapture(track);
+        var imgBm = await imageCapture.grabFrame();
+        screenshot.srcObject = captureStream.getVideoTracks()[0];
+        canvas.width = imgBm.width;
+        canvas.height = imgBm.height;
+        canvas.getContext("2d").drawImage(imgBm, 0, 0, imgBm.width, imgBm.height);
+        const frame = canvas.toDataURL("image/png");
+        console.log(frame);
+        //window.location.href = frame;;
+        captureStream.getTracks().forEach(track => track.stop());
+    } catch (err) {
+        console.error("Error: " + err);
+    }
+};
 
 $("#btnVisualizeTTDivId").dxButton({
     stylingMode: "outlined",
@@ -4677,6 +4797,7 @@ $("#btnShowTitlesDivId").dxButton({
         document.getElementById("divTitleAction3").style.display = displayValue;
         document.getElementById("divTitleAction4").style.display = displayValue;
         document.getElementById("divTitleAction5").style.display = displayValue;
+        document.getElementById("divTitleProduction").style.display = displayValue;
         titlesShown = !titlesShown;
         data.component.option('text', titlesShown ? getTextById("btnHideTitles") : getTextById("btnShowTitles"));
     },
@@ -5270,6 +5391,22 @@ var dataGridProduction = $("#dataGridProduction").dxDataGrid({
             displayFormat: getTextById("gridTitleTotalWeight") + " {0} kg",
         }],
     },
+    rowDragging: {
+        allowReordering: true,
+        showDragIcons: false,
+        onReorder(e) {
+            clearDataGridProductionSorting();
+
+            const visibleRows = e.component.getVisibleRows();
+            const toIndex = selectedObjects.findIndex((item) => item.OdooTcmId === visibleRows[e.toIndex].data.OdooTcmId);
+            const fromIndex = selectedObjects.findIndex((item) => item.OdooTcmId === e.itemData.OdooTcmId);
+
+            selectedObjects.splice(fromIndex, 1);
+            selectedObjects.splice(toIndex, 0, e.itemData);
+
+            e.component.refresh();
+        },
+    },
     onRowRemoving: async function (e) {
         var instanceDropDown = dropDownExistingSlips.dxDropDownBox("instance");
         instanceDropDown.reset();
@@ -5289,6 +5426,13 @@ var dataGridProduction = $("#dataGridProduction").dxDataGrid({
         }
     },
 });
+
+function clearDataGridProductionSorting() {
+    var dataGrid = dataGridProduction.dxDataGrid('instance');
+    for (var i = 0; i < dataGrid.columnCount(); i++) {
+        dataGrid.columnOption(i, 'sortOrder', undefined);
+    }
+}
 
 //#endregion
 
