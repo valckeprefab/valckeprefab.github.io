@@ -3948,7 +3948,7 @@ $("#btnOdooSearchDivId").dxButton({
             }
 
             var selectArrows = checkBoxDirectionArrows.dxCheckBox("instance").option("value");
-            if (!Boolean(selectArrows)) {
+            if (Boolean(selectArrows)) {
                 await selectDirectionArrows();
             }
             //select assemblies

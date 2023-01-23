@@ -1,7 +1,10 @@
 var API = null;
 var odooURL = "https://odoo.valcke-prefab.be"; //no slash at the end
 var odooDatabase = "erp_prd"
-var fetchLimit = 80;
+var fetchLimit = 60; 
+//80 was too much for a query with GUID's listed in the domain
+//(threw a CORS error(= invalid query usually), response was complete though,
+//should be looked into but since lowering fetchLimit doesn't give a noticable delay it was just set to 60 instead of 80 for now)
 
 window.onload = async function () {
     API = await TrimbleConnectWorkspace.connect(window.parent, async (event, data) => {
@@ -116,9 +119,9 @@ const labelContentTypes = {
 };
 
 const labelContentTypesOdoo = {
-    nl: ["Merk.Serienummer"],
-    fr: ["Assemblage.NuméroDeSérie"],
-    en: ["Assembly.Serialnumber"]
+    nl: ["Merk.Serienummer", "Vracht.PositieInVracht"],
+    fr: ["Assemblage.NuméroDeSérie", "Charge.PlaceDansCharge"],
+    en: ["Assembly.Serialnumber", "Freight.PositionInFreight"]
 };
 
 var freightColors = [
@@ -184,48 +187,51 @@ var objectStatuses = [];
 var selectionChangedIds = [];
 
 var selectedObjects = [
-    {
-        ModelId: "0",
-        ObjectRuntimeId: 0,
-        ObjectId: "0",
-        Guid: "8d14bb4d-9b0e-4cf9-b7d7-a3740b154195",
-        OdooTcmId: 68560,
-        OdooPmmId: 150228,
-        Weight: 8389,
-        Prefix: "FM",//voor sorteren
-        PosNmbr: 23,
-        Rank: 1,
-        AssemblyName: "FM23",
-        OdooCode: "V8622.0000FM.0023"
-    },
-    {
-        ModelId: "0",
-        ObjectRuntimeId: 0,
-        ObjectId: "0",
-        Guid: "8d14bb4d-9b0e-4cf9-b7d7-a3740b154195",
-        OdooTcmId: 68561,
-        OdooPmmId: 150228,
-        Weight: 8389,
-        Prefix: "FM",//voor sorteren
-        PosNmbr: 100,
-        Rank: 1,
-        AssemblyName: "FM100",
-        OdooCode: "V8622.0000FM.0023"
-    },
-    {
-        ModelId: "0",
-        ObjectRuntimeId: 0,
-        ObjectId: "0",
-        Guid: "8d14bb4d-9b0e-4cf9-b7d7-a3740b154195",
-        OdooTcmId: 68562,
-        OdooPmmId: 150228,
-        Weight: 8389,
-        Prefix: "FM",//voor sorteren
-        PosNmbr: 1600,
-        Rank: 1,
-        AssemblyName: "FM1600",
-        OdooCode: "V8622.0000FM.0023"
-    },
+    //{
+    //    ModelId: "0",
+    //    ObjectRuntimeId: 0,
+    //    ObjectId: "0",
+    //    Guid: "8d14bb4d-9b0e-4cf9-b7d7-a3740b154195",
+    //    OdooTcmId: 68560,
+    //    OdooPmmId: 150228,
+    //    Weight: 8389,
+    //    Prefix: "FM",//voor sorteren
+    //    PosNmbr: 23,
+    //    Rank: 1,
+    //    AssemblyName: "FM23",
+    //    OdooCode: "V8622.0000FM.0023",
+    //    PosInFreight : -1
+    //},
+    //{
+    //    ModelId: "0",
+    //    ObjectRuntimeId: 0,
+    //    ObjectId: "0",
+    //    Guid: "8d14bb4d-9b0e-4cf9-b7d7-a3740b154195",
+    //    OdooTcmId: 68561,
+    //    OdooPmmId: 150228,
+    //    Weight: 8389,
+    //    Prefix: "FM",//voor sorteren
+    //    PosNmbr: 100,
+    //    Rank: 1,
+    //    AssemblyName: "FM100",
+    //    OdooCode: "V8622.0000FM.0023",
+    //    PosInFreight: -1
+    //},
+    //{
+    //    ModelId: "0",
+    //    ObjectRuntimeId: 0,
+    //    ObjectId: "0",
+    //    Guid: "8d14bb4d-9b0e-4cf9-b7d7-a3740b154195",
+    //    OdooTcmId: 68562,
+    //    OdooPmmId: 150228,
+    //    Weight: 8389,
+    //    Prefix: "FM",//voor sorteren
+    //    PosNmbr: 1600,
+    //    Rank: 1,
+    //    AssemblyName: "FM1600",
+    //    OdooCode: "V8622.0000FM.0023",
+    //    PosInFreight: -1
+    //},
 ];
 
 const textUi = {
@@ -540,6 +546,12 @@ const textUi = {
         fr: "En cours de créer un nouveau bon de livraison",
         en: "Creating new delivery slip",
     },
+    btnShowFreightsVisualizing:
+    {
+        nl: "Bezig met vrachten te visualiseren",
+        fr: "En cours d'afficher les charges",
+        en: "Visualizing freights"
+    },
     errorMsgNoAssemblySelection:
     {
         nl: "Labels kunnen enkel geplaatst worden van objecten die geselecteerd werden met \"Assembly selection\".",
@@ -575,6 +587,12 @@ const textUi = {
         nl: "Huidige selectie:",
         fr: "Sélection actuelle:",
         en: "Current selection:"
+    },
+    titleLabelContent:
+    {
+        nl: "Labelinhoud:",
+        fr: "Contenu des étiquettes:",
+        en: "Label content:"
     },
     gridTitleAssembly:
     {
@@ -617,6 +635,12 @@ const textUi = {
         nl: "Toon Odoo gegevens",
         fr: "Afficher les données Odoo",
         en: "Show Odoo data"
+    },
+    btnShowFreights:
+    {
+        nl: "Toon vrachten",
+        fr: "Afficher les charges",
+        en: "Show freights"
     },
     textGuid:
     {
@@ -731,6 +755,18 @@ const textUi = {
         nl: "Actie 4: Toon info van gekende odoo merken",
         fr: "Action 4 : Afficher info des assemblages connus d'Odoo",
         en: "Action 4: Show Odoo data of known assemblies"
+    },
+    titleAction5:
+    {
+        nl: "Actie 5: Visualiseer vrachten",
+        fr: "Action 5 : Afficher info des assemblages connus d'Odoo",
+        en: "Action 4: Show Odoo data of known assemblies"
+    },
+    titleAddDirectionArrows:
+    {
+        nl: "Voeg montagepijlen en stramienen toe aan selectie",
+        fr: "Ajouter des flèches de montage et les maillages à la sélection",
+        en: "Add erection arrows and grids to selection"
     },
 };
 
@@ -1116,7 +1152,7 @@ function getAssemblyPosNmbrFromSteelname(steelName) {
     return pos;
 }
 
-async function getAssemblyNamesByCompressedGuids(compressedGuids) {
+async function getAssemblyInfoByCompressedGuids(compressedGuids) {
     var assemblies = [];
 
     //Authenticate with MUK API
@@ -1157,7 +1193,7 @@ async function getAssemblyNamesByCompressedGuids(compressedGuids) {
             data: {
                 model: "trimble.connect.main",
                 domain: domainTrimbleConnectMain,
-                fields: '["id", "name", "rank", "mark_id"]',
+                fields: '["id", "name", "rank", "mark_id", "freight", "pos_in_freight_number"]',
             },
             success: function (odooData) {
                 for (var record of odooData) {
@@ -1171,7 +1207,8 @@ async function getAssemblyNamesByCompressedGuids(compressedGuids) {
                             AssemblyName: longPrefix + posNmbr + "." + record.rank,
                             Guid: record.name,
                             AssemblyId: record.mark_id[0],
-                            AssemblyQuantity: 0
+                            AssemblyQuantity: 0,
+                            FreightInfo: `Vr_${record.freight}.${record.pos_in_freight_number}`,
                         });
                     assemblyIds.push(record.mark_id[0]);
                 }
@@ -1289,11 +1326,11 @@ async function getElementsInFreight(freightnumber) {
         data: {
             model: "trimble.connect.main",
             domain: domain,
-            fields: '["id", "name"]',
+            fields: '["id", "name", "freight", "pos_in_freight_number"]',
         },
         success: function (data) {
             for (const record of data) {
-                elements.push({ Guid: record.name, OdooId: record.id, Freight: freightnumber});
+                elements.push({ Guid: record.name, OdooId: record.id, Freight: record.freight, PosInFreight: record.pos_in_freight_number});
             }
         }
     });
@@ -1744,6 +1781,8 @@ async function selectionChanged(data) {
                     ReinforcementType: "",
                     SlipName: "",
                     OdooSlipId: -1,
+                    Freight: -1,
+                    PosInFreight: -1,
                 });
             }
         }
@@ -1767,11 +1806,17 @@ async function selectionChanged(data) {
         referenceDate.setMinutes(59);
         referenceDate.setSeconds(59);
 
+        //console.log('tempSelectedObjects.length: ');
+        //console.log(tempSelectedObjects.length);
         for (var i = 0; i < tempSelectedObjects.length; i += fetchLimit) { //loop cuz only fetchLimit records get fetched at a time
+            //console.log('i: ');
+            //console.log(i);
             if (selectionChangedIds[selectionChangedIds.length - 1] != mySelectionId) return;
             var domainTrimbleConnectMain = "";
 
             for (var j = i; j < tempSelectedObjects.length && j < i + fetchLimit; j++) {
+                //console.log('j: ');
+                //console.log(j);
                 var filterArrStr = '["name", "ilike", "' + tempSelectedObjects[j].Guid + '"]';
                 if (j > i) {
                     domainTrimbleConnectMain = '"|", ' + filterArrStr + ',' + domainTrimbleConnectMain;
@@ -1795,7 +1840,7 @@ async function selectionChanged(data) {
                 data: {
                     model: "trimble.connect.main",
                     domain: domainTrimbleConnectMain,
-                    fields: '["id", "mark_id", "name", "rank", "mark_available", "date_transported", "freight"]',
+                    fields: '["id", "mark_id", "name", "rank", "mark_available", "date_transported", "freight", "pos_in_freight_number"]',
                 },
                 success: function (odooData) {
                     //console.log("trimble.connect.main");
@@ -1817,6 +1862,8 @@ async function selectionChanged(data) {
                             selectedObject.OdooCode = record.mark_id[1];
                             selectedObject.DateTransported = record.date_transported ? getDateFromString(record.date_transported) : "";
                             selectedObject.AvailableForTransport = record.mark_available;
+                            selectedObject.Freight = record.freight,
+                            selectedObject.PosInFreight = record.pos_in_freight_number,
                             selectedObject.ValidForNewFreight = record.freight == 0;
                         }
                         cntr++;
@@ -1947,7 +1994,8 @@ async function selectionChanged(data) {
         selectedObjects.length = 0;
         //for (var o of tempSelectedObjects)
         //    selectedObjects.push(o);
-        selectedObjects.push(...tempSelectedObjects);
+        selectedObjects.push(...tempSelectedObjects.filter(o => o.OdooTcmId != -1).sort(function (a, b) { return a.PosInFreight - b.PosInFreight; }));
+        setPosInFreight();
         clearDataGridProductionSorting();
         dataGridTransport.dxDataGrid("refresh");
         dataGridProduction.dxDataGrid("refresh");
@@ -1962,6 +2010,11 @@ async function selectionChanged(data) {
         console.log(e);
     }
     performSelectionChanged = true;
+}
+
+function setPosInFreight() {
+    for (var i = 0; i < selectedObjects.length; i++)
+        selectedObjects[i].PosInFreight = i + 1;
 }
 
 async function refreshExistingSlips() {
@@ -2205,8 +2258,10 @@ async function visualizeFreights() {
             var colorToUse;
             if (freight == 0)
                 colorToUse = { r: 128, g: 128, b: 128, a: 255 };
-            else
+            else {
                 colorToUse = freightColors[freight.FreightNumber % freightColors.length];
+                colorToUse = { r: colorToUse.r, g: colorToUse.g, b: colorToUse.b, a: 255 };
+            }
 
             //Set element color per freight
             colorToUse.a = 255;
@@ -2421,39 +2476,45 @@ async function getRecentOdooData() {
                         referenceDate.setHours(23);
                         referenceDate.setMinutes(59);
                         referenceDate.setSeconds(59);
+
+                        var recordsPerStatus = [];
+                        for (const objStatus of objectStatuses) {
+                            recordsPerStatus.push({ Status: objStatus.Status, Records: [], ModifiedCompressedIfcGuids: [] });
+                        }
+
                         for (const record of data) {
-                            var status = getStatus(record, referenceDate);
-                            var color = getColorByStatus(status);
+                            var statusWithRecords = recordsPerStatus.find(s => s.Status === getStatus(record, referenceDate));
+                            statusWithRecords.Records.push(record);
+                        }
 
-                            const mobjectsArr = await API.viewer.getObjects({ parameter: { properties: { 'Default.GUID': record.name } } });
-                            //console.log("mobjectsArr length: " + mobjectsArr.length);
+                        for (const statusWithRecords of recordsPerStatus.filter(r => r.Records.length > 0)) {
+                            var objStatus = objectStatuses.find(o => o.Status === statusWithRecords.Status);
 
-                            var compressedIfcGuids = [];
-                            var compressedIfcGuid = Guid.fromFullToCompressed(record.name);
-                            compressedIfcGuids.push(compressedIfcGuid);
-                            //remove element from previous status
-                            for (const objStatus of objectStatuses) {
-                                var index = objStatus.CompressedIfcGuids.indexOf(compressedIfcGuid);
-                                if (index != -1) {
-                                    objStatus.CompressedIfcGuids.splice(index, 1);
-                                    console.log("Assembly " + record.name + " removed from CompressedIfcGuids as " + objStatus.Status);
-                                }
-                                index = objStatus.Guids.indexOf(record.name);
-                                if (index != -1) {
-                                    objStatus.Guids.splice(index, 1);
-                                    console.log("Assembly " + record.name + " removed from Guids as " + objStatus.Status);
+                            for (const record of statusWithRecords.Records) {
+                                var compressedIfcGuid = Guid.fromFullToCompressed(record.name);
+                                if (objStatus.CompressedIfcGuids.indexOf(compressedIfcGuid) == -1) {
+                                    removeStatusFromCompressedIfcGuids(compressedIfcGuid);
+                                    objStatus.CompressedIfcGuids.push(compressedIfcGuid);
+
+                                    removeStatusFromGuids(record.name);
+                                    objStatus.Guids.push(record.name);
+
+                                    statusWithRecords.ModifiedCompressedIfcGuids.push(compressedIfcGuid);
                                 }
                             }
-                            //add element to new status
-                            var objStatus = objectStatuses.find(o => o.Status === status);
-                            objStatus.Guids.push(record.name);
-                            objStatus.CompressedIfcGuids.push(compressedIfcGuid);
-                            console.log("Assembly " + record.name + " added as " + status);
+                        }
 
-                            for (const mobjects of mobjectsArr) {
-                                var modelId = mobjects.modelId;
-                                var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedIfcGuids);
-                                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: color });
+                        for (const statusWithRecords of recordsPerStatus.filter(r => r.ModifiedCompressedIfcGuids.length > 0)) {
+                            var colorToUse = getColorByStatus(statusWithRecords.Status);
+
+                            var models = await API.viewer.getModels("loaded");
+                            for (var model of models) {
+                                var modelId = model.id;
+                                var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, statusWithRecords.ModifiedCompressedIfcGuids);
+                                if (runtimeIds != undefined && runtimeIds.length > 0) {
+                                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: colorToUse, visible: true });
+                                    elementsColored = true;
+                                }
                             }
                         }
                     }
@@ -2466,6 +2527,28 @@ async function getRecentOdooData() {
     }
     catch (e) {
         console.log(e);
+    }
+}
+
+function removeStatusFromCompressedIfcGuids(compressedIfcGuid) {
+    for (const objStatus of objectStatuses) {
+        var index = objStatus.CompressedIfcGuids.indexOf(compressedIfcGuid);
+        if (index != -1) {
+            objStatus.CompressedIfcGuids.splice(index, 1);
+            console.log("IfcGuid " + compressedIfcGuid + " removed from CompressedIfcGuids as " + objStatus.Status);
+            break;
+        }
+    }
+}
+
+function removeStatusFromGuids(guid) {
+    for (const objStatus of objectStatuses) {
+        var index = objStatus.Guids.indexOf(guid);
+        if (index != -1) {
+            objStatus.Guids.splice(index, 1);
+            console.log("Guid " + guid + " removed from Guids as " + objStatus.Status);
+            break;
+        }
     }
 }
 
@@ -2561,6 +2644,10 @@ var checkBoxToday = $('#checked').dxCheckBox({
     },
 });
 
+var checkBoxDirectionArrows = $('#checkedAddDirectionArrows').dxCheckBox({
+    value: true,
+});
+
 const popup = $('#popup').dxPopup({
     contentTemplate: popupContentTemplate,
     width: 300,
@@ -2635,12 +2722,14 @@ const propertyValueTextBox = $('#placeholderPropertyValue').dxTextBox({
 
 const freightNumberBox = $('#placeholderFreightNmbr').dxNumberBox({
     width: 50,
-    onValueChanged: async function (data) {
-        var elementsInFreight = await getElementsInFreight(data.value);
-        var guids = elementsInFreight.map(x => x.Guid);
-        await selectGuids(guids);
-    },
+    onValueChanged: selectFreightElements,
 });
+
+async function selectFreightElements(data) {
+    var elementsInFreight = await getElementsInFreight(data.value);
+    var guids = elementsInFreight.map(x => x.Guid);
+    await selectGuids(guids);
+}
 
 const newFreightNumberBox = $('#placeholderNewFreightNmbr').dxNumberBox({
     value: "",
@@ -3071,6 +3160,8 @@ $('#btnVisualizePTypesDivId').dxButton({
 
         await colorPanelsByPrefix();
 
+        await showDirectionArrows();
+
         buttonIndicator.option('visible', false);
         data.component.option('text', "P: prefixen");
     },
@@ -3092,6 +3183,8 @@ $('#btnVisualizePFinishDivId').dxButton({
 
         await colorPanelsByFinish();
 
+        await showDirectionArrows();
+
         buttonIndicator.option('visible', false);
         data.component.option('text', "P: afwerking");
     },
@@ -3112,6 +3205,8 @@ $('#btnVisualizePMaterialDivId').dxButton({
         buttonIndicator.option('visible', true);
 
         await colorPanelsByMaterial();
+
+        await showDirectionArrows();
 
         buttonIndicator.option('visible', false);
         data.component.option('text', "P: materialen");
@@ -3184,6 +3279,25 @@ async function setOdooFreightNumber(ids, freightnumber) {
     });
 }
 
+async function setOdooFreightNumberAndPosInFreight(ids, freightnumber, posInFreight) {
+    //Authenticate with MUK API
+    var token = await getToken();
+
+    await $.ajax({
+        type: "PUT",
+        url: odooURL + "/api/v1/write",
+        headers: { "Authorization": "Bearer " + token },
+        data: {
+            model: "trimble.connect.main",
+            values: `{"freight": "${freightnumber}", "pos_in_freight_number": "${posInFreight}"}`,
+            ids: `[${ids.join(',')}]`
+        },
+        success: function (odooData) {
+            console.log(odooData);
+        }
+    });
+}
+
 $('#btnSaveFreightDivId').dxButton({
     icon: 'save',
     onClick: async function (data) {
@@ -3195,10 +3309,12 @@ $('#btnSaveFreightDivId').dxButton({
         console.log(`setting elements with freight ${freightNumber}`);
         var elementsToModify = await getElementsInFreight(freightNumber);
         console.log(`found ${elementsToModify.length} elements to modify`);
-        //-- remove freight number (set as 0)
-        for (var ele of elementsToModify)
+        //-- remove freight info of the elements that are in this freight atm (set as 0)
+        for (var ele of elementsToModify) {
             ele.Freight = 0;
-        //-- set freight number of selected
+            ele.PosInFreight = 0;
+        }
+        //-- set freight number of selected (= elements that will be put in this freight)
         console.log(`found ${selectedObjects.length} selected objects to modify`);
         for (var ele of selectedObjects) {
             var existingEle = elementsToModify.find(x => x.Guid === ele.Guid);
@@ -3206,24 +3322,28 @@ $('#btnSaveFreightDivId').dxButton({
                 elementsToModify.push({
                     Guid: ele.Guid,
                     OdooId: ele.OdooTcmId,
-                    Freight: freightNumber
+                    Freight: freightNumber,
+                    PosInFreight: ele.PosInFreight,
                 });
             }
             else {
                 existingEle.Freight = freightNumber;
+                existingEle.PosInFreight = ele.PosInFreight;
             }
         }
 
-        var freights = [0, freightNumber];
-        for (var freight of freights) {
-            var elementsInFreight = elementsToModify.filter(x => x.Freight == freight);
-            if (elementsInFreight.length > 0) {
-                var ids = elementsInFreight.map(x => x.OdooId);
-                await setOdooFreightNumber(ids, freight);
-            }
+        for (var elementToModify of elementsToModify) {
+            var ids = [];
+            ids.push(elementToModify.OdooId);
+            await setOdooFreightNumberAndPosInFreight(ids, elementToModify.Freight, elementToModify.PosInFreight);
         }
 
         await visualizeFreights();
+
+        var nmbrBox = freightNumberBox.dxNumberBox("instance");
+        nmbrBox.off('onValueChanged');
+        nmbrBox.option('value', freightNumber);
+        nmbrBox.on('onValueChanged', selectFreightElements);
     },
 });
 
@@ -3235,9 +3355,9 @@ $('#btnDeleteFreightDivId').dxButton({
         //get alle elements with current freight number
         var freightNumber = freightNumberBox.dxNumberBox("instance").option("value");
         var elementsToModify = await getElementsInFreight(freightNumber);
-        //remove freight number (set as 0)
+        //remove freight info of the elements that are in this freight atm (set as 0)
         var ids = elementsToModify.map(x => x.OdooId);
-        await setOdooFreightNumber(ids, 0);
+        await setOdooFreightNumberAndPosInFreight(ids, 0, 0);
 
         await visualizeFreights();
     },
@@ -3250,9 +3370,9 @@ $('#btnDeleteAllFreightsDivId').dxButton({
         modelIsColored = false; 
         //get alle elements with a freight number
         var elementsToModify = await getElementsInFreight(undefined);
-        //remove freight number (set as 0)
+        //remove freight info of the elements that are in this freight atm (set as 0)
         var ids = elementsToModify.map(x => x.OdooId);
-        await setOdooFreightNumber(ids, 0);
+        await setOdooFreightNumberAndPosInFreight(ids, 0, 0);
 
         await visualizeFreights();
     },
@@ -3787,7 +3907,7 @@ $("#btnOdooSearchDivId").dxButton({
 
             //domainStr += ']';
 
-            console.log(domainStr);
+            //console.log(domainStr);
 
             var assembliesToSelect = [];
             await $.ajax({
@@ -3816,7 +3936,7 @@ $("#btnOdooSearchDivId").dxButton({
                     }
                 }
             });
-            console.log(assembliesToSelect);
+            //console.log(assembliesToSelect);
 
             if (assembliesToSelect.length > 0) {
                 var guidsToSelect = assembliesToSelect.map(a => a.Guid);
@@ -3827,7 +3947,10 @@ $("#btnOdooSearchDivId").dxButton({
                 throw "No results found for given searchstring";
             }
 
-
+            var selectArrows = checkBoxDirectionArrows.dxCheckBox("instance").option("value");
+            if (Boolean(selectArrows)) {
+                await selectDirectionArrows();
+            }
             //select assemblies
             //inform if certain elements weren't found
         }
@@ -3897,6 +4020,8 @@ $("#btnVisualizeTTDivId").dxButton({
         legendItems.push({ Text: `TTT breedte = ${standardTTTWidth}`, Color: { r: 0, g: 255, b: 0 } });
         legendItems.push({ Text: `TTT breedte < ${standardTTTWidth}`, Color: { r: 255, g: 0, b: 0 } });
 
+        await showDirectionArrows();
+
         popup.option({
             contentTemplate: () => popupContentTemplateLegend(legendItems),
             height: 100 + legendItems.length * 30
@@ -3929,6 +4054,8 @@ $("#btnVisualizeWWidthDivId").dxButton({
             { Text: `W breedte < ${standardWWidth}`, Color: { r: 255, g: 0, b: 0 } },
         ];
 
+        await showDirectionArrows();
+
         popup.option({
             contentTemplate: () => popupContentTemplateLegend(legendItems),
             height: 100 + legendItems.length * 30
@@ -3956,6 +4083,8 @@ $("#btnVisualizeWProfileDivId").dxButton({
 
         await colorWByProfile();
 
+        await showDirectionArrows();
+
         buttonIndicator.option('visible', false);
         data.component.option('text', 'W profielen');
     },
@@ -3976,6 +4105,8 @@ $("#btnVisualizeWReinforcementDivId").dxButton({
         buttonIndicator.option('visible', true);
 
         await colorWByReinforcement();
+
+        await showDirectionArrows();
 
         buttonIndicator.option('visible', false);
         data.component.option('text', 'W wapening');
@@ -4498,89 +4629,103 @@ $("#btnSetOdooLabelsDivId").dxButton({
     onClick: async function (data) {
         data.component.option('text', getTextById("btnSetOdooLabelsSetting"));
         buttonIndicator.option('visible', true);
-        try {
-            await checkAssemblySelection();
 
-            var username = odooUsernameTextbox.dxTextBox("instance").option("value");
-            var password = odooPasswordTextbox.dxTextBox("instance").option("value");
-            if (typeof username !== 'string' || typeof password !== 'string' || username === "" || password === "") {
-                console.log("no username and/or password found");
-                throw getTextById("errorMsgUsernamePassword");
-            }
+        var selectedItem = labelContentOdooSelectBox.dxSelectBox("instance").option("selectedItem");
 
-            var selectedItem = labelContentOdooSelectBox.dxSelectBox("instance").option("selectedItem"); 
-            var possibleSelectBoxValues = getLabelContentOdooTypes();
+        await AddOdooInfoLabels(selectedItem);
 
-            let jsonArray = "[";
-            const selection = await API.viewer.getSelection();
-            const selector = {
-                modelObjectIds: selection
-            };
-            const modelspecs = await API.viewer.getModels("loaded");
-            const mobjectsArr = await API.viewer.getObjects(selector);
-            var nmbrOfAssembliesFound = 0;
-            for (const mobjects of mobjectsArr) {
-                //console.log(modelspecs);
-                const modelspec = modelspecs.find(s => s.id === mobjects.modelId);
-                //console.log(modelspec);
-                const modelPos = modelspec.placement.position;
-                //console.log(modelPos);
-                const objectRuntimeIds = mobjects.objects.map(o => o.id); //o.id = runtimeId = number
-                const objectIds = await API.viewer.convertToObjectIds(mobjects.modelId, objectRuntimeIds);//objectIds = compressed ifc ids
-                const objPropertiesArr = await API.viewer.getObjectProperties(mobjects.modelId, objectRuntimeIds);
-                //console.log(objectRuntimeIds);
-                var assemblyNames = await getAssemblyNamesByCompressedGuids(objectIds);
-                //console.log(assemblyNames);
-                for (const objproperties of objPropertiesArr) {
-                    var defaultProperties = objproperties.properties.find(p => p.name === "Default");
-                    if (defaultProperties == undefined)
-                        continue;
-                    var cogX = defaultProperties.properties.find(x => x.name === "COG_X");
-                    var cogY = defaultProperties.properties.find(x => x.name === "COG_Y");
-                    var cogZ = defaultProperties.properties.find(x => x.name === "COG_Z");
-                    var guid = defaultProperties.properties.find(x => x.name === "GUID");
-                    if (cogX == undefined || cogX == undefined || cogX == undefined || guid == undefined)
-                        continue;
-                    
-                    var color = { r: 60, g: 203, b: 62, a: 255 };
-                    var coordinates = { x: modelPos.x + cogX.value, y: modelPos.y + cogY.value, z: modelPos.z + cogZ.value };
-                    var labelText = "";
-                    if (selectedItem === possibleSelectBoxValues[0]) {
-                        var assemblyNameObj = assemblyNames.find(x => x.Guid.toUpperCase() === guid.value.toUpperCase());
-                        if (assemblyNameObj != undefined) {
-                            if (assemblyNameObj.AssemblyQuantity > 1)
-                                color = { r: 255, g: 0, b: 0, a: 255 };
-                            labelText = assemblyNameObj.AssemblyName;
-                        }
-                        else
-                            continue;
-                    }
-
-                    if (labelText != "") {
-                        jsonArray += getMarkupJson(color, coordinates, mobjects.modelId, objproperties.id, labelText) + ",";
-                        nmbrOfAssembliesFound++;
-                    }
-                }
-            }
-
-            jsonArray = jsonArray.slice(0, -1);
-            jsonArray += "]";
-            await API.markup.removeMarkups();
-            if (nmbrOfAssembliesFound > 0) {
-                await API.markup.addTextMarkup(JSON.parse(jsonArray));
-            }
-            else {
-                DevExpress.ui.notify(getTextById("errorMsgNoOdooAssembliesFound"));
-            }
-        }
-        catch (e) {
-            DevExpress.ui.notify(e);
-            console.log(e);
-        }
         buttonIndicator.option('visible', false);
         data.component.option('text', getTextById("btnSetOdooLabels"));
     },
 });
+
+async function AddOdooInfoLabels(selectedItem) {
+    try {
+        await checkAssemblySelection();
+
+        var username = odooUsernameTextbox.dxTextBox("instance").option("value");
+        var password = odooPasswordTextbox.dxTextBox("instance").option("value");
+        if (typeof username !== 'string' || typeof password !== 'string' || username === "" || password === "") {
+            console.log("no username and/or password found");
+            throw getTextById("errorMsgUsernamePassword");
+        }
+
+        var possibleSelectBoxValues = getLabelContentOdooTypes();
+
+        let jsonArray = "[";
+        const selection = await API.viewer.getSelection();
+        const selector = {
+            modelObjectIds: selection
+        };
+        const modelspecs = await API.viewer.getModels("loaded");
+        const mobjectsArr = await API.viewer.getObjects(selector);
+        var nmbrOfAssembliesFound = 0;
+        for (const mobjects of mobjectsArr) {
+            //console.log(modelspecs);
+            const modelspec = modelspecs.find(s => s.id === mobjects.modelId);
+            //console.log(modelspec);
+            const modelPos = modelspec.placement.position;
+            //console.log(modelPos);
+            const objectRuntimeIds = mobjects.objects.map(o => o.id); //o.id = runtimeId = number
+            const objectIds = await API.viewer.convertToObjectIds(mobjects.modelId, objectRuntimeIds);//objectIds = compressed ifc ids
+            const objPropertiesArr = await API.viewer.getObjectProperties(mobjects.modelId, objectRuntimeIds);
+            //console.log(objectRuntimeIds);
+            var assemblyInfo = await getAssemblyInfoByCompressedGuids(objectIds);
+            //console.log(assemblyNames);
+            for (const objproperties of objPropertiesArr) {
+                var defaultProperties = objproperties.properties.find(p => p.name === "Default");
+                if (defaultProperties == undefined)
+                    continue;
+                var cogX = defaultProperties.properties.find(x => x.name === "COG_X");
+                var cogY = defaultProperties.properties.find(x => x.name === "COG_Y");
+                var cogZ = defaultProperties.properties.find(x => x.name === "COG_Z");
+                var guid = defaultProperties.properties.find(x => x.name === "GUID");
+                if (cogX == undefined || cogX == undefined || cogX == undefined || guid == undefined)
+                    continue;
+
+                var color = { r: 60, g: 203, b: 62, a: 255 };
+                var coordinates = { x: modelPos.x + cogX.value, y: modelPos.y + cogY.value, z: modelPos.z + cogZ.value };
+                var labelText = "";
+                var assemblyInfoObj = assemblyInfo.find(x => x.Guid.toUpperCase() === guid.value.toUpperCase());
+                if (selectedItem === possibleSelectBoxValues[0]) {
+                    if (assemblyInfoObj != undefined) {
+                        if (assemblyInfoObj.AssemblyQuantity > 1)
+                            color = { r: 255, g: 0, b: 0, a: 255 };
+                        labelText = assemblyInfoObj.AssemblyName;
+                    }
+                    else
+                        continue;
+                }
+                else if (selectedItem === possibleSelectBoxValues[1]) {
+                    if (assemblyInfoObj != undefined) {
+                        labelText = `${assemblyInfoObj.AssemblyName}_${assemblyInfoObj.FreightInfo}`;
+                    }
+                    else
+                        continue;
+                }
+
+                if (labelText != "") {
+                    jsonArray += getMarkupJson(color, coordinates, mobjects.modelId, objproperties.id, labelText) + ",";
+                    nmbrOfAssembliesFound++;
+                }
+            }
+        }
+
+        jsonArray = jsonArray.slice(0, -1);
+        jsonArray += "]";
+        await API.markup.removeMarkups();
+        if (nmbrOfAssembliesFound > 0) {
+            await API.markup.addTextMarkup(JSON.parse(jsonArray));
+        }
+        else {
+            DevExpress.ui.notify(getTextById("errorMsgNoOdooAssembliesFound"));
+        }
+    }
+    catch (e) {
+        DevExpress.ui.notify(e);
+        console.log(e);
+    }
+}
 
 $("#btnShowAllColoredDivId").dxButton({
     stylingMode: "outlined",
@@ -4633,22 +4778,75 @@ $("#btnShowArrowsDivId").dxButton({
         }).dxLoadIndicator('instance');
     },
     onClick: async function (data) {
-        try {
-            //Show Arrows
-            const mobjectsArrPijlen = await API.viewer.getObjects(getPropSelectorByPropnameAndValue("Default.COMMENT", "MONTAGEPIJL"));
-            console.log(mobjectsArrPijlen);
-            if (mobjectsArrPijlen.length != undefined && mobjectsArrPijlen.length > 0) {
-                for (var mobjects of mobjectsArrPijlen) {
-                    const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true });
+        await showDirectionArrows();
+    }
+});
+
+$("#btnSelectArrowsDivId").dxButton({
+    stylingMode: "outlined",
+    text: "Selecteer montagepijlen",
+    type: "success",
+    template(data, container) {
+        $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+        buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+            visible: false,
+        }).dxLoadIndicator('instance');
+    },
+    onClick: async function (data) {
+        await setObjectSelectionByPropnameAndValue("Default.COMMENT", "MONTAGEPIJL");
+    }
+});
+
+async function showDirectionArrows() {
+    try {
+        //Show Arrows
+        const mobjectsArrPijlen = await API.viewer.getObjects(getPropSelectorByPropnameAndValue("Default.COMMENT", "MONTAGEPIJL"));
+        console.log(mobjectsArrPijlen);
+        if (mobjectsArrPijlen.length && mobjectsArrPijlen.length > 0) {
+            for (var mobjects of mobjectsArrPijlen) {
+                const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+                await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true });
+            }
+        }
+    }
+    catch (e) {
+        DevExpress.ui.notify(e);
+    }
+}
+
+async function selectDirectionArrows() {
+    try {
+        //Select Arrows
+        const mobjectsArrPijlen = await API.viewer.getObjects(getPropSelectorByPropnameAndValue("Default.COMMENT", "MONTAGEPIJL"));
+        if (mobjectsArrPijlen.length && mobjectsArrPijlen.length > 0) {
+            for (var mobjects of mobjectsArrPijlen) {
+                const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+                await API.viewer.setSelection({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, 'add');
+            }
+        }
+
+        //Select Grid
+        const mobjectsArrGrids = await API.viewer.getObjects({ parameter: { class: "IFCGRID" } });
+        if (mobjectsArrGrids.length && mobjectsArrGrids.length > 0) {
+            for (var mobjects of mobjectsArrGrids) {
+                const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+                const objectPropertiesArr = await API.viewer.getObjectProperties(mobjects.modelId, objectsRuntimeIds);
+                var objectsRuntimeIdsGrid0 = [];
+                for (const objproperties of objectPropertiesArr) {
+                    var productName = objproperties.product.name
+                    if (productName === "0.0")
+                        objectsRuntimeIdsGrid0.push(objproperties.id);
+                }
+                if (objectsRuntimeIdsGrid0.length > 0) {
+                    await API.viewer.setSelection({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIdsGrid0 }] }, 'add');
                 }
             }
         }
-        catch (e) {
-            DevExpress.ui.notify(e);
-        }
     }
-});
+    catch (e) {
+        DevExpress.ui.notify(e);
+    }
+}
 
 $("#btnShowKnownPrefixesDivId").dxButton({
     stylingMode: "outlined",
@@ -4805,7 +5003,7 @@ $("#btnShowTitlesDivId").dxButton({
 
 $("#btnVisualizeFreightsDivId").dxButton({
     stylingMode: "outlined",
-    text: "Toon vrachten",
+    text: getTextById("btnShowFreights"),
     type: "success",
     template(data, container) {
         $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
@@ -4814,13 +5012,13 @@ $("#btnVisualizeFreightsDivId").dxButton({
         }).dxLoadIndicator('instance');
     },
     onClick: async function (data) {
-        data.component.option('text', 'Bezig met vrachten te visualiseren');
+        data.component.option('text', getTextById("btnShowFreightsVisualizing"));
         buttonIndicator.option('visible', true);
 
         await visualizeFreights();
 
         buttonIndicator.option('visible', false);
-        data.component.option('text', 'Toon vrachten');
+        data.component.option('text', getTextById("btnShowFreights"));
     },
 });
 
@@ -4866,6 +5064,33 @@ $("#showGridAndArrows").dxButton({
         }
         buttonIndicator.option('visible', false);
         data.component.option('text', "Toon stramien en montagepijlen");
+    },
+});
+
+$("#btnReversePosInFreightDivId").dxButton({
+    icon: 'sorted',
+    onClick: async function (data) {
+        try {
+            selectedObjects.reverse();
+            setPosInFreight();
+            dataGridProduction.dxDataGrid("refresh");
+        }
+        catch (e) {
+            DevExpress.ui.notify(e);
+        }
+    },
+});
+
+$("#btnLabelPosInFreightDivId").dxButton({
+    icon: 'tags',
+    onClick: async function (data) {
+        try {
+            var possibleSelectBoxValues = getLabelContentOdooTypes();
+            await AddOdooInfoLabels(possibleSelectBoxValues[1]);
+        }
+        catch (e) {
+            DevExpress.ui.notify(e);
+        }
     },
 });
 
@@ -5339,11 +5564,21 @@ var dataGridProduction = $("#dataGridProduction").dxDataGrid({
         confirmDelete: false,
         useIcons: true,
     },
-    columns: [{
+    columns: [
+    {
+        dataField: 'PosInFreight',
+        caption: 'Positie in vracht',
+        dataType: 'number',
+        width: 100,
+        format: {
+            type: "fixedPoint",
+            precision: 0
+        },
+    }, {
         dataField: 'AssemblyName',
         caption: getTextById("gridTitleAssembly"),
         width: 120,
-        sortOrder: 'asc',
+        //sortOrder: 'asc',
         calculateSortValue: function (rowData) {
             return rowData.Prefix.toString().padStart(12, "0") + rowData.PosNmbr.toString().padStart(6, "0") + "." + rowData.Rank.toString().padStart(4, "0");
         },
@@ -5374,7 +5609,7 @@ var dataGridProduction = $("#dataGridProduction").dxDataGrid({
             type: "fixedPoint",
             precision: 0
         },
-    },
+    }
     ],
     summary: {
         totalItems: [{
@@ -5403,6 +5638,8 @@ var dataGridProduction = $("#dataGridProduction").dxDataGrid({
 
             selectedObjects.splice(fromIndex, 1);
             selectedObjects.splice(toIndex, 0, e.itemData);
+
+            setPosInFreight();
 
             e.component.refresh();
         },
