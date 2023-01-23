@@ -1,0 +1,370 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <Title>Valcke Trimble Connect Plugin</Title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <meta charset="UTF-8">
+
+    <!-- ... -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script>window.jQuery || document.write(decodeURIComponent('%3Cscript src="js/jquery.min.js"%3E%3C/script%3E'))</script>
+
+    <!-- DevExtreme theme -->
+    <link rel="stylesheet" type="text/css" href="https://cdn3.devexpress.com/jslib/21.2.5/css/dx.common.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdn3.devexpress.com/jslib/21.2.5/css/dx.dark.compact.css" />
+    <link rel="stylesheet" type="text/css" href="./css/style.css">
+    <!-- DevExtreme library -->
+    <script type="text/javascript" src="https://cdn3.devexpress.com/jslib/21.2.5/js/dx.all.js"></script>
+    <!-- <script type="text/javascript" src="https://cdn3.devexpress.com/jslib/21.2.4/js/dx.web.js"></script> -->
+    <!-- <script type="text/javascript" src="https://cdn3.devexpress.com/jslib/21.2.4/js/dx.viz.js"></script> -->
+    <!--<script crossorigin src="https://cdn.rawgit.com/caldwell/renderjson/master/renderjson.js"></script>-->
+</head>
+
+<body class="dx-viewport">
+    <script>
+        DevExpress.localization.locale(navigator.language);
+            // ...
+            // DevExtreme UI components are configured here
+            // ...
+    </script>
+    <div class="demo-container">
+        <div id="popup"></div>
+        <!--<div id="testbtn"></div>-->
+        <div class="form">
+            <div class="v-visibility">
+                <!--<div id="btnShowArrowsDivId"></div>
+                <div id="btnSelectArrowsDivId"></div>-->
+                <!--<div id="btnTest"></div>-->
+                <div class="v-showTitle" id="btnShowTitlesDivId"></div>
+                <div class="v-title" id="divTitleVisibility"><h1 id="titleVisibility">Zichtbaarheid onderdelen</h1></div>
+                <div class="dx-fieldset">
+                    <div id="btnShowKnownPrefixesDivId"></div>
+                </div>
+            </div>
+
+            <div class="v-selection">
+                <div class="v-title" id="divTitleFilters"><h1 id="titleFilters">Selecteren met filters</h1></div>
+                <div class="v-grp">
+                    <div id="filterTypeSelectGrp">
+                        <div class="dx-fieldset">
+                            <div class="dx-field">
+                                <div class="v-field-label" id="titleFilterType">Type filter:</div>
+                                <div class="v-field-value">
+                                    <div id="filterTypeSelection"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="v-filterGrp" id="prefixSelectionGrp">
+                        <div class="dx-fieldset">
+                            <div class="dx-field">
+                                <div class="v-field-label" id="titleSelectPrefixes">Selecteer prefixen:</div>
+                                <div class="v-field-value">
+                                    <div id="prefixSelection"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="v-filterGrp" id="assemblyInputGrp">
+                        <div class="dx-fieldset">
+                            <div class="dx-field">
+                                <div class="v-field-label" id="titleAssemblyname">Geef een merk op:</div>
+                                <div class="v-field-value">
+                                    <div id="placeholderAssemblyname"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="v-filterGrp" id="manualInputGrp">
+                        <div class="dx-fieldset">
+                            <div class="dx-field">
+                                <div class="v-field-label" id="titlePropertyname">Geef een property name op:</div>
+                                <div class="v-field-value">
+                                    <div id="placeholderPropertyName"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="dx-fieldset">
+                            <div class="dx-field">
+                                <div class="v-field-label" id="titlePropertyvalue">Geef een property value op:</div>
+                                <div class="v-field-value">
+                                    <div id="placeholderPropertyValue"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dx-fieldset">
+                        <div id="btnSelectByFilterDivId"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="v-showExtra">
+                <div class="v-title" id="divTitleExtra"><h1>Toon verborgen gegevens</h1></div>
+                <div class="v-grp">
+                    <div class="dx-fieldset">
+                        <div id="showGridAndArrows"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="v-labels">
+                <div class="v-title" id="divTitlePropertyLabels"><h1 id="titlePropertylabels">Labels plaatsen op basis van gegevens 3D model</h1></div>
+                <div class="dx-fieldset">
+                    <div class="dx-field">
+                        <div class="v-field-label" id="titleLabelContent">Labelinhoud</div>
+                        <div class="v-field-value">
+                            <div id="labelContentSelection"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="v-grp">
+                    <div class="dx-fieldset">
+                        <div id="btnShowLabelsDivId"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="v-odooData">
+                <div class="v-title" id="divTitleVisualizeOdooData"><h1 id="titleVisualizeOdooData">Odoo gegevens visualiseren</h1></div>
+
+                <div class="bordered">
+                    <div id="textEnterOdooData">Vul gebruikersnaam en paswoord in en kies een actie</div>
+                    <form>
+                        <div class="v-odoo-input">
+                            <div class="v-field-value-full-width" id="placeholderOdooUsername"></div>
+                            <div class="v-field-value-full-width" id="placeholderOdooPassword"></div>
+                        </div>
+                    </form>
+                </div>
+
+                <hr />
+                <div class="v-title" id="divTitleAction1"><h1 id="titleAction1">Actie 1: Model inkleuren volgens planningsstatus</h1></div>
+                <div class="v-grp">
+                    <table>
+                        <tr>
+                            <td><div class="v-refDate" id="textRefdateToday">Referentiedatum = vandaag? </div></td>
+                            <td><div class="v-refDate" id="checked"></div></td>
+                        </tr>
+                    </table>
+                    <div id="dateDiv" class="v-field-grp-date">
+                        <div class="v-field-label2" id="textRefdate">Referentiedatum: </div>
+                        <div class="v-field-value2" id="date"></div>
+                    </div>
+                </div>
+
+                <div class="dx-fieldset">
+                    <div id="btnSetColorFromStatusDivId"></div>
+                    <div id="legend" class="v-legend">
+                        <div><h5>Legende: </h5></div>
+                        <table id="tblLegend">
+                            <tr id="trLegendSum">
+                                <td colspan="5"><div id="btnShowAllColoredDivId"></div></td>
+                            </tr>
+                            <tr id="trLegendExisting">
+                                <td><div id="btnShowExisting"></div></td>
+                                <td><div id="btnHideExisting"></div></td>
+                                <td><div id="btnOnlyShowExisting"></div></td>
+                                <td><div id="legendExistingTitle" class="v-legendLine">xxx</div></td>
+                                <td><div id="legendExistingDescr" class="v-legendLine">xxx</div></td>
+                            </tr>
+                            <tr id="trLegendModelled">
+                                <td><div id="btnShowModelled"></div></td>
+                                <td><div id="btnHideModelled"></div></td>
+                                <td><div id="btnOnlyShowModelled"></div></td>
+                                <td><div id="legendModelledTitle" class="v-legendLine">xxx</div></td>
+                                <td><div id="legendModelledDescr" class="v-legendLine">xxx</div></td>
+                            </tr>
+                            <tr id="trLegendOnHold">
+                                <td><div id="btnShowOnHold"></div></td>
+                                <td><div id="btnHideOnHold"></div></td>
+                                <td><div id="btnOnlyShowOnHold"></div></td>
+                                <td><div id="legendOnHoldTitle" class="v-legendLine">xxx'</div></td>
+                                <td><div id="legendOnHoldDescr" class="v-legendLine">xxx'</div></td>
+                            </tr>
+                            <tr id="trLegendDrawn">
+                                <td><div id="btnShowDrawn"></div></td>
+                                <td><div id="btnHideDrawn"></div></td>
+                                <td><div id="btnOnlyShowDrawn"></div></td>
+                                <td><div id="legendDrawnTitle" class="v-legendLine">xxx</div></td>
+                                <td><div id="legendDrawnDescr" class="v-legendLine">xxx</div></td>
+                            </tr>
+                            <tr id="trLegendPlanned">
+                                <td><div id="btnShowPlanned"></div></td>
+                                <td><div id="btnHidePlanned"></div></td>
+                                <td><div id="btnOnlyShowPlanned"></div></td>
+                                <td><div id="legendPlannedTitle" class="v-legendLine">xxx</div></td>
+                                <td><div id="legendPlannedDescr" class="v-legendLine">xxx</div></td>
+                            </tr>
+                            <tr id="trLegendDemoulded">
+                                <td><div id="btnShowDemoulded"></div></td>
+                                <td><div id="btnHideDemoulded"></div></td>
+                                <td><div id="btnOnlyShowDemoulded"></div></td>
+                                <td><div id="legendDemouldedTitle" class="v-legendLine">xxx</div></td>
+                                <td><div id="legendDemouldedDescr" class="v-legendLine">xxx</div></td>
+                            </tr>
+                            <tr id="trLegendProductionEnded">
+                                <td><div id="btnShowProductionEnded"></div></td>
+                                <td><div id="btnHideProductionEnded"></div></td>
+                                <td><div id="btnOnlyShowProductionEnded"></div></td>
+                                <td><div id="legendProductionEndedTitle" class="v-legendLine">xxx</div></td>
+                                <td><div id="legendProductionEndedDescr" class="v-legendLine">xxx</div></td>
+                            </tr>
+                            <tr id="trLegendAvailableForTransport">
+                                <td><div id="btnShowAvailableForTransport"></div></td>
+                                <td><div id="btnHideAvailableForTransport"></div></td>
+                                <td><div id="btnOnlyShowAvailableForTransport"></div></td>
+                                <td><div id="legendAvailableForTransportTitle" class="v-legendLine">xxx</div></td>
+                                <td><div id="legendAvailableForTransportDescr" class="v-legendLine">xxx</div></td>
+                            </tr>
+                            <tr id="trLegendPlannedForTransport">
+                                <td><div id="btnShowPlannedForTransport"></div></td>
+                                <td><div id="btnHidePlannedForTransport"></div></td>
+                                <td><div id="btnOnlyShowPlannedForTransport"></div></td>
+                                <td><div id="legendPlannedForTransportTitle" class="v-legendLine">xxx</div></td>
+                                <td><div id="legendPlannedForTransportDescr" class="v-legendLine">xxx</div></td>
+                            </tr>
+                            <tr id="trLegendTransported">
+                                <td><div id="btnShowTransported"></div></td>
+                                <td><div id="btnHideTransported"></div></td>
+                                <td><div id="btnOnlyShowTransported"></div></td>
+                                <td><div id="legendTransportedTitle" class="v-legendLine">xxx</div></td>
+                                <td><div id="legendTransportedDescr" class="v-legendLine">xxx</div></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <hr />
+                <div class="v-title" id="divTitleAction2"><h1 id="titleAction2">Actie 2: Labels plaatsen bij gekende odoo elementen</h1></div>
+                <div class="v-grp">
+                    <div class="dx-fieldset">
+                        <div class="dx-field">
+                            <div class="v-field-label" id="titleLabelContentOdoo">Labelinhoud</div>
+                            <div class="v-field-value">
+                                <div id="labelContentOdooSelection"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dx-fieldset">
+                        <div id="btnSetOdooLabelsDivId"></div>
+                    </div>
+                </div>
+
+                <hr />
+                <div class="v-title" id="divTitleAction3"><h1 id="titleAction3">Actie 3: Selecteren van gekende odoo elementen</h1></div>
+                <div class="v-grp">
+                    <div class="v-field-value-full-width" id="placeholderOdooSearch"></div>
+                    <div class="dx-fieldset">
+                        <div id="checkedAddDirectionArrows"></div>
+                        <span id="titleAddDirectionArrows">Voeg montagepijlen toe aan selectie</span>
+                    </div>
+                    <div class="dx-fieldset">
+                        <div id="btnOdooSearchDivId"></div>
+                    </div>
+                </div>
+
+                <hr />
+                <div class="v-title" id="divTitleAction4"><h1 id="titleAction4">Actie 4: Toon info van gekende odoo elementen</h1></div>
+                <div class="v-grp">
+                    <div class="v-field-value-full-width" id="placeholderOdooSearch"></div>
+                    <div class="dx-fieldset">
+                        <div id="btnGetOdooInfoDivId"></div>
+                    </div>
+                </div>
+
+                <hr />
+                <div class="v-title" id="divTitleAction5"><h1 id="titleAction5">Actie 5: Visualiseer vrachten</h1></div>
+                <div class="v-grp">
+                    <div class="dx-fieldset">
+                        <div id="btnVisualizeFreightsDivId"></div>
+                    </div>
+                </div>
+
+                <hr />
+                <div class="v-title" id="divTitleAction6"><h1 id="titleAction6">Actie 6: Kleur merken volgens betonkleur</h1></div>
+                <div class="v-grp">
+                    <div class="dx-fieldset">
+                        <div id="btnVisualizeConcreteFinishDivId"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="transportDiv" class="v-transport">
+                <div class="v-title" id="divTitleTransport"><h1 id="titleTransport">Transport</h1></div>
+                <hr />
+                <div class="v-transportBlock">
+                    <div id="titleExistingSlips">Bestaande transportbonnen:</div>
+                    <div id="btnRefreshExistingSlipsDivId"></div>
+                    <div id="dropDownBoxExistingSlipsTransport"></div>
+                </div>
+                <hr />
+                <div class="v-transportBlock">
+                    <div id="titleCurrentSelection">Huidige selectie:</div>
+                    <div class="v-dataGridTransport" id="dataGridTransport"></div>
+                    <div id="btnCreateSlipDivId"></div>
+                </div>
+            </div>
+
+            <div id="productionDiv" class="v-production">
+                <div class="v-title" id="divTitleProduction"><h1 id="titleProduction">Productie</h1></div>
+                <hr />
+                <div class="v-grp">
+                    <div>
+                        Visualiseren
+                    </div>
+                    <div class="dx-fieldset">
+                        <span>TT(T): </span>
+                        <div id="btnVisualizeTTDivId"></div>
+                    </div>
+                    <div class="dx-fieldset">
+                        <span>Gewelven: </span>
+                        <div id="btnVisualizeWWidthDivId"></div>
+                        <div id="btnVisualizeWProfileDivId"></div>
+                        <div id="btnVisualizeWReinforcementDivId"></div>
+                    </div>
+                    <div class="dx-fieldset">
+                        <span>Panelen: </span>
+                        <div id="btnVisualizePTypesDivId"></div>
+                        <div id="btnVisualizePFinishDivId"></div>
+                        <div id="btnVisualizePMaterialDivId"></div>
+                    </div>
+                </div>
+                <hr />
+                <div id="freightsDiv">
+                    <div class="v-productionBlock">
+                        <div id="titleExistingFreights">Vrachten:</div>
+                        <span class="v-menuNavigationButtonsFreights">
+                            <span id="btnFirstFreightsDivId"></span>
+                            <span id="btnPreviousFreightsDivId"></span>
+                            <span class="v-freightNmbr" id="placeholderFreightNmbr"></span>
+                            <span id="btnNextFreightsDivId"></span>
+                            <span id="btnLastFreightsDivId"></span>
+                            <span id="btnRefreshExistingFreightsDivId"></span>
+                        </span>
+                        <span class="v-menuCrudButtonsFreights">
+                            <span id="btnDeleteFreightDivId"></span>
+                            <span id="btnDeleteAllFreightsDivId"></span>
+                        </span>
+                    </div>
+                    <div class="v-productionBlock">
+                        <div id="titleCurrentSelectionProduction">Huidige selectie:</div>
+                        <div id="btnReversePosInFreightDivId"></div>
+                        <div id="btnLabelPosInFreightDivId"></div>
+                        <div class="v-dataGridProduction" id="dataGridProduction"></div>
+                        <div id="btnCreateFreightDivId"></div>
+                    </div>
+                    <div class="v-productionBlock">
+                        <span>Bewaren als: </span>
+                        <span class="v-freightNmbr" id="placeholderNewFreightNmbr"></span>
+                        <span id="btnSaveFreightDivId"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+<script src="https://components.connect.trimble.com/trimble-connect-workspace-api/index.js"></script>
+<script src="./scripts/app314.js"></script>
+</html>
