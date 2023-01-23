@@ -22,33 +22,34 @@ window.onload = async function () {
     setTextByLanguage();
 }
 
-//$("#testbtn").dxButton({
-//    stylingMode: "outlined",
-//    text: "test",
-//    type: "success",
-//    onClick: async function (data) {
-//        try {
-//            var token = await getToken();
-//            var domain = '[["project_id.id", "=", "2238"],"|", ["name", "ilike", "dc46b795-7099-4f43-b1ff-75e4bf308bcb"],"|", ["name", "ilike", "d6419331-c75f-4a82-b8d9-77810938a7f1"],"|", ["name", "ilike", "6780d3e4-69b0-4635-8f4d-f780ac04cc20"],["name", "ilike", "610e1f82-7ba5-407c-b2d7-82549751e617"]]';
-//            await $.ajax({
-//                type: "GET",
-//                url: odooURL + "/api/v1/search_read",
-//                headers: { "Authorization": "Bearer " + token },
-//                data: {
-//                    model: "trimble.connect.main",
-//                    domain: domain,
-//                    fields: '["id"]',
-//                },
-//                success: function (odooData) {
-//                    console.log(odooData);
-//                }
-//            });
-//        }
-//        catch (e) {
-//            console.log(e);
-//        }
-//    },
-//});
+$("#testbtn").dxButton({
+    stylingMode: "outlined",
+    text: "test",
+    type: "success",
+    onClick: async function (data) {
+        //try {
+        //    var token = await getToken();
+        //    var domain = '[["project_id.id", "=", "2238"],"|", ["name", "ilike", "dc46b795-7099-4f43-b1ff-75e4bf308bcb"],"|", ["name", "ilike", "d6419331-c75f-4a82-b8d9-77810938a7f1"],"|", ["name", "ilike", "6780d3e4-69b0-4635-8f4d-f780ac04cc20"],["name", "ilike", "610e1f82-7ba5-407c-b2d7-82549751e617"]]';
+        //    await $.ajax({
+        //        type: "GET",
+        //        url: odooURL + "/api/v1/search_read",
+        //        headers: { "Authorization": "Bearer " + token },
+        //        data: {
+        //            model: "trimble.connect.main",
+        //            domain: domain,
+        //            fields: '["id"]',
+        //        },
+        //        success: function (odooData) {
+        //            console.log(odooData);
+        //        }
+        //    });
+        //}
+        //catch (e) {
+        //    console.log(e);
+        //}
+        console.log(getConcretecolorFromOdooStr('110;110;110'));
+    },
+});
 
 //#region global variables
 
@@ -552,6 +553,12 @@ const textUi = {
         fr: "En cours d'afficher les charges",
         en: "Visualizing freights"
     },
+    btnVisualizeConcreteFinishVisualizing:
+    {
+        nl: "Bezig met visualiseren",
+        fr: "En cours d'afficher",
+        en: "Visualizing"
+    },
     errorMsgNoAssemblySelection:
     {
         nl: "Labels kunnen enkel geplaatst worden van objecten die geselecteerd werden met \"Assembly selection\".",
@@ -626,9 +633,9 @@ const textUi = {
     },
     phOdooSearch:
     {
-        nl: "Voorbeeld: PV1 FM* V1 PS1+2 BV1-10 GU1.5-1.20 BS1.1+3.1",
-        fr: "Exemple: PV1 FM* V1 PS1+2 BV1-10 GU1.5-1.20 BS1.1+3.1",
-        en: "Example: PV1 FM* V1 PS1+2 BV1-10 GU1.5-1.20 BS1.1+3.1"
+        nl: "Voorbeeld: PV1 FM* V1 PS1+2 BV1-10 GU1.5-1.20 BS1.1+3.1 WD200 WWEbis",
+        fr: "Exemple: PV1 FM* V1 PS1+2 BV1-10 GU1.5-1.20 BS1.1+3.1 WD200 WWEbis",
+        en: "Example: PV1 FM* V1 PS1+2 BV1-10 GU1.5-1.20 BS1.1+3.1 WD200 WWEbis"
     },
     btnGetOdooInfo:
     {
@@ -641,6 +648,12 @@ const textUi = {
         nl: "Toon vrachten",
         fr: "Afficher les charges",
         en: "Show freights"
+    },
+    btnVisualizeConcreteFinish:
+    {
+        nl: "Visualiseer",
+        fr: "Visualiser",
+        en: "Visualize"
     },
     textGuid:
     {
@@ -753,14 +766,20 @@ const textUi = {
     titleAction4:
     {
         nl: "Actie 4: Toon info van gekende odoo merken",
-        fr: "Action 4 : Afficher info des assemblages connus d'Odoo",
+        fr: "Action 4: Afficher info des assemblages connus d'Odoo",
         en: "Action 4: Show Odoo data of known assemblies"
     },
     titleAction5:
     {
         nl: "Actie 5: Visualiseer vrachten",
-        fr: "Action 5 : Afficher info des assemblages connus d'Odoo",
-        en: "Action 4: Show Odoo data of known assemblies"
+        fr: "Action 5 : Visualiser les charges",
+        en: "Action 5: Visualize freights"
+    },
+    titleAction6:
+    {
+        nl: "Actie 6: Kleur merken volgens betonkleur",
+        fr: "Action 6: Colorer les assemblages en fonction du couleur du béton",
+        en: "Action 6: Color assemblies based on concrete colors"
     },
     titleAddDirectionArrows:
     {
@@ -2139,6 +2158,127 @@ async function selectGuids(guids) {
             //console.log("out of for");
         }
         //console.log("end");
+    }
+}
+
+function getConcretecolorFromOdooStr(odooColor3DStr) {
+    var result = odooColor3DStr.match(/(\d+).(\d+).(\d+).(\d+)/g);
+    if (result != null) {
+        var splitArray = odooColor3DStr.trim().split(";");
+        var r = parseInt(splitArray[0]);
+        var g = parseInt(splitArray[1]);
+        var b = parseInt(splitArray[2]);
+        if (splitArray.length == 3)
+            return { r: r, g: g, b: b };
+        else if (splitArray.length == 4) {
+            var a = parseInt(splitArray[3]);
+            return { r: r, g: g, b: b, a: a };
+        }
+    }
+    return undefined;
+}
+
+async function visualizeConcreteFinishes() {
+    //Get project name
+    var projectNumber = await getProjectNumber();
+    if (projectNumber == undefined)
+        return;
+
+    //Authenticate with MUK API
+    var token = await getToken();
+
+    //Get project ID
+    var projectId = await GetProjectId(projectNumber);
+
+    //Get finish values
+    var finishes = [];
+    await $.ajax({
+        type: "GET",
+        url: odooURL + "/api/v1/search_read",
+        headers: { "Authorization": "Bearer " + token },
+        data: {
+            model: "project.master_marks",
+            domain: `[["project_id.id", "=", "${projectId}"]]`, //, ["mark_id.mark_prefix", "=", "W"]
+            fields: '["id", "mark_comment"]',
+        },
+        success: function (odooData) {
+            for (var record of odooData) {
+                if (!record.mark_comment)
+                    continue;
+                var comment = record.mark_comment.trim();
+                if (!comment)
+                    continue;
+
+                var finish = finishes.find(x => x === comment);
+                if (finish == undefined) {
+                    finishes.push(record.mark_comment);
+                }
+            }
+        }
+    });
+
+    //Color everything grey
+    var allObjects = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
+    for (const mobjects of allObjects) {
+        var modelId = mobjects.modelId;
+        const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: { r: 128, g: 128, b: 128, a: 255 } });
+    }
+
+    for (var finish of finishes) {
+        var colorToUse = { r: 128, g: 128, b: 128, a: 255 };
+
+        //Get color from Odoo
+        var finishToSearchFor = finish.replace("G", "GL").trim();
+        await $.ajax({
+            type: "GET",
+            url: odooURL + "/api/v1/search_read",
+            headers: { "Authorization": "Bearer " + token },
+            data: {
+                model: "cust.silex_data",
+                domain: `[["name", "=ilike", "${finishToSearchFor}"]]`,
+                fields: '["id", "color3D"]',
+            },
+            success: function (odooData) {
+                if (odooData.length > 0) {
+                    var color = getConcretecolorFromOdooStr(odooData[0].color3D);
+                    if (color != undefined)
+                        colorToUse = color;
+                }
+            }
+        });
+
+        //Get elements with this finish
+        var guids = [];
+        await $.ajax({
+            type: "GET",
+            url: odooURL + "/api/v1/search_read",
+            headers: { "Authorization": "Bearer " + token },
+            data: {
+                model: "trimble.connect.main",
+                domain: `[["project_id.id", "=", "${projectId}"], ["mark_id.mark_comment", "=ilike", "${finish}"]]`,
+                fields: '["id", "name"]',
+            },
+            success: function (odooData) {
+                for (var record of odooData) {
+                    guids.push(record.name);
+                }
+            }
+        });
+
+        //Color elements
+        var validGuids = guids.filter(x => x != undefined && x !== "");
+        if (validGuids.length > 0) {
+            var models = await API.viewer.getModels("loaded");
+            var compressedGuids = validGuids.map(x => Guid.fromFullToCompressed(x));
+            for (var model of models) {
+                var runtimeIds = await API.viewer.convertToObjectRuntimeIds(model.id, compressedGuids);
+                if (runtimeIds.length == 0)
+                    continue;
+                var selector = { modelObjectIds: [{ modelId: model.id, objectRuntimeIds: runtimeIds }] };
+                await API.viewer.setObjectState(selector, { color: colorToUse });
+            }
+        }
     }
 }
 
@@ -4995,6 +5135,7 @@ $("#btnShowTitlesDivId").dxButton({
         document.getElementById("divTitleAction3").style.display = displayValue;
         document.getElementById("divTitleAction4").style.display = displayValue;
         document.getElementById("divTitleAction5").style.display = displayValue;
+        document.getElementById("divTitleAction6").style.display = displayValue;
         document.getElementById("divTitleProduction").style.display = displayValue;
         titlesShown = !titlesShown;
         data.component.option('text', titlesShown ? getTextById("btnHideTitles") : getTextById("btnShowTitles"));
@@ -5019,6 +5160,27 @@ $("#btnVisualizeFreightsDivId").dxButton({
 
         buttonIndicator.option('visible', false);
         data.component.option('text', getTextById("btnShowFreights"));
+    },
+});
+
+$("#btnVisualizeConcreteFinishDivId").dxButton({
+    stylingMode: "outlined",
+    text: getTextById("btnVisualizeConcreteFinish"),
+    type: "success",
+    template(data, container) {
+        $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+        buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+            visible: false,
+        }).dxLoadIndicator('instance');
+    },
+    onClick: async function (data) {
+        data.component.option('text', getTextById("btnVisualizeConcreteFinishVisualizing"));
+        buttonIndicator.option('visible', true);
+
+        await visualizeConcreteFinishes();
+
+        buttonIndicator.option('visible', false);
+        data.component.option('text', getTextById("btnVisualizeConcreteFinish"));
     },
 });
 
