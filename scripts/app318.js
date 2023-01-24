@@ -757,6 +757,12 @@ const textUi = {
         fr: "Matériau",
         en: "Material"
     },
+    textDefaultConcreteColor:
+    {
+        nl: "Standaard betonkleur",
+        fr: "Couleur du béton par défaut",
+        en: "Default concrete color"
+    },
     textNoInfoFound:
     {
         nl: "Merk bestaat niet op Odoo",
@@ -2219,7 +2225,7 @@ async function visualizeConcreteFinishes() {
 
     var legendItems = [];
     var defaultConcreteColor = { r: 128, g: 128, b: 128, a: 255 };
-    legendItems.push({ Text: "Standaard betonkleur", Color: defaultConcreteColor });
+    legendItems.push({ Text: getTextById("textDefaultConcreteColor"), Color: defaultConcreteColor });
     //Color everything grey
     var allObjects = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
     for (const mobjects of allObjects) {
