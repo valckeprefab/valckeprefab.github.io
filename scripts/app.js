@@ -757,6 +757,12 @@ const textUi = {
         fr: "Matériau",
         en: "Material"
     },
+    textDefaultConcreteColor:
+    {
+        nl: "Standaard betonkleur",
+        fr: "Couleur du béton par défaut",
+        en: "Default concrete color"
+    },
     textNoInfoFound:
     {
         nl: "Merk bestaat niet op Odoo",
@@ -787,6 +793,18 @@ const textUi = {
         fr: "Ajouter des flèches de montage et les maillages à la sélection",
         en: "Add erection arrows and grids to selection"
     },
+    errorMsgNothingSelected: 
+    {
+        nl: "Er is niets geselecteerd",
+        fr: "Rien n'est sélectionné",
+        en: "Nothing selected"
+    },
+    errorMsgEmptySearchstring:
+    {
+        nl: "Leg zoekstring, geen selectie uitgevoerd.",
+        fr: "Chaîne de recherche vide, aucune sélection n'est effectuée.",
+        en: "Empty searchstring, no selection performed."
+    }
 };
 
 var prefixDetails = [];
@@ -2179,310 +2197,321 @@ function getConcretecolorFromOdooStr(odooColor3DStr) {
 }
 
 async function visualizeConcreteFinishes() {
-    //Get project name
-    var projectNumber = await getProjectNumber();
-    if (projectNumber == undefined)
-        return;
+    try {
+        //Get project name
+        var projectNumber = await getProjectNumber();
+        if (projectNumber == undefined)
+            return;
 
-    //Authenticate with MUK API
-    var token = await getToken();
+        //Authenticate with MUK API
+        var token = await getToken();
 
-    //Get project ID
-    var projectId = await GetProjectId(projectNumber);
+        //Get project ID
+        var projectId = await GetProjectId(projectNumber);
 
-    //Get finish values
-    var finishes = [];
-    await $.ajax({
-        type: "GET",
-        url: odooURL + "/api/v1/search_read",
-        headers: { "Authorization": "Bearer " + token },
-        data: {
-            model: "project.master_marks",
-            domain: `[["project_id.id", "=", "${projectId}"]]`, //, ["mark_id.mark_prefix", "=", "W"]
-            fields: '["id", "mark_comment"]',
-        },
-        success: function (odooData) {
-            for (var record of odooData) {
-                if (!record.mark_comment)
-                    continue;
-                var comment = record.mark_comment.trim();
-                if (!comment)
-                    continue;
-
-                var finish = finishes.find(x => x === comment);
-                if (finish == undefined) {
-                    finishes.push(record.mark_comment);
-                }
-            }
-        }
-    });
-
-    var legendItems = [];
-    var defaultConcreteColor = { r: 128, g: 128, b: 128, a: 255 };
-    legendItems.push({ Text: "Standaard betonkleur", Color: defaultConcreteColor });
-    //Color everything grey
-    var allObjects = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
-    for (const mobjects of allObjects) {
-        var modelId = mobjects.modelId;
-        const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: defaultConcreteColor });
-    }
-
-    for (var finish of finishes) {
-        var colorToUse = defaultConcreteColor;
-
-        //Get color from Odoo
-        var finishToSearchFor = finish.replace("G", "GL").trim();
-        await $.ajax({
-            type: "GET",
-            url: odooURL + "/api/v1/search_read",
-            headers: { "Authorization": "Bearer " + token },
-            data: {
-                model: "cust.silex_data",
-                domain: `[["name", "=ilike", "${finishToSearchFor}"]]`,
-                fields: '["id", "color3D"]',
-            },
-            success: function (odooData) {
-                if (odooData.length > 0) {
-                    var color = getConcretecolorFromOdooStr(odooData[0].color3D);
-                    if (color != undefined)
-                        colorToUse = color;
-                }
-            }
-        });
-
-        //Get elements with this finish
-        var guids = [];
-        await $.ajax({
-            type: "GET",
-            url: odooURL + "/api/v1/search_read",
-            headers: { "Authorization": "Bearer " + token },
-            data: {
-                model: "trimble.connect.main",
-                domain: `[["project_id.id", "=", "${projectId}"], ["mark_id.mark_comment", "=ilike", "${finish}"]]`,
-                fields: '["id", "name"]',
-            },
-            success: function (odooData) {
-                for (var record of odooData) {
-                    guids.push(record.name);
-                }
-            }
-        });
-
-        //Color elements
-        var validGuids = guids.filter(x => x != undefined && x !== "");
-        if (validGuids.length > 0) {
-            var models = await API.viewer.getModels("loaded");
-            var compressedGuids = validGuids.map(x => Guid.fromFullToCompressed(x));
-            for (var model of models) {
-                var runtimeIds = await API.viewer.convertToObjectRuntimeIds(model.id, compressedGuids);
-                if (runtimeIds.length == 0)
-                    continue;
-                var selector = { modelObjectIds: [{ modelId: model.id, objectRuntimeIds: runtimeIds }] };
-                await API.viewer.setObjectState(selector, { color: colorToUse });
-                if (colorToUse != defaultConcreteColor) {
-                    legendItems.push({ Text: finishToSearchFor, Color: colorToUse });
-                }
-            }
-        }
-    }
-
-    popup.option({
-        contentTemplate: () => popupContentTemplateLegend(legendItems),
-        height: 100 + legendItems.length * 30
-    });
-    popup.show();
-}
-
-async function visualizeFreights() {
-    //Get project name
-    var projectNumber = await getProjectNumber();
-    if (projectNumber == undefined)
-        return;
-
-    //Authenticate with MUK API
-    var token = await getToken();
-
-    //Get project ID
-    var projectId = await GetProjectId(projectNumber);
-
-    //Get freightnumber per element
-    var freights = [];
-    await $.ajax({
-        type: "GET",
-        url: odooURL + "/api/v1/search_read",
-        headers: { "Authorization": "Bearer " + token },
-        data: {
-            model: "trimble.connect.main",
-            domain: '[["project_id.id", "=", "' + projectId + '"], ["freight", ">=", "0"]]', //, ["mark_id.mark_prefix", "=", "W"]
-            order: 'freight',
-            fields: '["id", "name", "freight", "mark_id", "mark_available"]',
-        },
-        success: function (data) {
-            for (const record of data) {
-                var freight = freights.find(x => x.FreightNumber == record.freight);
-                if (freight != undefined) {
-                    if (record.mark_available)
-                        freight.ObjectIdsAvailable.push(Guid.fromFullToCompressed(record.name));
-                    else
-                        freight.ObjectIdsUnavailable.push(Guid.fromFullToCompressed(record.name));
-                    freight.MarkIds.push(record.mark_id[0]);
-                }
-                else {
-                    var newFreight = {
-                        FreightNumber: record.freight,
-                        ObjectIdsAvailable: [],//objectIds = compressed ifc ids
-                        ObjectRuntimeIdsAvailable: [],//o.id = runtimeId = number
-                        ObjectIdsUnavailable: [],//objectIds = compressed ifc ids
-                        ObjectRuntimeIdsUnavailable: [],//o.id = runtimeId = number
-                        MarkIds: [record.mark_id[0]],
-                        Surface: 0,
-                    };
-                    if(record.mark_available)
-                        newFreight.ObjectIdsAvailable = [Guid.fromFullToCompressed(record.name)];//objectIds = compressed ifc ids
-                    else
-                        newFreight.ObjectIdsUnavailable = [Guid.fromFullToCompressed(record.name)];//objectIds = compressed ifc ids
-                    freights.push(newFreight);
-                }
-            }
-        }
-    });
-
-    var assemblyIds = [...new Set(freights.map(f => f.MarkIds).flat())];
-    for (var i = 0; i < assemblyIds.length; i += fetchLimit) { //loop cuz only fetchLimit records get fetched at a time
-        var domainMasterMarks = "";
-        for (var j = i; j < assemblyIds.length && j < i + fetchLimit; j++) {
-            var filterArrStr = '["id", "=", "' + assemblyIds[j] + '"]';
-            if (j > i) {
-                domainMasterMarks = '"|", ' + filterArrStr + ',' + domainMasterMarks;
-            }
-            else {
-                domainMasterMarks = filterArrStr;
-            }
-        }
-        domainMasterMarks = '[' + domainMasterMarks + ']';
+        //Get finish values
+        var finishes = [];
         await $.ajax({
             type: "GET",
             url: odooURL + "/api/v1/search_read",
             headers: { "Authorization": "Bearer " + token },
             data: {
                 model: "project.master_marks",
-                domain: domainMasterMarks,
-                fields: '["id", "mark_surface"]',
+                domain: `[["project_id.id", "=", "${projectId}"]]`, //, ["mark_id.mark_prefix", "=", "W"]
+                fields: '["id", "mark_comment"]',
             },
             success: function (odooData) {
                 for (var record of odooData) {
-                    for (var f of freights) {
-                        var markIdsInFreight = f.MarkIds.filter(x => x == record.id);
-                        if (markIdsInFreight != undefined && markIdsInFreight.length > 0) {
-                            f.Surface += markIdsInFreight.length * record.mark_surface * 1000000;
-                        }
+                    if (!record.mark_comment)
+                        continue;
+                    var comment = record.mark_comment.trim();
+                    if (!comment)
+                        continue;
+
+                    var finish = finishes.find(x => x === comment);
+                    if (finish == undefined) {
+                        finishes.push(record.mark_comment);
                     }
                 }
             }
         });
+
+        var legendItems = [];
+        var defaultConcreteColor = { r: 128, g: 128, b: 128, a: 255 };
+        legendItems.push({ Text: getTextById("textDefaultConcreteColor"), Color: defaultConcreteColor });
+        //Color everything grey
+        var allObjects = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
+        for (const mobjects of allObjects) {
+            var modelId = mobjects.modelId;
+            const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: defaultConcreteColor });
+        }
+
+        for (var finish of finishes) {
+            var colorToUse = defaultConcreteColor;
+
+            //Get color from Odoo
+            var finishToSearchFor = finish.replace("G", "GL").trim();
+            await $.ajax({
+                type: "GET",
+                url: odooURL + "/api/v1/search_read",
+                headers: { "Authorization": "Bearer " + token },
+                data: {
+                    model: "cust.silex_data",
+                    domain: `[["name", "=ilike", "${finishToSearchFor}"]]`,
+                    fields: '["id", "color3D"]',
+                },
+                success: function (odooData) {
+                    if (odooData.length > 0) {
+                        var color = getConcretecolorFromOdooStr(odooData[0].color3D);
+                        if (color != undefined)
+                            colorToUse = color;
+                    }
+                }
+            });
+
+            //Get elements with this finish
+            var guids = [];
+            await $.ajax({
+                type: "GET",
+                url: odooURL + "/api/v1/search_read",
+                headers: { "Authorization": "Bearer " + token },
+                data: {
+                    model: "trimble.connect.main",
+                    domain: `[["project_id.id", "=", "${projectId}"], ["mark_id.mark_comment", "=ilike", "${finish}"]]`,
+                    fields: '["id", "name"]',
+                },
+                success: function (odooData) {
+                    for (var record of odooData) {
+                        guids.push(record.name);
+                    }
+                }
+            });
+
+            //Color elements
+            var validGuids = guids.filter(x => x != undefined && x !== "");
+            if (validGuids.length > 0) {
+                var models = await API.viewer.getModels("loaded");
+                var compressedGuids = validGuids.map(x => Guid.fromFullToCompressed(x));
+                for (var model of models) {
+                    var runtimeIds = await API.viewer.convertToObjectRuntimeIds(model.id, compressedGuids);
+                    if (runtimeIds.length == 0)
+                        continue;
+                    var selector = { modelObjectIds: [{ modelId: model.id, objectRuntimeIds: runtimeIds }] };
+                    await API.viewer.setObjectState(selector, { color: colorToUse });
+                    if (colorToUse != defaultConcreteColor) {
+                        legendItems.push({ Text: finishToSearchFor, Color: colorToUse });
+                    }
+                }
+            }
+        }
+
+        popup.option({
+            contentTemplate: () => popupContentTemplateLegend(legendItems),
+            height: 100 + legendItems.length * 30
+        });
+        popup.show();
     }
+    catch (e) {
+        DevExpress.ui.notify(e);
+    }
+}
 
-    await API.markup.removeMarkups();
-    var jsonArray = "";
-    var models = await API.viewer.getModels("loaded");
-    for (var model of models) {
-        var modelId = model.id;
-        for (var freight of freights) {
-            var jsonFreight = "";
+async function visualizeFreights() {
+    try {
+        //Get project name
+        var projectNumber = await getProjectNumber();
+        if (projectNumber == undefined)
+            return;
 
-            var runtimeIdsAvailable = await API.viewer.convertToObjectRuntimeIds(modelId, freight.ObjectIdsAvailable);
-            var runtimeIdsUnavailable = await API.viewer.convertToObjectRuntimeIds(modelId, freight.ObjectIdsUnavailable);
+        //Authenticate with MUK API
+        var token = await getToken();
 
-            var allRuntimeIds = [];
-            if (runtimeIdsAvailable != undefined && runtimeIdsAvailable.length > 0) {
-                runtimeIdsAvailable = runtimeIdsAvailable.filter(x => x != undefined);
-                allRuntimeIds = allRuntimeIds.concat(runtimeIdsAvailable);
+        //Get project ID
+        var projectId = await GetProjectId(projectNumber);
+
+        //Get freightnumber per element
+        var freights = [];
+        await $.ajax({
+            type: "GET",
+            url: odooURL + "/api/v1/search_read",
+            headers: { "Authorization": "Bearer " + token },
+            data: {
+                model: "trimble.connect.main",
+                domain: '[["project_id.id", "=", "' + projectId + '"], ["freight", ">=", "0"]]', //, ["mark_id.mark_prefix", "=", "W"]
+                order: 'freight',
+                fields: '["id", "name", "freight", "mark_id", "mark_available"]',
+            },
+            success: function (data) {
+                for (const record of data) {
+                    var freight = freights.find(x => x.FreightNumber == record.freight);
+                    if (freight != undefined) {
+                        if (record.mark_available)
+                            freight.ObjectIdsAvailable.push(Guid.fromFullToCompressed(record.name));
+                        else
+                            freight.ObjectIdsUnavailable.push(Guid.fromFullToCompressed(record.name));
+                        freight.MarkIds.push(record.mark_id[0]);
+                    }
+                    else {
+                        var newFreight = {
+                            FreightNumber: record.freight,
+                            ObjectIdsAvailable: [],//objectIds = compressed ifc ids
+                            ObjectRuntimeIdsAvailable: [],//o.id = runtimeId = number
+                            ObjectIdsUnavailable: [],//objectIds = compressed ifc ids
+                            ObjectRuntimeIdsUnavailable: [],//o.id = runtimeId = number
+                            MarkIds: [record.mark_id[0]],
+                            Surface: 0,
+                        };
+                        if (record.mark_available)
+                            newFreight.ObjectIdsAvailable = [Guid.fromFullToCompressed(record.name)];//objectIds = compressed ifc ids
+                        else
+                            newFreight.ObjectIdsUnavailable = [Guid.fromFullToCompressed(record.name)];//objectIds = compressed ifc ids
+                        freights.push(newFreight);
+                    }
+                }
             }
-            if (runtimeIdsUnavailable != undefined && runtimeIdsUnavailable.length > 0) {
-                runtimeIdsUnavailable = runtimeIdsUnavailable.filter(x => x != undefined);
-                allRuntimeIds = allRuntimeIds.concat(runtimeIdsUnavailable);
+        });
+
+        var assemblyIds = [...new Set(freights.map(f => f.MarkIds).flat())];
+        for (var i = 0; i < assemblyIds.length; i += fetchLimit) { //loop cuz only fetchLimit records get fetched at a time
+            var domainMasterMarks = "";
+            for (var j = i; j < assemblyIds.length && j < i + fetchLimit; j++) {
+                var filterArrStr = '["id", "=", "' + assemblyIds[j] + '"]';
+                if (j > i) {
+                    domainMasterMarks = '"|", ' + filterArrStr + ',' + domainMasterMarks;
+                }
+                else {
+                    domainMasterMarks = filterArrStr;
+                }
             }
+            domainMasterMarks = '[' + domainMasterMarks + ']';
+            await $.ajax({
+                type: "GET",
+                url: odooURL + "/api/v1/search_read",
+                headers: { "Authorization": "Bearer " + token },
+                data: {
+                    model: "project.master_marks",
+                    domain: domainMasterMarks,
+                    fields: '["id", "mark_surface"]',
+                },
+                success: function (odooData) {
+                    for (var record of odooData) {
+                        for (var f of freights) {
+                            var markIdsInFreight = f.MarkIds.filter(x => x == record.id);
+                            if (markIdsInFreight != undefined && markIdsInFreight.length > 0) {
+                                f.Surface += markIdsInFreight.length * record.mark_surface * 1000000;
+                            }
+                        }
+                    }
+                }
+            });
+        }
 
-            if (allRuntimeIds.length == 0)
-                continue;
-            
-            var colorToUse;
-            if (freight == 0)
-                colorToUse = { r: 128, g: 128, b: 128, a: 255 };
-            else {
-                colorToUse = freightColors[freight.FreightNumber % freightColors.length];
-                colorToUse = { r: colorToUse.r, g: colorToUse.g, b: colorToUse.b, a: 255 };
-            }
+        await API.markup.removeMarkups();
+        var jsonArray = "";
+        var models = await API.viewer.getModels("loaded");
+        for (var model of models) {
+            var modelId = model.id;
+            for (var freight of freights) {
+                var jsonFreight = "";
 
-            //Set element color per freight
-            colorToUse.a = 255;
-            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsAvailable }] }, { color: colorToUse });
-            colorToUse.a = 128;
-            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsUnavailable }] }, { color: colorToUse });
+                var runtimeIdsAvailable = await API.viewer.convertToObjectRuntimeIds(modelId, freight.ObjectIdsAvailable);
+                var runtimeIdsUnavailable = await API.viewer.convertToObjectRuntimeIds(modelId, freight.ObjectIdsUnavailable);
 
-            //Add labels per freight
-            var allCogCoordinates = [];
-            const modelPos = model.placement.position;
-            const objPropertiesArr = await API.viewer.getObjectProperties(modelId, allRuntimeIds);
-            for (const objproperties of objPropertiesArr) {
-                //objproperties type: ObjectProperties
-                var defaultProperties = objproperties.properties.find(p => p.name === "Default");
-                if (defaultProperties == undefined)
+                var allRuntimeIds = [];
+                if (runtimeIdsAvailable != undefined && runtimeIdsAvailable.length > 0) {
+                    runtimeIdsAvailable = runtimeIdsAvailable.filter(x => x != undefined);
+                    allRuntimeIds = allRuntimeIds.concat(runtimeIdsAvailable);
+                }
+                if (runtimeIdsUnavailable != undefined && runtimeIdsUnavailable.length > 0) {
+                    runtimeIdsUnavailable = runtimeIdsUnavailable.filter(x => x != undefined);
+                    allRuntimeIds = allRuntimeIds.concat(runtimeIdsUnavailable);
+                }
+
+                if (allRuntimeIds.length == 0)
                     continue;
-                var cogX = defaultProperties.properties.find(x => x.name === "COG_X");
-                var cogY = defaultProperties.properties.find(x => x.name === "COG_Y");
-                var cogZ = defaultProperties.properties.find(x => x.name === "COG_Z");
-                if (cogX == undefined || cogX == undefined || cogX == undefined)
-                    continue;
 
-                var coordinates = { x: modelPos.x + cogX.value, y: modelPos.y + cogY.value, z: modelPos.z + cogZ.value };
-                var labelText = freight.FreightNumber;
-                jsonFreight += getMarkupJson(colorToUse, coordinates, modelId, objproperties.id, labelText) + ",";
+                var colorToUse;
+                if (freight == 0)
+                    colorToUse = { r: 128, g: 128, b: 128, a: 255 };
+                else {
+                    colorToUse = freightColors[freight.FreightNumber % freightColors.length];
+                    colorToUse = { r: colorToUse.r, g: colorToUse.g, b: colorToUse.b, a: 255 };
+                }
 
-                allCogCoordinates.push(coordinates);
+                //Set element color per freight
+                colorToUse.a = 255;
+                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsAvailable }] }, { color: colorToUse });
+                colorToUse.a = 128;
+                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsUnavailable }] }, { color: colorToUse });
+
+                //Add labels per freight
+                var allCogCoordinates = [];
+                const modelPos = model.placement.position;
+                const objPropertiesArr = await API.viewer.getObjectProperties(modelId, allRuntimeIds);
+                for (const objproperties of objPropertiesArr) {
+                    //objproperties type: ObjectProperties
+                    var defaultProperties = objproperties.properties.find(p => p.name === "Default");
+                    if (defaultProperties == undefined)
+                        continue;
+                    var cogX = defaultProperties.properties.find(x => x.name === "COG_X");
+                    var cogY = defaultProperties.properties.find(x => x.name === "COG_Y");
+                    var cogZ = defaultProperties.properties.find(x => x.name === "COG_Z");
+                    if (cogX == undefined || cogX == undefined || cogX == undefined)
+                        continue;
+
+                    var coordinates = { x: modelPos.x + cogX.value, y: modelPos.y + cogY.value, z: modelPos.z + cogZ.value };
+                    var labelText = freight.FreightNumber;
+                    jsonFreight += getMarkupJson(colorToUse, coordinates, modelId, objproperties.id, labelText) + ",";
+
+                    allCogCoordinates.push(coordinates);
+                }
+                var xValues = allCogCoordinates.map(c => c.x);
+                var minX = Math.min(...xValues);
+                var maxX = Math.max(...xValues);
+                var deltaX = maxX - minX;
+                var yValues = allCogCoordinates.map(c => c.y);
+                var minY = Math.min(...yValues);
+                var maxY = Math.max(...yValues);
+                var deltaY = maxY - minY;
+                var zValues = allCogCoordinates.map(c => c.z);
+                var minZ = Math.min(...zValues);
+                var maxZ = Math.max(...zValues);
+                var deltaZ = maxZ - minZ;
+
+                //console.log(freight);
+                //console.log("freight.Surface: ");
+                //console.log(freight.Surface);
+                //console.log("deltaX * deltaY: ");
+                //console.log(deltaX * deltaY);
+                //console.log("deltaZ: ");
+                //console.log(deltaZ);
+                if (freight.Surface > deltaX * deltaY /*&& deltaZ <= 400*/
+                    && !(deltaX == 0 && deltaY / yValues > 1200) && !(deltaY == 0 && deltaX / xValues > 1200)) {
+                    var avgX = xValues.reduce((a, b) => a + b, 0) / xValues.length;
+                    var avgY = yValues.reduce((a, b) => a + b, 0) / yValues.length;
+                    var avgZ = zValues.reduce((a, b) => a + b, 0) / zValues.length;
+                    var coordinates = { x: avgX, y: avgY, z: avgZ };
+                    var labelText = freight.FreightNumber;
+                    jsonFreight = getMarkupJson(colorToUse, coordinates, modelId, allRuntimeIds[0], labelText) + ",";
+                }
+                jsonArray += jsonFreight;
             }
-            var xValues = allCogCoordinates.map(c => c.x);
-            var minX = Math.min(...xValues);
-            var maxX = Math.max(...xValues);
-            var deltaX = maxX - minX;
-            var yValues = allCogCoordinates.map(c => c.y);
-            var minY = Math.min(...yValues);
-            var maxY = Math.max(...yValues);
-            var deltaY = maxY - minY;
-            var zValues = allCogCoordinates.map(c => c.z);
-            var minZ = Math.min(...zValues);
-            var maxZ = Math.max(...zValues);
-            var deltaZ = maxZ - minZ;
+        }
 
-            //console.log(freight);
-            //console.log("freight.Surface: ");
-            //console.log(freight.Surface);
-            //console.log("deltaX * deltaY: ");
-            //console.log(deltaX * deltaY);
-            //console.log("deltaZ: ");
-            //console.log(deltaZ);
-            if (freight.Surface > deltaX * deltaY /*&& deltaZ <= 400*/
-                && !(deltaX == 0 && deltaY / yValues > 1200) && !(deltaY == 0 && deltaX / xValues > 1200)) {
-                var avgX = xValues.reduce((a, b) => a + b, 0) / xValues.length;
-                var avgY = yValues.reduce((a, b) => a + b, 0) / yValues.length;
-                var avgZ = zValues.reduce((a, b) => a + b, 0) / zValues.length;
-                var coordinates = { x: avgX, y: avgY, z: avgZ };
-                var labelText = freight.FreightNumber;
-                jsonFreight = getMarkupJson(colorToUse, coordinates, modelId, allRuntimeIds[0], labelText) + ",";
-            }
-            jsonArray += jsonFreight;
+        if (jsonArray.length > 0) {
+            jsonArray = jsonArray.slice(0, -1);
+            jsonArray = "[" + jsonArray + "]"
+            await API.markup.addTextMarkup(JSON.parse(jsonArray));
+        }
+        else {
+            DevExpress.ui.notify("Geen vrachten gevonden");
         }
     }
-
-    if (jsonArray.length > 0) {
-        jsonArray = jsonArray.slice(0, -1);
-        jsonArray = "[" + jsonArray + "]"
-        await API.markup.addTextMarkup(JSON.parse(jsonArray));
+    catch (e) {
+        DevExpress.ui.notify(e);
     }
-    else {
-        DevExpress.ui.notify("Geen vrachten gevonden");
-    }
+    
 }
 
 //#region Odoo
@@ -2493,6 +2522,11 @@ var tokenExpiretime;
 var client_id = "3oVDFZt2EVPhAOfQRgsRDYI9pIcdcdTGYR7rUSST";
 var client_secret = "PXthv4zShfW5NORk4bKFgr6O1dlYTxqD8KwFlx1S";
 async function getToken() {
+    checkUsernameAndPassword();
+
+    var username = odooUsernameTextbox.dxTextBox("instance").option("value");
+    var password = odooPasswordTextbox.dxTextBox("instance").option("value");
+
     if (token !== "" && refresh_token !== "" && tokenExpiretime.getTime() < Date.now() + 60000) {
         console.log("Refreshing token");
         //console.log("tokenExpiretime.getTime()");
@@ -2524,12 +2558,6 @@ async function getToken() {
     }
     if (token === "") {
         //console.log("Fetching token");
-        var username = odooUsernameTextbox.dxTextBox("instance").option("value");
-        var password = odooPasswordTextbox.dxTextBox("instance").option("value");
-        if (typeof username !== 'string' || typeof password !== 'string' || username === "" || password === "") {
-            console.log("no username and/or password found");
-            throw "Gelieve gebruikersnaam en/of paswoord in te vullen.";
-        }
         //console.log("Start db name fetch1");
         //await $.ajax({
         //    type: "GET",
@@ -3682,6 +3710,7 @@ $("#btnGetOdooInfoDivId").dxButton({
         buttonIndicator.option('visible', true);
         try {
             await checkAssemblySelection();
+            checkUsernameAndPassword();
 
             const selection = await API.viewer.getSelection();
             const selector = {
@@ -3697,7 +3726,7 @@ $("#btnGetOdooInfoDivId").dxButton({
             }
 
             if (selectedGuids.length == 0)
-                throw "Nothing selected";
+                throw getTextById("errorMsgNothingSelected");
 
             //Get project name
             var projectNumber = await getProjectNumber();
@@ -3897,7 +3926,7 @@ $("#btnOdooSearchDivId").dxButton({
         try {
             //decode string
             var searchStr = odooSearchTextBox.dxTextBox("instance").option("value");
-            if (searchStr.trim() === "") throw "Empty searchstring, no selection performed.";
+            if (searchStr.trim() === "") throw getTextById("errorMsgEmptySearchstring"); 
             var splitBySpaceArr = searchStr.trim().split(" ");
             var queryGroups = [];
             for (var splitBySpace of splitBySpaceArr) {
@@ -4791,16 +4820,18 @@ $("#btnSetOdooLabelsDivId").dxButton({
     },
 });
 
+function checkUsernameAndPassword() {
+    var username = odooUsernameTextbox.dxTextBox("instance").option("value");
+    var password = odooPasswordTextbox.dxTextBox("instance").option("value");
+    if (typeof username !== 'string' || typeof password !== 'string' || username === "" || password === "") {
+        console.log("no username and/or password found");
+        throw getTextById("errorMsgUsernamePassword");
+    }
+}
+
 async function AddOdooInfoLabels(selectedItem) {
     try {
         await checkAssemblySelection();
-
-        var username = odooUsernameTextbox.dxTextBox("instance").option("value");
-        var password = odooPasswordTextbox.dxTextBox("instance").option("value");
-        if (typeof username !== 'string' || typeof password !== 'string' || username === "" || password === "") {
-            console.log("no username and/or password found");
-            throw getTextById("errorMsgUsernamePassword");
-        }
 
         var possibleSelectBoxValues = getLabelContentOdooTypes();
 
