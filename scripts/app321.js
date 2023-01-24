@@ -2524,6 +2524,9 @@ var client_secret = "PXthv4zShfW5NORk4bKFgr6O1dlYTxqD8KwFlx1S";
 async function getToken() {
     checkUsernameAndPassword();
 
+    var username = odooUsernameTextbox.dxTextBox("instance").option("value");
+    var password = odooPasswordTextbox.dxTextBox("instance").option("value");
+
     if (token !== "" && refresh_token !== "" && tokenExpiretime.getTime() < Date.now() + 60000) {
         console.log("Refreshing token");
         //console.log("tokenExpiretime.getTime()");
