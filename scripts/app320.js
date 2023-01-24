@@ -801,7 +801,9 @@ const textUi = {
     },
     errorMsgEmptySearchstring:
     {
-
+        nl: "Leg zoekstring, geen selectie uitgevoerd.",
+        fr: "Chaîne de recherche vide, aucune sélection n'est effectuée.",
+        en: "Empty searchstring, no selection performed."
     }
 };
 
