@@ -2280,7 +2280,9 @@ async function visualizeConcreteFinishes() {
                     continue;
                 var selector = { modelObjectIds: [{ modelId: model.id, objectRuntimeIds: runtimeIds }] };
                 await API.viewer.setObjectState(selector, { color: colorToUse });
-                legendItems.push({ Text: finishToSearchFor, Color: colorToUse });
+                if (colorToUse != defaultConcreteColor) {
+                    legendItems.push({ Text: finishToSearchFor, Color: colorToUse });
+                }
             }
         }
     }

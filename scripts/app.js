@@ -2217,16 +2217,19 @@ async function visualizeConcreteFinishes() {
         }
     });
 
+    var legendItems = [];
+    var defaultConcreteColor = { r: 128, g: 128, b: 128, a: 255 };
+    legendItems.push({ Text: "Standaard betonkleur", Color: defaultConcreteColor });
     //Color everything grey
     var allObjects = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
     for (const mobjects of allObjects) {
         var modelId = mobjects.modelId;
         const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: { r: 128, g: 128, b: 128, a: 255 } });
+        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: defaultConcreteColor });
     }
 
     for (var finish of finishes) {
-        var colorToUse = { r: 128, g: 128, b: 128, a: 255 };
+        var colorToUse = defaultConcreteColor;
 
         //Get color from Odoo
         var finishToSearchFor = finish.replace("G", "GL").trim();
@@ -2277,9 +2280,18 @@ async function visualizeConcreteFinishes() {
                     continue;
                 var selector = { modelObjectIds: [{ modelId: model.id, objectRuntimeIds: runtimeIds }] };
                 await API.viewer.setObjectState(selector, { color: colorToUse });
+                if (colorToUse != defaultConcreteColor) {
+                    legendItems.push({ Text: finishToSearchFor, Color: colorToUse });
+                }
             }
         }
     }
+
+    popup.option({
+        contentTemplate: () => popupContentTemplateLegend(legendItems),
+        height: 100 + legendItems.length * 30
+    });
+    popup.show();
 }
 
 async function visualizeFreights() {
