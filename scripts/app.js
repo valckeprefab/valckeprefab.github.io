@@ -1079,7 +1079,7 @@ async function doWorkSafe(preAction, action, postAction) {
 function fillObjectStatuses() {
     var modelled = {
         Status: StatusModelled,
-        Color: { r: 211, g: 211, b: 211 },
+        Color: { r: 211, g: 211, b: 211, a: 255 },
         Guids: [],
         CompressedIfcGuids: []
     };
@@ -1087,7 +1087,7 @@ function fillObjectStatuses() {
 
     var existing = {
         Status: StatusExisting,
-        Color: { r: 130, g: 92, b: 79 },
+        Color: { r: 130, g: 92, b: 79, a: 255 },
         Guids: [],
         CompressedIfcGuids: []
     };
@@ -1095,7 +1095,7 @@ function fillObjectStatuses() {
 
     var drawn = {
         Status: StatusDrawn,
-        Color: { r: 221, g: 160, b: 221 },
+        Color: { r: 221, g: 160, b: 221, a: 255 },
         Guids: [],
         CompressedIfcGuids: []
     };
@@ -1103,7 +1103,7 @@ function fillObjectStatuses() {
 
     var onHold = {
         Status: StatusOnHold,
-        Color: { r: 255, g: 0, b: 0 },
+        Color: { r: 255, g: 0, b: 0, a: 255 },
         Guids: [],
         CompressedIfcGuids: []
     };
@@ -1111,7 +1111,7 @@ function fillObjectStatuses() {
 
     var planned = {
         Status: StatusPlanned,
-        Color: { r: 255, g: 140, b: 0 },
+        Color: { r: 255, g: 140, b: 0, a: 255 },
         Guids: [],
         CompressedIfcGuids: []
     };
@@ -1119,7 +1119,7 @@ function fillObjectStatuses() {
 
     var demoulded = {
         Status: StatusDemoulded,
-        Color: { r: 128, g: 128, b: 0 },
+        Color: { r: 128, g: 128, b: 0, a: 255 },
         Guids: [],
         CompressedIfcGuids: []
     };
@@ -1127,7 +1127,7 @@ function fillObjectStatuses() {
 
     var prodEnded = {
         Status: StatusProductionEnded,
-        Color: { r: 255, g: 255, b: 0 },
+        Color: { r: 255, g: 255, b: 0, a: 255 },
         Guids: [],
         CompressedIfcGuids: []
     };
@@ -1135,7 +1135,7 @@ function fillObjectStatuses() {
 
     var availForTransport = {
         Status: StatusAvailableForTransport,
-        Color: { r: 0, g: 128, b: 255 },
+        Color: { r: 0, g: 128, b: 255, a: 255 },
         Guids: [],
         CompressedIfcGuids: []
     };
@@ -1143,7 +1143,7 @@ function fillObjectStatuses() {
 
     var plannedForTransport = {
         Status: StatusPlannedForTransport,
-        Color: { r: 0, g: 255, b: 255 },
+        Color: { r: 0, g: 255, b: 255, a: 255 },
         Guids: [],
         CompressedIfcGuids: []
     };
@@ -1151,7 +1151,7 @@ function fillObjectStatuses() {
 
     var transported = {
         Status: StatusTransported,
-        Color: { r: 34, g: 177, b: 76 },
+        Color: { r: 34, g: 177, b: 76, a: 255 },
         Guids: [],
         CompressedIfcGuids: []
     };
@@ -5053,7 +5053,7 @@ $("#btnShowKnownPrefixesDivId").dxButton({
             for (const mobjects of mobjectsArr) {
                 var modelId = mobjects.modelId;
                 const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
+                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false, color: { a: 255 } });
                 if (idsPerPrefixPerModelId.find(o => o.ModelId === modelId) !== undefined) {
                     continue;
                 }
@@ -5121,9 +5121,16 @@ $("#btnShowKnownPrefixesDivId").dxButton({
                 }
             }
 
+            //Hide dummy objects
+            var mobjectsXXXArr = await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "IfcMaterial.Material": "XXX*" } } });
+            for (const mobjects of mobjectsXXXArr) {
+                const objectsIds = mobjects.objects.map(o => o.id);
+                await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsIds }] }, { visible: false });
+            }
+
             //Show Arrows
             const mobjectsArrPijlen = await API.viewer.getObjects(getPropSelectorByPropnameAndValue("Default.COMMENT", "MONTAGEPIJL"));
-            console.log(mobjectsArrPijlen);
+            //console.log(mobjectsArrPijlen);
             if (mobjectsArrPijlen.length != undefined && mobjectsArrPijlen.length > 0) {
                 for (var mobjects of mobjectsArrPijlen) {
                     const objectsRuntimeIds = mobjects.objects.map(o => o.id);
