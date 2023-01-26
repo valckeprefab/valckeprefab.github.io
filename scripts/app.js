@@ -2163,12 +2163,15 @@ async function selectGuids(guids) {
     else {
         var models = await API.viewer.getModels("loaded");
         var compressedGuids = validGuids.map(x => Guid.fromFullToCompressed(x));
+        //console.log('compressedGuids');
         //console.log(compressedGuids);
         var selectionType = "set";
         for (var model of models) {
             var runtimeIds = await API.viewer.convertToObjectRuntimeIds(model.id, compressedGuids);
+            runtimeIds = runtimeIds.filter(x => x != undefined);
+            //console.log('runtimeIds');
             //console.log(runtimeIds);
-            if (runtimeIds.length == 0)
+            if (runtimeIds == undefined || runtimeIds.length == 0)
                 continue;
             var selector = { modelObjectIds: [{ modelId: model.id, objectRuntimeIds: runtimeIds }] };
             await API.viewer.setSelection(selector, selectionType);
@@ -3718,7 +3721,7 @@ $("#btnGetOdooInfoDivId").dxButton({
             };
             const mobjectsArr = await API.viewer.getObjects(selector);
             var selectedGuids = [];
-            for (const mobjects of mobjectsArr) {
+            for (const mobjects of mobjectsArr.filter(x => x.objects.length > 0)) {
                 const objectRuntimeIds = mobjects.objects.map(o => o.id); //o.id = runtimeId = number
                 const objectIds = await API.viewer.convertToObjectIds(mobjects.modelId, objectRuntimeIds);//objectIds = compressed ifc ids
                 //console.log(objectRuntimeIds);
@@ -5121,11 +5124,20 @@ $("#btnShowKnownPrefixesDivId").dxButton({
                 }
             }
 
-            //Hide dummy objects
+            //Hide dummy objects but keep external prestressed beams visible
             var mobjectsXXXArr = await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "IfcMaterial.Material": "XXX*" } } });
             for (const mobjects of mobjectsXXXArr) {
                 const objectsIds = mobjects.objects.map(o => o.id);
-                await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsIds }] }, { visible: false });
+                const objectPropertiesArr = await API.viewer.getObjectProperties(mobjects.modelId, objectsIds);
+                var objectIdsToHide = [];
+                for (const objproperties of objectPropertiesArr) {
+                    if (!objproperties.product.description || !objproperties.product.description.startsWith("EX")) {
+                        objectIdsToHide.push(objproperties.id);
+                    }
+                }
+                if (objectIdsToHide.length > 0) {
+                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectIdsToHide }] }, { visible: false });
+                }
             }
 
             //Show Arrows
