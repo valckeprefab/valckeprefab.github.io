@@ -2435,7 +2435,7 @@ async function visualizeFreights() {
                     continue;
 
                 var colorToUse;
-                if (freight == 0)
+                if (freight.FreightNumber == 0)
                     colorToUse = { r: 128, g: 128, b: 128, a: 255 };
                 else {
                     colorToUse = freightColors[freight.FreightNumber % freightColors.length];
@@ -2447,6 +2447,10 @@ async function visualizeFreights() {
                 await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsAvailable }] }, { color: colorToUse });
                 colorToUse.a = 128;
                 await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsUnavailable }] }, { color: colorToUse });
+
+                //Don't insert a label for freight number 0, clutters the 3D model
+                if (freight.FreightNumber == 0)
+                    continue;
 
                 //Add labels per freight
                 var allCogCoordinates = [];
