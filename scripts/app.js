@@ -804,7 +804,13 @@ const textUi = {
         nl: "Leg zoekstring, geen selectie uitgevoerd.",
         fr: "Chaîne de recherche vide, aucune sélection n'est effectuée.",
         en: "Empty searchstring, no selection performed."
-    }
+    },
+    titleVisualizeFreightsOnlySelected:
+    {
+        nl: "Enkel van geselecteerde merken",
+        fr: "Uniquement des assemblages sélectionnés",
+        en: "Only of selected assemblies"
+    },
 };
 
 var prefixDetails = [];
@@ -2354,10 +2360,12 @@ async function visualizeFreights() {
                         else
                             freight.ObjectIdsUnavailable.push(Guid.fromFullToCompressed(record.name));
                         freight.MarkIds.push(record.mark_id[0]);
+                        freight.Guids.push(record.name);
                     }
                     else {
                         var newFreight = {
                             FreightNumber: record.freight,
+                            Guids: [],
                             ObjectIdsAvailable: [],//objectIds = compressed ifc ids
                             ObjectRuntimeIdsAvailable: [],//o.id = runtimeId = number
                             ObjectIdsUnavailable: [],//objectIds = compressed ifc ids
@@ -2369,6 +2377,7 @@ async function visualizeFreights() {
                             newFreight.ObjectIdsAvailable = [Guid.fromFullToCompressed(record.name)];//objectIds = compressed ifc ids
                         else
                             newFreight.ObjectIdsUnavailable = [Guid.fromFullToCompressed(record.name)];//objectIds = compressed ifc ids
+                        newFreight.Guids.push(record.name);
                         freights.push(newFreight);
                     }
                 }
@@ -2410,6 +2419,22 @@ async function visualizeFreights() {
             });
         }
 
+        const selection = await API.viewer.getSelection();
+        const selector = {
+            modelObjectIds: selection
+        };
+        const mobjectsArr = await API.viewer.getObjects(selector);
+        var selectedGuids = [];
+        var selectedRuntimeIds = [];
+        for (const mobjects of mobjectsArr.filter(x => x.objects.length > 0)) {
+            const objectRuntimeIds = mobjects.objects.map(o => o.id); //o.id = runtimeId = number
+            const objectIds = await API.viewer.convertToObjectIds(mobjects.modelId, objectRuntimeIds);//objectIds = compressed ifc ids
+            //console.log(objectRuntimeIds);
+            selectedGuids.push(...objectIds.map(x => Guid.fromCompressedToFull(x)));
+            selectedRuntimeIds = selectedRuntimeIds.concat(objectRuntimeIds);
+        }
+
+        var onlySelected = checkBoxVisualizeFreightsOnlySelected.dxCheckBox("instance").option("value");
         await API.markup.removeMarkups();
         var jsonArray = "";
         var models = await API.viewer.getModels("loaded");
@@ -2452,10 +2477,19 @@ async function visualizeFreights() {
                 if (freight.FreightNumber == 0)
                     continue;
 
+                const intersection = freight.Guids.filter(value => selectedGuids.includes(value));
+                if (Boolean(onlySelected) && (intersection == undefined || intersection.length == 0))
+                    continue;
+
                 //Add labels per freight
                 var allCogCoordinates = [];
                 const modelPos = model.placement.position;
-                const objPropertiesArr = await API.viewer.getObjectProperties(modelId, allRuntimeIds);
+                var runtimeIdsToTakeIntoAccount = [];
+                if (Boolean(onlySelected))
+                    runtimeIdsToTakeIntoAccount = allRuntimeIds.filter(value => selectedRuntimeIds.includes(value))
+                else
+                    runtimeIdsToTakeIntoAccount = allRuntimeIds;
+                const objPropertiesArr = await API.viewer.getObjectProperties(modelId, runtimeIdsToTakeIntoAccount);
                 for (const objproperties of objPropertiesArr) {
                     //objproperties type: ObjectProperties
                     var defaultProperties = objproperties.properties.find(p => p.name === "Default");
@@ -2833,6 +2867,11 @@ var checkBoxToday = $('#checked').dxCheckBox({
 
 var checkBoxDirectionArrows = $('#checkedAddDirectionArrows').dxCheckBox({
     value: true,
+});
+
+
+var checkBoxVisualizeFreightsOnlySelected = $('#checkedVisualizeFreightsOnlySelected').dxCheckBox({
+    value: false,
 });
 
 const popup = $('#popup').dxPopup({
