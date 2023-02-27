@@ -561,9 +561,9 @@ const textUi = {
     },
     errorMsgNoAssemblySelection:
     {
-        nl: "Labels kunnen enkel geplaatst worden van objecten die geselecteerd werden met \"Assembly selection\".",
-        fr: "Les étiquettes ne peuvent être placées qu'à partir d'objets sélectionnés avec \"Sélection d'assemblage\".",
-        en: "Can only show labels of objects that were selected with \"Assembly selection\" on."
+        nl: "Labels plaatsen en Odooinfo opvragen kan enkel van objecten die geselecteerd werden met \"Assembly selection\".",
+        fr: "Placer des étiquettes et la récupération d'informations Odoo ne peuvent être effectuées que pour les objets sélectionnés avec \"Sélection d'assemblage\".",
+        en: "Adding labels and showing Odoo info can only be done of objects that were selected with \"Assembly selection\" on."
     },
     btnShowTitles:
     {
@@ -1038,7 +1038,7 @@ async function setAccesBooleans() {
 async function checkAssemblySelection() {
     const settings = await API.viewer.getSettings();
     if (!settings.assemblySelection) {
-        DevExpress.ui.notify(getTextById("errorMsgNoAssemblySelection"));
+        throw new Error(getTextById("errorMsgNoAssemblySelection"));
     }
 }
 
@@ -1777,7 +1777,12 @@ async function selectionChanged(data) {
     if (!hasAccesToTransport && !hasAccesToFreights)
         return;
 
-    await checkAssemblySelection();
+    try {
+        await checkAssemblySelection();
+    }
+    catch (e) {
+        DevExpress.ui.notify(e);
+    }
 
     var mySelectionId = ++lastSelectionId;
     selectionChangedIds.push(mySelectionId);
@@ -3921,32 +3926,37 @@ $("#btnGetOdooInfoDivId").dxButton({
                 }
             }
 
-            odooAssemblyData = selectedAssemblies[0];
+            if (selectedAssemblies.length == 0) {
+                throw getTextById("textNoInfoFound");
+            }
+            else {
+                odooAssemblyData = selectedAssemblies[0];
 
-            var models = await API.viewer.getModels("loaded");
-            var compressedGuid = Guid.fromFullToCompressed(odooAssemblyData.Guid);
-            for (var model of models) {
-                var runtimeIds = await API.viewer.convertToObjectRuntimeIds(model.id, [compressedGuid]);
-                if (runtimeIds != undefined && runtimeIds.length > 0 && runtimeIds[0] != undefined) {
-                    const objPropertiesArr = await API.viewer.getObjectProperties(model.id, runtimeIds);
-                    for (const objproperties of objPropertiesArr) {
-                        var defaultProperties = objproperties.properties.find(p => p.name === "Default");
-                        if (defaultProperties == undefined)
-                            continue;
-                        var cableLength = defaultProperties.properties.find(x => x.name === "CABLE_LENGTH");
-                        if (cableLength == undefined)
-                            continue;
-                        odooAssemblyData.CableLength = cableLength.value;
+                var models = await API.viewer.getModels("loaded");
+                var compressedGuid = Guid.fromFullToCompressed(odooAssemblyData.Guid);
+                for (var model of models) {
+                    var runtimeIds = await API.viewer.convertToObjectRuntimeIds(model.id, [compressedGuid]);
+                    if (runtimeIds != undefined && runtimeIds.length > 0 && runtimeIds[0] != undefined) {
+                        const objPropertiesArr = await API.viewer.getObjectProperties(model.id, runtimeIds);
+                        for (const objproperties of objPropertiesArr) {
+                            var defaultProperties = objproperties.properties.find(p => p.name === "Default");
+                            if (defaultProperties == undefined)
+                                continue;
+                            var cableLength = defaultProperties.properties.find(x => x.name === "CABLE_LENGTH");
+                            if (cableLength == undefined)
+                                continue;
+                            odooAssemblyData.CableLength = cableLength.value;
+                        }
                     }
                 }
-            }
-            
 
-            popup.option({
-                contentTemplate: () => popupContentTemplate(),
-                height: 620
-            });
-            popup.show();
+
+                popup.option({
+                    contentTemplate: () => popupContentTemplate(),
+                    height: 620
+                });
+                popup.show();
+            }
         }
         catch (e) {
             DevExpress.ui.notify(e);
