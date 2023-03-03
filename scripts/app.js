@@ -5178,18 +5178,24 @@ $("#btnShowKnownPrefixesDivId").dxButton({
             }
 
             //Hide dummy objects but keep external prestressed beams visible
-            var mobjectsXXXArr = await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "IfcMaterial.Material": "XXX*" } } });
-            for (const mobjects of mobjectsXXXArr) {
-                const objectsIds = mobjects.objects.map(o => o.id);
-                const objectPropertiesArr = await API.viewer.getObjectProperties(mobjects.modelId, objectsIds);
-                var objectIdsToHide = [];
-                for (const objproperties of objectPropertiesArr) {
-                    if (!objproperties.product.description || !objproperties.product.description.startsWith("EX")) {
-                        objectIdsToHide.push(objproperties.id);
+            var arraysToHide = [];
+            arraysToHide.push(await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "IfcMaterial.Material": "XXX*" } } }));
+            arraysToHide.push(await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.MERKPREFIX": "XXX" } } }));
+            arraysToHide.push(await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.MERKPREFIX": "BEWERKING" } } }));
+            for (var arrayToHide of arraysToHide) {
+                for (const mobjects of arrayToHide) {
+                    const objectsIds = mobjects.objects.map(o => o.id);
+                    const objectPropertiesArr = await API.viewer.getObjectProperties(mobjects.modelId, objectsIds);
+                    console.log(objectPropertiesArr);
+                    var objectIdsToHide = [];
+                    for (const objproperties of objectPropertiesArr) {
+                        if (!objproperties.product.description || !objproperties.product.description.startsWith("EX")) {
+                            objectIdsToHide.push(objproperties.id);
+                        }
                     }
-                }
-                if (objectIdsToHide.length > 0) {
-                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectIdsToHide }] }, { visible: false });
+                    if (objectIdsToHide.length > 0) {
+                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectIdsToHide }] }, { visible: false });
+                    }
                 }
             }
 
