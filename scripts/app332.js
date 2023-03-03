@@ -5181,12 +5181,7 @@ $("#btnShowKnownPrefixesDivId").dxButton({
             var arraysToHide = [];
             arraysToHide.push(await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "IfcMaterial.Material": "XXX*" } } }));
             arraysToHide.push(await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "OrientedBoundingBox.Name": "OPEN KANAAL" } } }));
-            arraysToHide.push(await API.viewer.getObjects({
-                class: "IFCBUILDINGELEMENTPART", parameter: {
-                    properties: {
-                        "OrientedBoundingBox.Name": "UITSP. HIJSLUS
-
-" } } }));
+            arraysToHide.push(await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "OrientedBoundingBox.Name": "UITSP. HIJSLUS" } } }));
             for (var arrayToHide of arraysToHide) {
                 for (const mobjects of arrayToHide) {
                     const objectsIds = mobjects.objects.map(o => o.id);
