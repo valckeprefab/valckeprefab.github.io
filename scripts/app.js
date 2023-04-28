@@ -2591,8 +2591,8 @@ async function getToken() {
             },
             success: function (odooData) {
                 token = odooData.access_token;
-                refresh_token = data.refresh_token;
-                tokenExpiretime = new Date(Date.now() + data.expires_in * 1000);
+                refresh_token = odooData.refresh_token;
+                tokenExpiretime = new Date(Date.now() + odooData.expires_in * 1000);
                 refreshSuccesful = true;
                 console.log("refresh success");
             },
