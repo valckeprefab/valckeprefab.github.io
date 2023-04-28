@@ -2573,7 +2573,7 @@ async function getToken() {
     var username = odooUsernameTextbox.dxTextBox("instance").option("value");
     var password = odooPasswordTextbox.dxTextBox("instance").option("value");
 
-    if (token !== "" && refresh_token !== "" && tokenExpiretime.getTime() < Date.now() + 60000) {
+    if (token !== "" && refresh_token !== "") {// && tokenExpiretime.getTime() < Date.now() + 60000) {
         console.log("Refreshing token");
         //console.log("tokenExpiretime.getTime()");
         //console.log(tokenExpiretime.getTime());
@@ -2594,6 +2594,8 @@ async function getToken() {
                 refresh_token = odooData.refresh_token;
                 tokenExpiretime = new Date(Date.now() + odooData.expires_in * 1000);
                 refreshSuccesful = true;
+                //console.log("odoo data:");
+                //console.log(odooData);
                 console.log("refresh success");
             },
         });
@@ -5186,7 +5188,7 @@ $("#btnShowKnownPrefixesDivId").dxButton({
                 for (const mobjects of arrayToHide) {
                     const objectsIds = mobjects.objects.map(o => o.id);
                     const objectPropertiesArr = await API.viewer.getObjectProperties(mobjects.modelId, objectsIds);
-                    console.log(objectPropertiesArr);
+                    //console.log(objectPropertiesArr);
                     var objectIdsToHide = [];
                     for (const objproperties of objectPropertiesArr) {
                         if (!objproperties.product.description || !objproperties.product.description.startsWith("EX")) {
