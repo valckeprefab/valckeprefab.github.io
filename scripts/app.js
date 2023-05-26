@@ -2926,6 +2926,10 @@ const assemblyTextBox = $('#placeholderAssemblyname').dxTextBox({
 var odooPasswordTextbox = $('#placeholderOdooPassword').dxTextBox({
     mode: 'password',
     placeholder: getTextById("phOdooPassword"),
+    inputAttr: {
+        autocomplete: 'on',
+        name: 'password'
+    }
 });
 
 var odooSearchTextBox = $('#placeholderOdooSearch').dxTextBox({
@@ -2934,6 +2938,10 @@ var odooSearchTextBox = $('#placeholderOdooSearch').dxTextBox({
 
 var odooUsernameTextbox = $('#placeholderOdooUsername').dxTextBox({
     placeholder: getTextById("phOdooUsername"),
+    inputAttr: {
+        autocomplete: 'on',
+        name: 'username'
+    }
 });
 
 const prefixSelectionTagBox = $('#prefixSelection').dxTagBox({
