@@ -871,6 +871,7 @@ const prefixes = [
     'VENTILA',
     'W',
     'WANDREGE',
+    'VLOERTRACONORD'
 ];
 
 //#endregion
