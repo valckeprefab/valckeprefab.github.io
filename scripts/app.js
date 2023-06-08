@@ -1969,7 +1969,7 @@ async function selectionChanged(data) {
                                 domainSliplines = filterArrStr;
                             }
                         }
-                        domainSliplines = `[["trimble_connect_id.project_id", "=", "${projectId}"],["slip_id.state", "!=", "cancel"],${domainSliplines}]`;
+                        domainSliplines = `[["trimble_connect_id.project_id", "=", ${projectId}],["slip_id.state", "!=", "cancel"],${domainSliplines}]`;
                         //console.log("domainSliplines: ");
                         //console.log(domainSliplines);
 
@@ -4519,7 +4519,7 @@ $("#btnSetColorFromStatusDivId").dxButton({
                         data: {
                             model: "vpb.delivery.slip.line",
                             //domain: '[["trimble_connect_id.project_id.id", "=", "' + id + '"],["slip_id.state", "=", "draft"],["id", ">", "' + lastId + '"]]',
-                            domain: '[["trimble_connect_id.project_id", "=", "' + id + '"],["slip_id.state", "=", "draft"],["id", ">", "' + lastId + '"]]',
+                            domain: '[["trimble_connect_id.project_id", "=", ' + id + '],["slip_id.state", "=", "draft"],["id", ">", "' + lastId + '"]]',
                             fields: '["id", "trimble_connect_id"]',
                             order: 'id',
                         },
