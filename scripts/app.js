@@ -1228,7 +1228,7 @@ async function getAssemblyInfoByCompressedGuids(compressedGuids) {
             }
         }
 
-        domainTrimbleConnectMain = '[["project_id.id", "=", "' + projectId + '"],' + domainTrimbleConnectMain + ']';
+        domainTrimbleConnectMain = '[["project_id", "=", ' + projectId + '],' + domainTrimbleConnectMain + ']';
         var assemblyIds = [];
         await $.ajax({
             type: "GET",
@@ -1360,9 +1360,9 @@ async function getElementsInFreight(freightnumber) {
     var elements = [];
     var domain;
     if(freightnumber != undefined)
-        domain = `[["project_id.id", "=", "${projectId}"], ["freight", "=", "${freightnumber}"], ["state","!=","cancelled"]]`; //, ["mark_id.mark_prefix", "=", "W"]
+        domain = `[["project_id", "=", ${projectId}], ["freight", "=", "${freightnumber}"], ["state","!=","cancelled"]]`; //, ["mark_id.mark_prefix", "=", "W"]
     else
-        domain = `[["project_id.id", "=", "${projectId}"], ["state","!=","cancelled"]]`; //, ["mark_id.mark_prefix", "=", "W"]
+        domain = `[["project_id", "=", ${projectId}], ["state","!=","cancelled"]]`; //, ["mark_id.mark_prefix", "=", "W"]
     await $.ajax({
         type: "GET",
         url: odooURL + "/api/v1/search_read",
@@ -1432,7 +1432,8 @@ async function getFreightNumbers() {
         headers: { "Authorization": "Bearer " + token },
         data: {
             model: "trimble.connect.main",
-            domain: `[["project_id.id", "=", "${projectId}"], ["freight", ">", "0"], ["state","!=","cancelled"]]`, //, ["mark_id.mark_prefix", "=", "W"]
+            //["project_id.id", "=", "${projectId}"] will perform a join on trimble.connect.main and project.project, ["project_id", "=", "${projectId}"] will not
+            domain: `[["project_id", "=", ${projectId}], ["freight", ">", "0"], ["state","!=","cancelled"]]`, //, ["mark_id.mark_prefix", "=", "W"]
             fields: '["freight"]',
         },
         success: function (data) {
@@ -1877,7 +1878,7 @@ async function selectionChanged(data) {
             //adding project_id to the query reduces the time it takes to find the records
             //based on seeing how fast the grid refreshes with and w/o project_id, should properly time the difference to verify.
             //should also try this with other queries that use ilike
-            domainTrimbleConnectMain = '[["project_id.id", "=", "' + projectId + '"],' + domainTrimbleConnectMain + "]";
+            domainTrimbleConnectMain = '[["project_id", "=", ' + projectId + '],' + domainTrimbleConnectMain + "]";
             //console.log("domainTrimbleConnectMain");
             //console.log(domainTrimbleConnectMain);
             var domainProjectMarks = "";
@@ -1968,7 +1969,7 @@ async function selectionChanged(data) {
                                 domainSliplines = filterArrStr;
                             }
                         }
-                        domainSliplines = `[["trimble_connect_id.project_id.id", "=", "${projectId}"],["slip_id.state", "!=", "cancel"],${domainSliplines}]`;
+                        domainSliplines = `[["trimble_connect_id.project_id", "=", "${projectId}"],["slip_id.state", "!=", "cancel"],${domainSliplines}]`;
                         //console.log("domainSliplines: ");
                         //console.log(domainSliplines);
 
@@ -2091,7 +2092,7 @@ async function refreshExistingSlips() {
                 data: {
                     model: "vpb.delivery.slip",
                     //, ["state", "=", "draft"]
-                    domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"]]',
+                    domain: '[["project_id", "=", ' + id + '],["id", ">", "' + lastId + '"]]',
                     fields: '["id", "name", "line_ids", "state", "date"]',
                     order: 'id',
                 },
@@ -2232,7 +2233,7 @@ async function visualizeConcreteFinishes() {
             headers: { "Authorization": "Bearer " + token },
             data: {
                 model: "project.master_marks",
-                domain: `[["project_id.id", "=", "${projectId}"]]`, //, ["mark_id.mark_prefix", "=", "W"]
+                domain: `[["project_id", "=", ${projectId}]]`, //, ["mark_id.mark_prefix", "=", "W"]
                 fields: '["id", "mark_comment"]',
             },
             success: function (odooData) {
@@ -2293,7 +2294,7 @@ async function visualizeConcreteFinishes() {
                 headers: { "Authorization": "Bearer " + token },
                 data: {
                     model: "trimble.connect.main",
-                    domain: `[["project_id.id", "=", "${projectId}"], ["mark_id.mark_comment", "=ilike", "${finish}"]]`,
+                    domain: `[["project_id", "=", ${projectId}], ["mark_id.mark_comment", "=ilike", "${finish}"]]`,
                     fields: '["id", "name"]',
                 },
                 success: function (odooData) {
@@ -2353,7 +2354,7 @@ async function visualizeFreights() {
             headers: { "Authorization": "Bearer " + token },
             data: {
                 model: "trimble.connect.main",
-                domain: '[["project_id.id", "=", "' + projectId + '"], ["freight", ">=", "0"]]', //, ["mark_id.mark_prefix", "=", "W"]
+                domain: '[["project_id", "=", ' + projectId + '], ["freight", ">=", "0"]]', //, ["mark_id.mark_prefix", "=", "W"]
                 order: 'freight',
                 fields: '["id", "name", "freight", "mark_id", "mark_available"]',
             },
@@ -2669,7 +2670,7 @@ async function getRecentOdooData() {
                 headers: { "Authorization": "Bearer " + token },
                 data: {
                     model: "trimble.connect.main",
-                    domain: '[["project_id.id", "=", "' + id + '"]]',
+                    domain: '[["project_id", "=", ' + id + ']]',
                     order: 'write_date desc',
                     limit: 1,
                     fields: '["id", "write_date"]'
@@ -2690,7 +2691,7 @@ async function getRecentOdooData() {
                 headers: { "Authorization": "Bearer " + token },
                 data: {
                     model: "trimble.connect.main",
-                    domain: '[["project_id.id", "=", "' + id + '"],["write_date",">=","' + lastUpdate + '"]]',
+                    domain: '[["project_id", "=", ' + id + '],["write_date",">=","' + lastUpdate + '"]]',
                     order: 'write_date desc',
                     fields: '["id", "write_date", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "state", "mark_available"]',
                 },
@@ -3050,7 +3051,7 @@ async function colorPanelsByFinish() {
         headers: { "Authorization": "Bearer " + token },
         data: {
             model: "project.master_marks",
-            domain: `[["project_id.id", "=", "${projectId}"], ["mark_comment", "ilike", "S%"], 
+            domain: `[["project_id", "=", ${projectId}], ["mark_comment", "ilike", "S%"], 
                     "|", ["mark_prefix", "=", "PV"], "|", ["mark_prefix", "=", "PS"], "|", ["mark_prefix", "=", "KM"], ["mark_prefix", "=", "PLAAT"]]`,
             fields: '["id", "mark_comment"]',
         },
@@ -3073,7 +3074,7 @@ async function colorPanelsByFinish() {
             headers: { "Authorization": "Bearer " + token },
             data: {
                 model: "trimble.connect.main",
-                domain: `[["project_id.id", "=", "${projectId}"], ["mark_id.mark_comment", "=", "${finish}"]]`,
+                domain: `[["project_id", "=", ${projectId}], ["mark_id.mark_comment", "=", "${finish}"]]`,
                 fields: '["id", "name"]',
             },
             success: function (data) {
@@ -3138,7 +3139,7 @@ async function colorPanelsByMaterial(){
         headers: { "Authorization": "Bearer " + token },
         data: {
             model: "project.master_marks",
-            domain: `[["project_id.id", "=", "${projectId}"], 
+            domain: `[["project_id", "=", ${projectId}], 
                     "|", ["mark_prefix", "=", "PV"], "|", ["mark_prefix", "=", "PS"], "|", ["mark_prefix", "=", "KM"], ["mark_prefix", "=", "PLAAT"]]`,
             fields: '["id", "mark_material"]',
         },
@@ -3160,7 +3161,7 @@ async function colorPanelsByMaterial(){
             headers: { "Authorization": "Bearer " + token },
             data: {
                 model: "trimble.connect.main",
-                domain: `[["project_id.id", "=", "${projectId}"], ["mark_id.mark_material", "=", "${material}"]]`,
+                domain: `[["project_id", "=", ${projectId}], ["mark_id.mark_material", "=", "${material}"]]`,
                 fields: '["id", "name"]',
             },
             success: function (data) {
@@ -3226,7 +3227,7 @@ async function colorWByReinforcement() {
         headers: { "Authorization": "Bearer " + token },
         data: {
             model: "project.master_marks",
-            domain: `[["project_id.id", "=", "${projectId}"],["mark_prefix", "=", "W"]]`,
+            domain: `[["project_id", "=", ${projectId}],["mark_prefix", "=", "W"]]`,
             fields: '["id", "mark_reinf_type"]',
         },
         success: function (data) {
@@ -3247,7 +3248,7 @@ async function colorWByReinforcement() {
             headers: { "Authorization": "Bearer " + token },
             data: {
                 model: "trimble.connect.main",
-                domain: `[["project_id.id", "=", "${projectId}"], ["mark_id.mark_reinf_type", "=", "${reinfType}"]]`,
+                domain: `[["project_id", "=", ${projectId}], ["mark_id.mark_reinf_type", "=", "${reinfType}"]]`,
                 fields: '["id", "name"]',
             },
             success: function (data) {
@@ -3313,7 +3314,7 @@ async function colorWByProfile() {
         headers: { "Authorization": "Bearer " + token },
         data: {
             model: "project.master_marks",
-            domain: `[["project_id.id", "=", "${projectId}"],["mark_prefix", "=", "W"]]`,
+            domain: `[["project_id", "=", ${projectId}],["mark_prefix", "=", "W"]]`,
             fields: '["id", "mark_profile"]',
         },
         success: function (data) {
@@ -3334,7 +3335,7 @@ async function colorWByProfile() {
             headers: { "Authorization": "Bearer " + token },
             data: {
                 model: "trimble.connect.main",
-                domain: `[["project_id.id", "=", "${projectId}"], ["mark_id.mark_profile", "=", "${profile}"]]`,
+                domain: `[["project_id", "=", ${projectId}], ["mark_id.mark_profile", "=", "${profile}"]]`,
                 fields: '["id", "name"]',
             },
             success: function (data) {
@@ -3818,7 +3819,7 @@ $("#btnGetOdooInfoDivId").dxButton({
                 //adding project_id to the query reduces the time it takes to find the records
                 //based on seeing how fast the grid refreshes with and w/o project_id, should properly time the difference to verify.
                 //should also try this with other queries that use ilike
-                domainTrimbleConnectMain = '[["project_id.id", "=", "' + projectId + '"],' + domainTrimbleConnectMain + "]";
+                domainTrimbleConnectMain = '[["project_id", "=", ' + projectId + '],' + domainTrimbleConnectMain + "]";
                 //console.log("domainTrimbleConnectMain");
                 //console.log(domainTrimbleConnectMain);
                 var domainProjectMarks = "";
@@ -4086,7 +4087,7 @@ $("#btnOdooSearchDivId").dxButton({
                     domainStr = qStr;
                 }
             }
-            domainStr = '[["project_id.id", "=", "' + projectId + '"],' + domainStr + ']';
+            domainStr = '[["project_id", "=", ' + projectId + '],' + domainStr + ']';
 
             //domainStr = '[';
             //domainStr += '["project_id.id", "=", "2238"],';
@@ -4518,7 +4519,7 @@ $("#btnSetColorFromStatusDivId").dxButton({
                         data: {
                             model: "vpb.delivery.slip.line",
                             //domain: '[["trimble_connect_id.project_id.id", "=", "' + id + '"],["slip_id.state", "=", "draft"],["id", ">", "' + lastId + '"]]',
-                            domain: '[["trimble_connect_id.project_id.id", "=", "' + id + '"],["slip_id.state", "=", "draft"],["id", ">", "' + lastId + '"]]',
+                            domain: '[["trimble_connect_id.project_id", "=", "' + id + '"],["slip_id.state", "=", "draft"],["id", ">", "' + lastId + '"]]',
                             fields: '["id", "trimble_connect_id"]',
                             order: 'id',
                         },
@@ -4547,7 +4548,7 @@ $("#btnSetColorFromStatusDivId").dxButton({
                     headers: { "Authorization": "Bearer " + token },
                     data: {
                         model: "trimble.connect.main",
-                        domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"],["state","!=","cancelled"]]',
+                        domain: '[["project_id", "=", ' + id + '],["id", ">", "' + lastId + '"],["state","!=","cancelled"]]',
                         fields: '["id", "mark_id", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "state", "mark_available"]',
                         order: 'id',
                     },
@@ -4591,7 +4592,7 @@ $("#btnSetColorFromStatusDivId").dxButton({
                     headers: { "Authorization": "Bearer " + token },
                     data: {
                         model: "project.master_marks",
-                        domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"]]',
+                        domain: '[["project_id", "=", ' + id + '],["id", ">", "' + lastId + '"]]',
                         fields: '["id", "mark_prefix", "mark_ref", "create_date", "mark_qty"]',
                         order: 'id',
                     },
@@ -4629,7 +4630,7 @@ $("#btnSetColorFromStatusDivId").dxButton({
                     headers: { "Authorization": "Bearer " + token },
                     data: {
                         model: "project.mark_steel_production",
-                        domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"]]',
+                        domain: '[["project_id", "=", ' + id + '],["id", ">", "' + lastId + '"]]',
                         fields: '["id", "upper_id", "date_delivered"]',
                         order: 'id',
                     },
@@ -4664,7 +4665,7 @@ $("#btnSetColorFromStatusDivId").dxButton({
                     headers: { "Authorization": "Bearer " + token },
                     data: {
                         model: "project.mark_steel_pack",
-                        domain: '[["project_id.id", "=", "' + id + '"],["id", ">", "' + lastId + '"]]',
+                        domain: '[["project_id", "=", ' + id + '],["id", ">", "' + lastId + '"]]',
                         fields: '["id", "mark_ids", "date_ready", "date_done"]', //mark_id = pack item id
                         order: 'id',
                     },
@@ -4706,7 +4707,7 @@ $("#btnSetColorFromStatusDivId").dxButton({
                     headers: { "Authorization": "Bearer " + token },
                     data: {
                         model: "project.mark_steel_pack_items",
-                        domain: '[["upper_id.id", "=", "' + steelPack.OdooId + '"]]',
+                        domain: '[["upper_id", "=", "' + steelPack.OdooId + '"]]',
                         fields: '["id", "mark_id", "qty"]', //mark_id = pack item id
                         order: 'id',
                     },
