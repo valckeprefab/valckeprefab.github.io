@@ -1169,7 +1169,7 @@ async function fillPrefixDetails() {
     await $.ajax({
         type: "GET",
         url: odooURL + "/api/v1/search_read",
-        headers: { "Authorization": "Bearer " + token },
+        headers: { "Authorization": "Bearer " + access_token },
         data: {
             model: "cust.prefix_to_ce",
             domain: '[["id", ">", "-1"]]',
@@ -2564,9 +2564,9 @@ async function visualizeFreights() {
 
 //#region Odoo
 
-var token = "";
+var access_token = "";
 var refresh_token = "";
-var tokenExpiretime;
+var access_token_expiretime;
 var client_id = "3oVDFZt2EVPhAOfQRgsRDYI9pIcdcdTGYR7rUSST";
 var client_secret = "PXthv4zShfW5NORk4bKFgr6O1dlYTxqD8KwFlx1S";
 async function getToken() {
@@ -2575,12 +2575,15 @@ async function getToken() {
     var username = odooUsernameTextbox.dxTextBox("instance").option("value");
     var password = odooPasswordTextbox.dxTextBox("instance").option("value");
 
-    if (token !== "" && refresh_token !== "") {// && tokenExpiretime.getTime() < Date.now() + 60000) {
+    if (refresh_token !== "" && access_token_expiretime != undefined && access_token_expiretime.getTime() < Date.now() + 60 * 1000) {
+        //refresh_token might be expired aswel => expected to fail
         console.log("Refreshing token");
-        //console.log("tokenExpiretime.getTime()");
-        //console.log(tokenExpiretime.getTime());
-        //console.log("Date.now()");
-        //console.log(Date.now());
+        console.log("Token: ");
+        console.log(access_token);
+        console.log("tokenExpiretime.getTime()");
+        console.log(access_token_expiretime.getTime());
+        console.log("Date.now()");
+        console.log(Date.now());
         var refreshSuccesful = false;
         await $.ajax({
             type: "POST",
@@ -2592,22 +2595,25 @@ async function getToken() {
                 refresh_token: refresh_token
             },
             success: function (odooData) {
-                token = odooData.access_token;
+                access_token = odooData.access_token;
                 refresh_token = odooData.refresh_token;
-                tokenExpiretime = new Date(Date.now() + odooData.expires_in * 1000);
+                access_token_expiretime = new Date(Date.now() + odooData.expires_in * 1000);
                 refreshSuccesful = true;
-                //console.log("odoo data:");
-                //console.log(odooData);
+                console.log("odoo data:");
+                console.log(odooData);
                 console.log("refresh success");
             },
         });
         if (!refreshSuccesful) {
-            token = "";
+            console.log("refresh failed");
+            access_token = "";
+            refresh_token = "";
+            access_token_expiretime = undefined;
         }
         console.log("End refresh token");
     }
-    if (token === "") {
-        //console.log("Fetching token");
+    if (access_token === "") {
+        console.log("Fetching new token");
         //console.log("Start db name fetch1");
         //await $.ajax({
         //    type: "GET",
@@ -2632,16 +2638,17 @@ async function getToken() {
                 grant_type: "password"
             },
             success: function (data) {
-                //console.log(data);
-                token = data.access_token;
+                console.log(data);
+                access_token = data.access_token;
                 refresh_token = data.refresh_token;
-                tokenExpiretime = new Date(Date.now() + data.expires_in * 1000);
-                //console.log(tokenExpiretime);
+                access_token_expiretime = new Date(Date.now() + data.expires_in * 1000);
+                console.log("tokenExpiretime:");
+                console.log(access_token_expiretime);
             }
         });
-        //console.log("Token received");
+        console.log("Token received");
     }
-    return token;
+    return access_token;
 }
 
 var lastUpdate = "";
