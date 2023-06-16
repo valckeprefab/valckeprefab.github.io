@@ -18,8 +18,14 @@ window.onload = async function () {
     });
 
     fillObjectStatuses();
-    setInterval(getRecentOdooData, 5000);
+    getRecentOdooDataTimed();
+    //setInterval(getRecentOdooData, 5000);
     setTextByLanguage();
+}
+
+function getRecentOdooDataTimed() {
+    getRecentOdooData();
+    setTimeout(function () { getRecentOdooDataTimed(); }, 5000);
 }
 
 $("#testbtn").dxButton({
