@@ -1,6 +1,6 @@
 var API = null;
-var odooURL = "https://odoo.valcke-prefab.be"; //no slash at the end
-var odooDatabase = "erp_prd"
+var odooURL = "https://10.10.126.32:9069"; //no slash at the end
+var odooDatabase = "odoo-sja"
 var fetchLimit = 60; 
 //80 was too much for a query with GUID's listed in the domain
 //(threw a CORS error(= invalid query usually), response was complete though,
