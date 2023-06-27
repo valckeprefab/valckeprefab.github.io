@@ -3689,7 +3689,7 @@ $("#btnCreateSlipDivId").dxButton({
                 await fillPrefixDetails();
             }
 
-            var siteAdressId = false;
+            var project;
             await $.ajax({
                 type: "GET",
                 url: odooURL + "/api/v1/search_read",
@@ -3697,12 +3697,15 @@ $("#btnCreateSlipDivId").dxButton({
                 data: {
                     model: "project.project",
                     domain: '[["id", "=", "' + id + '"]]',
-                    fields: '["site_address_id"]',
+                    fields: '["id", "partner_id", "site_address_id"]',
                 },
                 success: function (data) {
-                    siteAdressId = data.site_address_id;
+                    project = { id: data.id, partner_id: data.partner_id, site_address_id: data.site_address_id };
                 }
             });
+
+            console.log('project: ');
+            console.log(project);
 
             //console.log("projectId: " + id);
             //console.log(selectedObjects);
@@ -3713,24 +3716,13 @@ $("#btnCreateSlipDivId").dxButton({
                 headers: { "Authorization": "Bearer " + token },
                 data: {
                     model: "vpb.delivery.slip",
-                    values: '{"project_id": ' + id + ', "delivery_location_id": ' + siteAdressId + '}',
+                    values: '{"project_id": ' + project.id
+                        + ', "partner_id": ' + project.partner_id
+                        + ', "delivery_location_id": ' + project.site_address_id
+                        + '}',
                 },
                 success: function (odooData) {
                     deliverySlipId = odooData[0];
-                }
-            });
-
-            await $.ajax({
-                type: "GET",
-                url: odooURL + "/api/v1/search_read",
-                headers: { "Authorization": "Bearer " + token },
-                data: {
-                    model: "vpb.delivery.slip",
-                    domain: '[["id", "=", "' + id + '"]]',
-                    fields: '["site_address_id"]',
-                },
-                success: function (data) {
-                    siteAdressId = data.site_address_id;
                 }
             });
 
