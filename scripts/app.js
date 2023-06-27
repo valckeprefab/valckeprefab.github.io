@@ -4556,7 +4556,7 @@ $("#btnSetColorFromStatusDivId").dxButton({
                         data: {
                             model: "vpb.delivery.slip.line",
                             //domain: '[["trimble_connect_id.project_id.id", "=", "' + id + '"],["slip_id.state", "=", "draft"],["id", ">", "' + lastId + '"]]',
-                            domain: '[["trimble_connect_id.project_id", "=", ' + id + '],["slip_id.state", "=", "draft"],["id", ">", "' + lastId + '"]]',
+                            domain: '["&",["trimble_connect_id.project_id", "=", ' + id + '],"&",["id", ">", "' + lastId + '"],"|",["slip_id.state", "=", "draft"],"|",["slip_id.state", "=", "released"],"|",["slip_id.state", "=", "handling"],["slip_id.state", "=", "loaded"]]',
                             fields: '["id", "trimble_connect_id"]',
                             order: 'id',
                         },
