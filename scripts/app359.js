@@ -53,7 +53,31 @@ $("#testbtn").dxButton({
         //catch (e) {
         //    console.log(e);
         //}
-        console.log(getConcretecolorFromOdooStr('110;110;110'));
+        //console.log(getConcretecolorFromOdooStr('110;110;110'));
+
+        var token = getToken();
+
+        var id = GetProjectId("V8695");
+
+        var project;
+        await $.ajax({
+            type: "GET",
+            url: odooURL + "/api/v1/search_read",
+            headers: { "Authorization": "Bearer " + token },
+            data: {
+                model: "project.project",
+                domain: '[["id", "=", "' + id + '"]]',
+                fields: '["id"]',
+            },
+            success: function (data) {
+                console.log(data);
+                project = { id: data.id, partner_id: data.partner_id, site_address_id: data.site_address_id };
+                console.log('succes: ');
+            }
+        });
+
+        console.log('project: ');
+        console.log(project);
     },
 });
 
@@ -3696,11 +3720,12 @@ $("#btnCreateSlipDivId").dxButton({
                 headers: { "Authorization": "Bearer " + token },
                 data: {
                     model: "project.project",
-                    domain: '[["id", "=", "' + id + '"]]',
+                    domain: '[["id", "=", "' + 2471 + '"]]',
                     fields: '["id", "partner_id", "site_address_id"]',
                 },
                 success: function (data) {
                     project = { id: data.id, partner_id: data.partner_id, site_address_id: data.site_address_id };
+                    console.log('succes: ');
                 }
             });
 
