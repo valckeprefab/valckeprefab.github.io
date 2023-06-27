@@ -3713,7 +3713,7 @@ $("#btnCreateSlipDivId").dxButton({
                 await fillPrefixDetails();
             }
 
-            var project;
+            var projectInfo;
             await $.ajax({
                 type: "GET",
                 url: odooURL + "/api/v1/search_read",
@@ -3726,12 +3726,12 @@ $("#btnCreateSlipDivId").dxButton({
                 success: function (data) {
                     console.log('succes: ');
                     console.log(data);
-                    project = { id: data[0].id, partner_id: data[0].partner_id[0], site_address_id: data[0].site_address_id[0] };
+                    projectInfo = { id: data[0].id, partner_id: data[0].partner_id[0], site_address_id: data[0].site_address_id[0] };
                 }
             });
 
-            console.log('project: ');
-            console.log(project);
+            //console.log('project: ');
+            //console.log(project);
 
             //console.log("projectId: " + id);
             //console.log(selectedObjects);
@@ -3742,9 +3742,9 @@ $("#btnCreateSlipDivId").dxButton({
                 headers: { "Authorization": "Bearer " + token },
                 data: {
                     model: "vpb.delivery.slip",
-                    values: '{"project_id": ' + project.id
-                        + ', "partner_id": ' + project.partner_id
-                        + ', "delivery_location_id": ' + project.site_address_id
+                    values: '{"project_id": ' + projectInfo.id
+                        + ', "partner_id": ' + projectInfo.partner_id
+                        + ', "delivery_location_id": ' + projectInfo.site_address_id
                         + '}',
                 },
                 success: function (odooData) {

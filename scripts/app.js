@@ -53,7 +53,31 @@ $("#testbtn").dxButton({
         //catch (e) {
         //    console.log(e);
         //}
-        console.log(getConcretecolorFromOdooStr('110;110;110'));
+        //console.log(getConcretecolorFromOdooStr('110;110;110'));
+
+        //var id = await GetProjectId("V8695");
+
+        //var token = await getToken();
+
+        //var project;
+        //await $.ajax({
+        //    type: "GET",
+        //    url: odooURL + "/api/v1/search_read",
+        //    headers: { "Authorization": "Bearer " + token },
+        //    data: {
+        //        model: "project.project",
+        //        domain: '[["id", "=", "' + id + '"]]',
+        //        fields: '["id", "partner_id", "site_address_id"]',
+        //    },
+        //    success: function (data) {
+        //        console.log('succes: ');
+        //        console.log(data);
+        //        project = { id: data[0].id, partner_id: data[0].partner_id[0], site_address_id: data[0].site_address_id[0] };
+        //    }
+        //});
+
+        //console.log('project: ');
+        //console.log(project);
     },
 });
 
@@ -3689,6 +3713,26 @@ $("#btnCreateSlipDivId").dxButton({
                 await fillPrefixDetails();
             }
 
+            var projectInfo;
+            await $.ajax({
+                type: "GET",
+                url: odooURL + "/api/v1/search_read",
+                headers: { "Authorization": "Bearer " + token },
+                data: {
+                    model: "project.project",
+                    domain: '[["id", "=", "' + id + '"]]',
+                    fields: '["id", "partner_id", "site_address_id"]',
+                },
+                success: function (data) {
+                    //console.log('succes: ');
+                    //console.log(data);
+                    projectInfo = { id: data[0].id, partner_id: data[0].partner_id[0], site_address_id: data[0].site_address_id[0] };
+                }
+            });
+
+            //console.log('project: ');
+            //console.log(project);
+
             //console.log("projectId: " + id);
             //console.log(selectedObjects);
             var deliverySlipId = -1;
@@ -3698,7 +3742,10 @@ $("#btnCreateSlipDivId").dxButton({
                 headers: { "Authorization": "Bearer " + token },
                 data: {
                     model: "vpb.delivery.slip",
-                    values: '{"project_id": ' + id + '}',
+                    values: '{"project_id": ' + projectInfo.id
+                        + ', "partner_id": ' + projectInfo.partner_id
+                        + ', "delivery_location_id": ' + projectInfo.site_address_id
+                        + '}',
                 },
                 success: function (odooData) {
                     deliverySlipId = odooData[0];
@@ -3765,7 +3812,7 @@ $("#btnCreateSlipDivId").dxButton({
                         var objStatus = objStatusPlannedForTransport;
                         objStatus.Guids.push(guidToChange);
                         objStatus.CompressedIfcGuids.push(compressedIfcGuid);
-                        console.log("Assembly " + guidToChange + " added as " + status);
+                        console.log("Assembly " + guidToChange + " added as " + objStatus.Status);
 
                         for (const mobjects of mobjectsArr) {
                             var modelId = mobjects.modelId;
@@ -3781,8 +3828,8 @@ $("#btnCreateSlipDivId").dxButton({
 
             await refreshExistingSlips();
 
-            var snapshot = await API.viewer.getSnapshot();
-            console.log(snapshot);
+            //var snapshot = await API.viewer.getSnapshot();
+            //console.log(snapshot);
 
             await API.viewer.setSelection(undefined, 'remove');
         }
