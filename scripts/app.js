@@ -857,6 +857,7 @@ const prefixes = [
     'DG',
     'DORPEL',
     'DORPELBA',
+    'DRUKLAAG',
     'FCITERNE',
     'FLIFT',
     'FM',
@@ -5278,6 +5279,7 @@ $("#btnShowKnownPrefixesDivId").dxButton({
             arraysToHide.push(await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "IfcMaterial.Material": "XXX*" } } }));
             arraysToHide.push(await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.MERKPREFIX": "XXX" } } }));
             arraysToHide.push(await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.MERKPREFIX": "BEWERKING" } } }));
+            arraysToHide.push(await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.ONDERDEELPREFIX": "W_DRUKLAAG" } } }));
             for (var arrayToHide of arraysToHide) {
                 for (const mobjects of arrayToHide) {
                     const objectsIds = mobjects.objects.map(o => o.id);
