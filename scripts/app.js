@@ -2334,10 +2334,14 @@ async function visualizeConcreteFinishes() {
                 },
                 success: function (odooData) {
                     if (odooData.length > 0) {
-                        if (odooData[0].color3D === true) {
+                        //console.log(odooData[0].color3D);
+                        if (odooData[0].color3D !== false) {
                             var color = getConcretecolorFromOdooStr(odooData[0].color3D);
                             if (color != undefined)
                                 colorToUse = color;
+                        }
+                        else {
+                            colorToUse = { r: 128, g: 128, b: 128, a: 128 };
                         }
                     }
                 }
