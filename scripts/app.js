@@ -913,7 +913,7 @@ const prefixes = [
 //#region language related functions
 
 function getUserLang() {
-    var userLang = navigator.language || navigator.userLanguage;
+    var userLang = Intl.NumberFormat().resolvedOptions().locale || navigator.language;
     if (userLang.startsWith("fr-"))
         userLang = "fr";
     return userLang;
