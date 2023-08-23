@@ -914,8 +914,9 @@ const prefixes = [
 
 function getUserLang() {
     var userLang = Intl.NumberFormat().resolvedOptions().locale || navigator.language;
-    if (userLang.startsWith("fr-"))
-        userLang = "fr";
+    if (userLang.includes("-")) {
+        userLang = userLang.split('-')[0];
+    }
     return userLang;
 }
 
