@@ -2469,8 +2469,6 @@ async function visualizeFreights() {
                 }
             }
             domainMasterMarks = '[' + domainMasterMarks + ']';
-            console.log("domainMasterMarks: ");
-            console.log(domainMasterMarks);
             await $.ajax({
                 type: "GET",
                 url: odooURL + "/api/v1/search_read",

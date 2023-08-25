@@ -2422,6 +2422,9 @@ async function visualizeFreights() {
             },
             success: function (data) {
                 for (const record of data) {
+                    if (record.mark_id[0] == undefined || record.mark_id[0] == false) {
+                        continue;
+                    }
                     var freight = freights.find(x => x.FreightNumber == record.freight);
                     if (freight != undefined) {
                         if (record.mark_available)
