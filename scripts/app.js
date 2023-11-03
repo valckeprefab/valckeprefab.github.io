@@ -590,6 +590,12 @@ const textUi = {
         fr: "En cours d'afficher",
         en: "Visualizing"
     },
+    btnVisualizeGeneral:
+    {
+        nl: "Bezig met visualiseren",
+        fr: "En cours d'afficher",
+        en: "Visualizing"
+    },
     errorMsgNoAssemblySelection:
     {
         nl: "Labels plaatsen en Odooinfo opvragen kan enkel van objecten die geselecteerd werden met \"Assembly selection\".",
@@ -740,6 +746,12 @@ const textUi = {
         fr: "Coffrage",
         en: "Bin"
     },
+    textLocation:
+    {
+        nl: "Locatie",
+        fr: "Emplacement",
+        en: "Location"
+    },
     textProjectpart:
     {
         nl: "Projectonderdeel",
@@ -818,6 +830,12 @@ const textUi = {
         fr: "Action 6: Colorer les assemblages en fonction du couleur du béton",
         en: "Action 6: Color assemblies based on concrete colors"
     },
+    titleProduction:
+    {
+        nl: "Productie",
+        fr: "Production",
+        en: "Production"
+    },
     titleAddDirectionArrows:
     {
         nl: "Voeg montagepijlen en stramienen toe aan selectie",
@@ -841,6 +859,90 @@ const textUi = {
         nl: "Enkel van geselecteerde merken",
         fr: "Uniquement des assemblages sélectionnés",
         en: "Only of selected assemblies"
+    },
+    divTitleVisualize:
+    {
+        nl: "Visualiseren",
+        fr: "Visualiser",
+        en: "Visualize"
+    },
+    divProductionTitleTT:
+    {
+        nl: "Visualiseren",
+        fr: "Visualiser",
+        en: "Visualize"
+    },
+    divProductionTitleSlabs:
+    {
+        nl: "Gewelven",
+        fr: "Hourdis",
+        en: "Hollow core slabs"
+    },
+    divProductionTitlePanels:
+    {
+        nl: "Panelen",
+        fr: "Panneaux",
+        en: "Panels"
+    },
+    btnVisualizeTTText:
+    {
+        nl: "TT(T) breedtes",
+        fr: "TT(T) largeurs",
+        en: "TT(T) widths"
+    },
+    TTWidth:
+    {
+        nl: "TT breedte",
+        fr: "TT largeur",
+        en: "TT width"
+    },
+    TTTWidth:
+    {
+        nl: "TTT breedte",
+        fr: "TTT largeur",
+        en: "TTT width"
+    },
+    btnVisualizeWWidthText:
+    {
+        nl: "W breedtes",
+        fr: "W largeurs",
+        en: "W widths"
+    },
+    WWidth:
+    {
+        nl: "W breedte",
+        fr: "W largeur",
+        en: "W width"
+    },
+    btnVisualizeWProfile:
+    {
+        nl: "W profielen",
+        fr: "W profils",
+        en: "W profiles"
+    },
+    btnVisualizeWReinforcement:
+    {
+        nl: "W wapening",
+        fr: "W renforcement",
+        en: "W reinforcement"
+    },
+    btnVisualizePTypes:
+    {
+        nl: "P: prefixen",
+        fr: "P: préfixes",
+        en: "P: prefixes"
+    },
+    btnVisualizePFinish:
+    {
+        nl: "P: afwerking",
+        fr: "P: finition",
+        en: "P: finish"
+    },
+    btnVisualizePMaterial:
+    {
+        nl: "P: materialen",
+        fr: "P: matériaux",
+        en: "P: materials"
     },
 };
 
@@ -1728,6 +1830,7 @@ const popupContentTemplate = function () {
             $(`<p>${getTextById("textDateDemoulded")}: <span>${odooAssemblyData.DateDemoulded}</span></p>`),
             $(`<p>${getTextById("textDateProductionEnded")}: <span>${odooAssemblyData.DateProductionEnded}</span></p>`),
             $(`<p>${getTextById("textDateTransported")}: <span>${odooAssemblyData.DateTransported}</span></p>`),
+            $(`<p>${getTextById("textLocation")}: <span>${odooAssemblyData.Location}</span></p>`),
             $(`<p>${getTextById("textBin")}: <span>${odooAssemblyData.Bin}</span></p>`),
             $(`<p>${getTextById("textProjectpart")}: <span>${odooAssemblyData.Unit}</span></p>`),
             $(`<p>${getTextById("textMass")} [kg]: <span>${odooAssemblyData.Mass}</span></p>`),
@@ -2871,7 +2974,7 @@ async function GetProjectId(projectNumber) {
             headers: { "Authorization": "Bearer " + token },
             data: {
                 model: "project.project",
-                domain: '[["project_identifier", "=", "' + projectNumber + '"]]',
+                domain: '["&", "|", ["active","=",True], ["active","=",False], ["project_identifier", "=", "' + projectNumber + '"]]',
                 fields: '["id", "project_identifier"]',
             },
             success: function (data) {
@@ -3461,7 +3564,7 @@ async function colorWByProfile() {
 
 $('#btnVisualizePTypesDivId').dxButton({
     stylingMode: "outlined",
-    text: 'P: prefixen',
+    text: getTextById("btnVisualizePTypes"), 
     type: "success",
     template(data, container) {
         $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
@@ -3470,7 +3573,7 @@ $('#btnVisualizePTypesDivId').dxButton({
         }).dxLoadIndicator('instance');
     },
     onClick: async function (data) {
-        data.component.option('text', "Bezig met visualiseren");
+        data.component.option('text', getTextById("btnVisualizeGeneral"));
         buttonIndicator.option('visible', true);
 
         await colorPanelsByPrefix();
@@ -3478,13 +3581,13 @@ $('#btnVisualizePTypesDivId').dxButton({
         await showDirectionArrows();
 
         buttonIndicator.option('visible', false);
-        data.component.option('text', "P: prefixen");
+        data.component.option('text', getTextById("btnVisualizePTypes"));
     },
 });
 
 $('#btnVisualizePFinishDivId').dxButton({
     stylingMode: "outlined",
-    text: 'P: afwerking',
+    text: getTextById("btnVisualizePFinish"),
     type: "success",
     template(data, container) {
         $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
@@ -3493,7 +3596,7 @@ $('#btnVisualizePFinishDivId').dxButton({
         }).dxLoadIndicator('instance');
     },
     onClick: async function (data) {
-        data.component.option('text', "Bezig met visualiseren");
+        data.component.option('text', getTextById("btnVisualizeGeneral"));
         buttonIndicator.option('visible', true);
 
         await colorPanelsByFinish();
@@ -3501,13 +3604,13 @@ $('#btnVisualizePFinishDivId').dxButton({
         await showDirectionArrows();
 
         buttonIndicator.option('visible', false);
-        data.component.option('text', "P: afwerking");
+        data.component.option('text', getTextById("btnVisualizePFinish"));
     },
 });
 
 $('#btnVisualizePMaterialDivId').dxButton({
     stylingMode: "outlined",
-    text: 'P: materialen',
+    text: getTextById("btnVisualizePMaterial"),
     type: "success",
     template(data, container) {
         $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
@@ -3516,7 +3619,7 @@ $('#btnVisualizePMaterialDivId').dxButton({
         }).dxLoadIndicator('instance');
     },
     onClick: async function (data) {
-        data.component.option('text', "Bezig met visualiseren");
+        data.component.option('text', getTextById("btnVisualizeGeneral"));
         buttonIndicator.option('visible', true);
 
         await colorPanelsByMaterial();
@@ -3524,7 +3627,7 @@ $('#btnVisualizePMaterialDivId').dxButton({
         await showDirectionArrows();
 
         buttonIndicator.option('visible', false);
-        data.component.option('text', "P: materialen");
+        data.component.option('text', getTextById("btnVisualizePMaterial"));
     },
 });
 
@@ -3927,7 +4030,7 @@ $("#btnGetOdooInfoDivId").dxButton({
                         model: "trimble.connect.main",
                         domain: domainTrimbleConnectMain,
                         fields: `["id", "name", "mark_id", "rank", "date_drawn", "date_fab_planned", "date_fab_start", "date_fab_end", "date_fab_dem", 
-                            "date_transported", "date_transported", "mark_available", "location_bin", "freight", "unit_id"]`,
+                            "date_transported", "date_transported", "mark_available", "location_bin", "freight", "unit_id", "mark_location_id"]`,
                     },
                     success: function (odooData) {
                         //console.log("trimble.connect.main");
@@ -3955,9 +4058,9 @@ $("#btnGetOdooInfoDivId").dxButton({
                                     DateDemoulded: record.date_fab_dem ? getDateShortString(getDateFromString(record.date_fab_dem)) : "",
                                     DateTransported: record.date_transported ? getDateShortString(getDateFromString(record.date_transported)) : "",
                                     AvailableForTransport: record.mark_available,
-                                    Bin: record.location_bin[1],
+                                    Bin: record.location_bin ? record.location_bin[1] : "/",
                                     Freight: record.freight == -1 ? '/' : record.freight,
-                                    Unit: record.unit_id[1],
+                                    Unit: record.unit_id ? record.unit_id[1] : "/",
                                     Mass: 0,
                                     PosNmbr: 0,
                                     Prefix: "",
@@ -3969,6 +4072,7 @@ $("#btnGetOdooInfoDivId").dxButton({
                                     CableLength: "",
                                     Finish: "",
                                     Material: "",
+                                    Location: record.mark_location_id ? record.mark_location_id[1] : "/",
                                 });
                             cntr++;
                             recordsAdded++;
@@ -4340,7 +4444,7 @@ const captureScreenshot = async () => {
 
 $("#btnVisualizeTTDivId").dxButton({
     stylingMode: "outlined",
-    text: "TT(T) breedtes",
+    text: getTextById("btnVisualizeTTText"),
     type: "success",
     template(data, container) {
         $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
@@ -4349,20 +4453,20 @@ $("#btnVisualizeTTDivId").dxButton({
         }).dxLoadIndicator('instance');
     },
     onClick: async function (data) {
-        data.component.option('text', 'Bezig met visualiseren');
+        data.component.option('text', getTextById("btnVisualizeGeneral"));
         buttonIndicator.option('visible', true);
 
         var standardTTWidth = 2400;
         await colorNonStandardWidth('TT', standardTTWidth);
         var legendItems = [
-            { Text: `TT breedte = ${standardTTWidth}`, Color: { r: 0, g: 255, b: 0 } },
-            { Text: `TT breedte < ${standardTTWidth}`, Color: { r: 255, g: 0, b: 0 } },
+            { Text: `${getTextById(TTWidth)} = ${standardTTWidth}`, Color: { r: 0, g: 255, b: 0 } },
+            { Text: `${getTextById(TTWidth)} < ${standardTTWidth}`, Color: { r: 255, g: 0, b: 0 } },
         ];
 
         var standardTTTWidth = 1800;
         await colorNonStandardWidth('TTT', 1800, false);
-        legendItems.push({ Text: `TTT breedte = ${standardTTTWidth}`, Color: { r: 0, g: 255, b: 0 } });
-        legendItems.push({ Text: `TTT breedte < ${standardTTTWidth}`, Color: { r: 255, g: 0, b: 0 } });
+        legendItems.push({ Text: `${getTextById(TTTWidth)} = ${standardTTTWidth}`, Color: { r: 0, g: 255, b: 0 } });
+        legendItems.push({ Text: `${getTextById(TTTWidth)} < ${standardTTTWidth}`, Color: { r: 255, g: 0, b: 0 } });
 
         await showDirectionArrows();
 
@@ -4373,13 +4477,13 @@ $("#btnVisualizeTTDivId").dxButton({
         popup.show();
 
         buttonIndicator.option('visible', false);
-        data.component.option('text', 'TT(T) breedtes');
+        data.component.option('text', getTextById("btnVisualizeTTText"));
     },
 });
 
 $("#btnVisualizeWWidthDivId").dxButton({
     stylingMode: "outlined",
-    text: "W breedtes",
+    text: getTextById("btnVisualizeWWidthText"),
     type: "success",
     template(data, container) {
         $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
@@ -4388,14 +4492,14 @@ $("#btnVisualizeWWidthDivId").dxButton({
         }).dxLoadIndicator('instance');
     },
     onClick: async function (data) {
-        data.component.option('text', 'Bezig met visualiseren');
+        data.component.option('text', getTextById("btnVisualizeGeneral"));
         buttonIndicator.option('visible', true);
 
         var standardWWidth = 1200;
         await colorNonStandardWidth('W', standardWWidth);
         var legendItems = [
-            { Text: `W breedte = ${standardWWidth}`, Color: { r: 0, g: 255, b: 0 } },
-            { Text: `W breedte < ${standardWWidth}`, Color: { r: 255, g: 0, b: 0 } },
+            { Text: `${getTextById(WWidth)} = ${standardWWidth}`, Color: { r: 0, g: 255, b: 0 } },
+            { Text: `${getTextById(WWidth)} < ${standardWWidth}`, Color: { r: 255, g: 0, b: 0 } },
         ];
 
         await showDirectionArrows();
@@ -4407,13 +4511,13 @@ $("#btnVisualizeWWidthDivId").dxButton({
         popup.show();
 
         buttonIndicator.option('visible', false);
-        data.component.option('text', 'W breedtes');
+        data.component.option('text', getTextById("btnVisualizeWWidthText"));
     },
 });
 
 $("#btnVisualizeWProfileDivId").dxButton({
     stylingMode: "outlined",
-    text: "W profielen",
+    text: getTextById("btnVisualizeWProfile"),
     type: "success",
     template(data, container) {
         $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
@@ -4422,7 +4526,7 @@ $("#btnVisualizeWProfileDivId").dxButton({
         }).dxLoadIndicator('instance');
     },
     onClick: async function (data) {
-        data.component.option('text', "Bezig met visualiseren");
+        data.component.option('text', getTextById("btnVisualizeGeneral"));
         buttonIndicator.option('visible', true);
 
         await colorWByProfile();
@@ -4430,13 +4534,13 @@ $("#btnVisualizeWProfileDivId").dxButton({
         await showDirectionArrows();
 
         buttonIndicator.option('visible', false);
-        data.component.option('text', 'W profielen');
+        data.component.option('text', getTextById("btnVisualizeWProfile"));
     },
 });
 
 $("#btnVisualizeWReinforcementDivId").dxButton({
     stylingMode: "outlined",
-    text: "W wapening",
+    text: getTextById("btnVisualizeWReinforcement"),
     type: "success",
     template(data, container) {
         $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
@@ -4445,7 +4549,7 @@ $("#btnVisualizeWReinforcementDivId").dxButton({
         }).dxLoadIndicator('instance');
     },
     onClick: async function (data) {
-        data.component.option('text', 'Bezig met visualiseren');
+        data.component.option('text', getTextById("btnVisualizeGeneral"));
         buttonIndicator.option('visible', true);
 
         await colorWByReinforcement();
@@ -4453,7 +4557,7 @@ $("#btnVisualizeWReinforcementDivId").dxButton({
         await showDirectionArrows();
 
         buttonIndicator.option('visible', false);
-        data.component.option('text', 'W wapening');
+        data.component.option('text', getTextById("btnVisualizeWReinforcement"));
     },
 });
 
