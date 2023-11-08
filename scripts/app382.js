@@ -5324,6 +5324,37 @@ async function selectDirectionArrows() {
     }
 }
 
+$("#btnShowBoltsDivId").dxButton({
+    stylingMode: "outlined",
+    text: "Show Bolts",
+    type: "success",
+    template(data, container) {
+        $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+        buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+            visible: false,
+        }).dxLoadIndicator('instance');
+    },
+    onClick: async function (data) {
+        try {
+            const mobjectsArrBolts = await API.viewer.getObjects({ parameter: { class: "IFCMECHANICALFASTENER" } });
+            if (mobjectsArrBolts.length != undefined && mobjectsArrBolts.length > 0) {
+                for (var mobjects of mobjectsArrBolts) {
+                    const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+                    console.log(objectsRuntimeIds);
+                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true });
+                    var selector = { modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] };
+                    await API.viewer.setSelection(selector, "add");
+                }
+            }
+        }
+        catch (e) {
+            console.log(e);
+            DevExpress.ui.notify(e);
+        }
+    },
+});
+
+
 $("#btnShowKnownPrefixesDivId").dxButton({
     stylingMode: "outlined",
     text: getTextById("btnShowKnownPrefixes"),
@@ -5452,18 +5483,6 @@ $("#btnShowKnownPrefixesDivId").dxButton({
                     await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true });
                 }
             }
-
-
-            //const mobjectsArrBolts = await API.viewer.getObjects({ parameter: { class: "IFCMECHANICALFASTENER" } });
-            //if (mobjectsArrBolts.length != undefined && mobjectsArrBolts.length > 0) {
-            //    for (var mobjects of mobjectsArrBolts) {
-            //        const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-            //        console.log(objectsRuntimeIds);
-            //        await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true });
-            //        var selector = { modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] };
-            //        await API.viewer.setSelection(selector, "add");
-            //    }
-            //}
         }
         catch (e) {
             console.log(e);
