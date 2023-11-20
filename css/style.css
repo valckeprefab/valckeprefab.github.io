@@ -142,6 +142,8 @@ body .dx-popup-content .custom-item {
 
 table th, table td {
     white-space: nowrap;
+    border: 1px solid;
+    border-collapse: collapse;
 }
 
 .v-transport {
