@@ -5116,12 +5116,17 @@ $("#btnSetColorFromStatusDivId").dxButton({
             //console.log(unprocessedAssemblies);
             //console.log("Finished: Processing steel pack info");
 
+            console.log("Odoo part finished");
+
+            console.log("Getting IFCELEMENTASSEMBLY start");
             const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
+            console.log("Getting IFCELEMENTASSEMBLY end");
 
             //runtimeIds = [17062, 17065, ...] = ids used by viewer
             //objectIds = compressed IFC guids = ['28DCGNPlH98vcQNyNhB4sQ', '0fKOmd_6PFgOiexu4H1vtU', ...] = can be used to map runtimeId to original IFC
 
             //find objects by assemblypos and add to status objects
+            console.log("find objects by assemblypos and add to status objects start");
             var sliceLength = 5000;
             for (const mobjects of mobjectsArr) {
                 var modelId = mobjects.modelId;
@@ -5156,35 +5161,45 @@ $("#btnSetColorFromStatusDivId").dxButton({
 
                 for (const tempObjects of tempObjectRuntimeIdsPerStatus) {
                     if (tempObjects.ObjectRuntimeIds.length > 0) {
-                        const tempObjectsIfcIds = await API.viewer.convertToObjectIds(modelId, tempObjects.ObjectRuntimeIds);
-                        var objectStatus = objectStatuses.find(o => o.Status === tempObjects.Status);
-                        objectStatus.Guids = objectStatus.Guids.concat(tempObjectsIfcIds.map(c => Guid.fromCompressedToFull(c)));
-                        objectStatus.CompressedIfcGuids = objectStatus.CompressedIfcGuids.concat(tempObjectsIfcIds);
+                        for (var i = 0; i < tempObjects.ObjectRuntimeIds.length; i += sliceLength) {
+                            var slicedObjectRuntimeIds = tempObjects.ObjectRuntimeIds.slice(i, i + sliceLength);
+                            const tempObjectsIfcIds = await API.viewer.convertToObjectIds(modelId, slicedObjectRuntimeIds);
+                            var objectStatus = objectStatuses.find(o => o.Status === tempObjects.Status);
+                            objectStatus.Guids = objectStatus.Guids.concat(tempObjectsIfcIds.map(c => Guid.fromCompressedToFull(c)));
+                            objectStatus.CompressedIfcGuids = objectStatus.CompressedIfcGuids.concat(tempObjectsIfcIds);
+                        }
                     }
                 }
             }
+            console.log("find objects by assemblypos and add to status objects end");
 
+            console.log("set colors start");
             var objectStatusModelled = objectStatuses.find(o => o.Status === StatusModelled);
             var unplannedIfcIds = [];
+            var compressedIfcGuidsWithKnownStatus = [];
+            for (const objStatus of objectStatuses) {
+                compressedIfcGuidsWithKnownStatus = compressedIfcGuidsWithKnownStatus.concat(objStatus.CompressedIfcGuids);
+            }
+            var compressedIfcGuidsWithKnownStatusSet = new Set(compressedIfcGuidsWithKnownStatus);
             for (const mobjects of mobjectsArr) {
                 var modelId = mobjects.modelId;
                 const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-                const objectsIfcIds = await API.viewer.convertToObjectIds(modelId, objectsRuntimeIds);
-
-                var compressedIfcGuidsWithKnownStatus = [];
-                for (const objStatus of objectStatuses) {
-                    compressedIfcGuidsWithKnownStatus = compressedIfcGuidsWithKnownStatus.concat(objStatus.CompressedIfcGuids);
+                for (var i = 0; i < objectsRuntimeIds.length; i += sliceLength) {
+                    var objectsRuntimeIdsSliced = objectsRuntimeIds.slice(i, i + sliceLength);
+                    const objectsIfcIds = await API.viewer.convertToObjectIds(modelId, objectsRuntimeIdsSliced);
+                    unplannedIfcIds = unplannedIfcIds.concat(objectsIfcIds.filter(x => !compressedIfcGuidsWithKnownStatusSet.has(x)));
                 }
-                var compressedIfcGuidsWithKnownStatusSet = new Set(compressedIfcGuidsWithKnownStatus);
-
-                unplannedIfcIds = unplannedIfcIds.concat(objectsIfcIds.filter(x => !compressedIfcGuidsWithKnownStatusSet.has(x)));
-
                 for (const objStatus of objectStatuses) {
                     var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, objStatus.CompressedIfcGuids);
-                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: objStatus.Color });
+                    for (var i = 0; i < runtimeIds.length; i += sliceLength) {
+                        var runtimeIdsSliced = runtimeIds.slice(i, i + sliceLength);
+                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsSliced }] }, { color: objStatus.Color });
+                    }
                 }
             }
+            console.log("set colors end");
 
+            console.log("process prefix BESTAAND start");
             //will also include existing assemblies
             objectStatusModelled.CompressedIfcGuids = Array.from(unplannedIfcIds);
             objectStatusModelled.Guids = objectStatusModelled.CompressedIfcGuids.map(c => Guid.fromCompressedToFull(c));
@@ -5207,7 +5222,9 @@ $("#btnSetColorFromStatusDivId").dxButton({
 
                 await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: objectStatusExisting.Color });
             }
+            console.log("process prefix BESTAAND end");
 
+            console.log("process modelled assemblies start");
             for (const mobjects of mobjectsArr) {
                 var modelId = mobjects.modelId;
                 const objectsRuntimeIds = mobjects.objects.map(o => o.id);
@@ -5217,10 +5234,12 @@ $("#btnSetColorFromStatusDivId").dxButton({
 
                 await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: filteredRuntimeIds }] }, { color: objectStatusModelled.Color });
             }
+            console.log("process modelled assemblies end");
 
             modelIsColored = true;
         }
         catch (e) {
+            console.log(e);
             DevExpress.ui.notify(e, "info", 5000);
         }
         buttonIndicator.option('visible', false);
