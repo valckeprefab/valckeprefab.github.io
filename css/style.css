@@ -144,7 +144,7 @@ table th, table td {
     white-space: nowrap;
 }
 
-table.tableLegend, table.tableLegend th, table.tableLegend td {
+table.tablePopup, table.tablePopup th, table.tablePopup td {
     white-space: nowrap;
     border: 1px solid;
     border-collapse: collapse;
