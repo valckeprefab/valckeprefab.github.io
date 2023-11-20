@@ -598,9 +598,9 @@ const textUi = {
     },
     errorMsgNoAssemblySelection:
     {
-        nl: "Labels plaatsen en Odooinfo opvragen kan enkel van objecten die geselecteerd werden met \"Assembly selection\".",
-        fr: "Placer des étiquettes et la récupération d'informations Odoo ne peuvent être effectuées que pour les objets sélectionnés avec \"Sélection d'assemblage\".",
-        en: "Adding labels and showing Odoo info can only be done of objects that were selected with \"Assembly selection\" on."
+        nl: "Deze plugin werkt enkel met objecten die geselecteerd werden met \"Assembly selection\".",
+        fr: "Cette plugin ne fonctionne qu'avec les objets sélectionnés avec \"Sélection d'assemblage\".",
+        en: "This plugin only works with objects that were selected with \"Assembly selection\" on."
     },
     btnShowTitles:
     {
@@ -733,6 +733,12 @@ const textUi = {
         nl: "Datum productie beëindigd",
         fr: "Date production terminée",
         en: "date production ended"
+    },
+    textDateAvailable:
+    {
+        nl: "Datum beschikbaar",
+        fr: "Date disponible",
+        en: "Date available"
     },
     textDateTransported:
     {
@@ -944,6 +950,18 @@ const textUi = {
         fr: "P: matériaux",
         en: "P: materials"
     },
+    errorNoResultForSearchstring:
+    {
+        nl: "Geen resultaten gevonden voor opgegeven zoekterm.",
+        fr: "Aucun résultat n'a été trouvé pour la terme de recherche.",
+        en: "No results found for given searchstring."
+    },
+    errorSearchStringContainsSteel:
+    {
+        nl: "Stalen elementen kunnen niet via Odoo gegevens geselecteerd. Gebruik 'Selecteer merken o.b.v. gekozen filter'.",
+        fr: "Éléments en acier ne peuvent pas être sélectionnés via les données Odoo. Utiliser 'Sélectionnez assemblages en fonction de filtre sélectionné'.",
+        en: "Steel elements cannot be selected based on Odoo Data. Use 'Select assemblies by selected filter' instead."
+    },
 };
 
 var prefixDetails = [];
@@ -1131,11 +1149,11 @@ async function addTextMarkups() {
             await API.markup.addTextMarkup(JSON.parse(jsonArray));
         }
         else {
-            DevExpress.ui.notify("No relevant assemblies found to add labels.");
+            DevExpress.ui.notify("No relevant assemblies found to add labels.", "info", 5000);
         }
     }
     catch (e) {
-        DevExpress.ui.notify(e);
+        DevExpress.ui.notify(e, "info", 5000);
     }
 }
 
@@ -1331,7 +1349,7 @@ async function fillPrefixDetails() {
         data: {
             model: "cust.prefix_to_ce",
             domain: '[["id", ">", "-1"]]',
-            fields: '["id", "name", "product_id", "shortcode"]',
+            fields: '["id", "name", "product_id", "shortcode", "material_type"]',
         },
         success: function (data) {
             for (var record of data) {
@@ -1340,6 +1358,7 @@ async function fillPrefixDetails() {
                     ShortPrefix: record.shortcode,
                     Id: record.id,
                     ProductId: record.product_id[0],
+                    MaterialType: record.material_type,
                 });
             }
         }
@@ -1498,7 +1517,7 @@ function getDateFromString(s) {
 function getDateShortString(date) {
     var mm = date.getMonth() + 1; // getMonth() is zero-based
     var dd = date.getDate();
-    var dayName = date.toLocaleDateString(getUserLang(), { weekday: 'long' });
+    var dayName = date.toLocaleDateString(getUserLang(), { weekday: 'short' });
     return dayName + " " + [(dd > 9 ? '' : '0') + dd, (mm > 9 ? '' : '0') + mm, date.getFullYear(),].join('-');
 };
 
@@ -1710,6 +1729,10 @@ function getOdooSlipUrl(slipId) {
     return `${odooURL}/web#id=${slipId}&action=3552&model=vpb.delivery.slip&view_type=form&cids=1&menu_id=2270`;
 }
 
+function getOdooSteelPackUrl(packId) {
+    return `${odooURL}/web#id=${packId}&action=3350&model=project.mark_steel_pack&view_type=form&cids=1&menu_id=2270`;
+}
+
 function getPropSelector() {
     return {
         parameter: {
@@ -1803,7 +1826,7 @@ async function onlyShowStatus(status) {
         }
     }
     catch (e) {
-        DevExpress.ui.notify(e);
+        DevExpress.ui.notify(e, "info", 5000);
     }
 }
 
@@ -1816,33 +1839,53 @@ function pad(pad, str) {
 const popupContentTemplate = function () {
     if (odooAssemblyData != null && odooAssemblyData != undefined) {
         var odooContent = $(`<p><a href="${getOdooAssemblyUrl(odooAssemblyData.OdooPmmId)}" target="_blank" rel="noopener noreferrer">Odoo</a>`);
-        odooContent.append('- Tekeningen: ');
+        odooContent.append(' - Tekeningen: ');
         for (var url of odooAssemblyData.DrawingsUrls) {
             odooContent.append($(`<a href="${url}" target="_blank" rel="noopener noreferrer"><img src="images/Drawing.png" width="16" height="16"></a>`));
         }
         odooContent.append(`</p>`);
-        var content = $('<div>').append(
-            odooContent,
-            $(`<p>${getTextById("textNaam")}: <span>${odooAssemblyData.AssemblyName}</span></p>`),
-            $(`<p>${getTextById("textDateDrawn")}: <span>${odooAssemblyData.DateDrawn}</span></p>`),
-            $(`<p>${getTextById("textDatePlanned")}: <span>${odooAssemblyData.DateProductionPlanned}</span></p>`),
-            $(`<p>${getTextById("textDateProductionStarted")}: <span>${odooAssemblyData.DateProductionStarted}</span></p>`),
-            $(`<p>${getTextById("textDateDemoulded")}: <span>${odooAssemblyData.DateDemoulded}</span></p>`),
-            $(`<p>${getTextById("textDateProductionEnded")}: <span>${odooAssemblyData.DateProductionEnded}</span></p>`),
-            $(`<p>${getTextById("textDateTransported")}: <span>${odooAssemblyData.DateTransported}</span></p>`),
-            $(`<p>${getTextById("textLocation")}: <span>${odooAssemblyData.Location}</span></p>`),
-            $(`<p>${getTextById("textBin")}: <span>${odooAssemblyData.Bin}</span></p>`),
-            $(`<p>${getTextById("textProjectpart")}: <span>${odooAssemblyData.Unit}</span></p>`),
-            $(`<p>${getTextById("textMass")} [kg]: <span>${odooAssemblyData.Mass}</span></p>`),
-            $(`<p>${getTextById("textVolume")} [m³]: <span>${odooAssemblyData.Volume}</span></p>`),
-            $(`<p>${getTextById("textLength")} [mm]: <span>${odooAssemblyData.Length}</span></p>`),
-            $(`<p>${getTextById("textProfile")}: <span>${odooAssemblyData.Profile}</span></p>`),
-            $(`<p>${getTextById("textFreight")}: <span>${odooAssemblyData.Freight}</span></p>`),
-            $(`<p>${getTextById("textFinish")}: <span>${odooAssemblyData.Finish}</span></p>`),
-            $(`<p>${getTextById("textMaterial")}: <span>${odooAssemblyData.Material}</span></p>`),
-        );
-        if (odooAssemblyData.CableLength != undefined && odooAssemblyData.CableLength !== "") {
-            content.append($(`<p>Cable length: <span>${odooAssemblyData.CableLength}</span></p>`));
+        if (odooAssemblyData.PlanningType === "TrimbleConnect") {
+            var content = $('<div>').append(
+                odooContent,
+                $(`<p>${getTextById("textNaam")}: <span>${odooAssemblyData.AssemblyName}</span></p>`),
+                $(`<p>${getTextById("textDateDrawn")}: <span>${odooAssemblyData.DateDrawn}</span></p>`),
+                $(`<p>${getTextById("textDatePlanned")}: <span>${odooAssemblyData.DateProductionPlanned}</span></p>`),
+                $(`<p>${getTextById("textDateProductionStarted")}: <span>${odooAssemblyData.DateProductionStarted}</span></p>`),
+                $(`<p>${getTextById("textDateDemoulded")}: <span>${odooAssemblyData.DateDemoulded}</span></p>`),
+                $(`<p>${getTextById("textDateProductionEnded")}: <span>${odooAssemblyData.DateProductionEnded}</span></p>`),
+                $(`<p>${getTextById("textDateTransported")}: <span>${odooAssemblyData.DateTransported}</span></p>`),
+                $(`<p>${getTextById("textLocation")}: <span>${odooAssemblyData.Location}</span></p>`),
+                $(`<p>${getTextById("textBin")}: <span>${odooAssemblyData.Bin}</span></p>`),
+                $(`<p>${getTextById("textProjectpart")}: <span>${odooAssemblyData.Unit}</span></p>`),
+                $(`<p>${getTextById("textMass")} [kg]: <span>${odooAssemblyData.Mass}</span></p>`),
+                $(`<p>${getTextById("textVolume")} [m³]: <span>${odooAssemblyData.Volume}</span></p>`),
+                $(`<p>${getTextById("textLength")} [mm]: <span>${odooAssemblyData.Length}</span></p>`),
+                $(`<p>${getTextById("textProfile")}: <span>${odooAssemblyData.Profile}</span></p>`),
+                $(`<p>${getTextById("textFreight")}: <span>${odooAssemblyData.Freight}</span></p>`),
+                $(`<p>${getTextById("textFinish")}: <span>${odooAssemblyData.Finish}</span></p>`),
+                $(`<p>${getTextById("textMaterial")}: <span>${odooAssemblyData.Material}</span></p>`),
+            );
+            if (odooAssemblyData.CableLength != undefined && odooAssemblyData.CableLength !== "") {
+                content.append($(`<p>Cable length: <span>${odooAssemblyData.CableLength}</span></p>`));
+            }
+        }
+        else if (odooAssemblyData.PlanningType === "Steel") {
+            var htmlPacks = `<p><table class="tablePopup"><tr><th>Pack</th><th>Locatie</th><th>${getTextById("textDateAvailable")}</th><th>${getTextById("textDateTransported")}</th></tr>`;
+            for (var pack of odooAssemblyData.SteelPacks) {
+                var url = `<a href="${getOdooSteelPackUrl(pack.OdooId)}" target="_blank" rel="noopener noreferrer">${pack.ShortName}</a>`;
+                htmlPacks += `<tr><td>${url}</td><td>${pack.Location}</td><td>${pack.DateReady}</td><td>${pack.DateDone}</td></tr>`;
+            }
+            htmlPacks += "</table></p>";
+            var content = $('<div>').append(
+                odooContent,
+                $(`<p>${getTextById("textNaam")}: <span>${odooAssemblyData.AssemblyName}</span></p>`),
+                $(`<p>${getTextById("textDateDrawn")}: <span>${odooAssemblyData.DateDrawn}</span></p>`),
+                $(`<p>${getTextById("textMass")} [kg]: <span>${odooAssemblyData.Mass}</span></p>`),
+                $(`<p>${getTextById("textLength")} [mm]: <span>${odooAssemblyData.Length}</span></p>`),
+                $(`<p>${getTextById("textProfile")}: <span>${odooAssemblyData.Profile}</span></p>`),
+                $(`<p>${getTextById("textMaterial")}: <span>${odooAssemblyData.Material}</span></p>`),
+                htmlPacks,
+            );
         }
         return content;
     }
@@ -1923,7 +1966,7 @@ async function setVisibility(status, visibility) {
         }
     }
     catch (e) {
-        DevExpress.ui.notify(e);
+        DevExpress.ui.notify(e, "info", 5000);
     }
 }
 
@@ -1942,7 +1985,7 @@ async function selectionChanged(data) {
         await checkAssemblySelection();
     }
     catch (e) {
-        DevExpress.ui.notify(e);
+        DevExpress.ui.notify(e, "info", 5000);
     }
 
     var mySelectionId = ++lastSelectionId;
@@ -2494,7 +2537,7 @@ async function visualizeConcreteFinishes() {
         popup.show();
     }
     catch (e) {
-        DevExpress.ui.notify(e);
+        DevExpress.ui.notify(e, "info", 5000);
     }
 }
 
@@ -2721,11 +2764,11 @@ async function visualizeFreights() {
             await API.markup.addTextMarkup(JSON.parse(jsonArray));
         }
         else {
-            DevExpress.ui.notify("Geen vrachten gevonden");
+            DevExpress.ui.notify("Geen vrachten gevonden", "info", 5000);
         }
     }
     catch (e) {
-        DevExpress.ui.notify(e);
+        DevExpress.ui.notify(e, "info", 5000);
     }
     
 }
@@ -3060,7 +3103,7 @@ var checkBoxVisualizeFreightsOnlySelected = $('#checkedVisualizeFreightsOnlySele
 
 const popup = $('#popup').dxPopup({
     contentTemplate: popupContentTemplate,
-    width: 300,
+    width: 'auto',
     height: 560,
     container: '.dx-viewport',
     showTitle: true,
@@ -3126,7 +3169,7 @@ const prefixSelectionTagBox = $('#prefixSelection').dxTagBox({
     showSelectionControls: true,
     applyValueMode: 'useButtons',
     //onValueChanged: function () {
-    //    DevExpress.ui.notify("The button was clicked");
+    //    DevExpress.ui.notify("The button was clicked", "info", 5000);
     //},
 });
 
@@ -3948,7 +3991,7 @@ $("#btnCreateSlipDivId").dxButton({
             await API.viewer.setSelection(undefined, 'remove');
         }
         catch (e) {
-            DevExpress.ui.notify(e);
+            DevExpress.ui.notify(e, "info", 5000);
         }
 
         buttonIndicator.option('visible', false);
@@ -3967,6 +4010,7 @@ $("#btnGetOdooInfoDivId").dxButton({
         }).dxLoadIndicator('instance');
     },
     onClick: async function (data) {
+        //qsdfqsdf
         data.component.option('text', getTextById("btnGetOdooInfo"));
         buttonIndicator.option('visible', true);
         try {
@@ -3978,12 +4022,15 @@ $("#btnGetOdooInfoDivId").dxButton({
                 modelObjectIds: selection
             };
             const mobjectsArr = await API.viewer.getObjects(selector);
+            var selectedGuidsPerModelId = [];
             var selectedGuids = [];
             for (const mobjects of mobjectsArr.filter(x => x.objects.length > 0)) {
                 const objectRuntimeIds = mobjects.objects.map(o => o.id); //o.id = runtimeId = number
                 const objectIds = await API.viewer.convertToObjectIds(mobjects.modelId, objectRuntimeIds);//objectIds = compressed ifc ids
                 //console.log(objectRuntimeIds);
-                selectedGuids.push(...objectIds.map(x => Guid.fromCompressedToFull(x)));
+                var guids = objectIds.map(x => Guid.fromCompressedToFull(x));
+                selectedGuidsPerModelId.push({ modelId: mobjects.modelId, Guids: guids });
+                selectedGuids.push(...guids);
             }
 
             if (selectedGuids.length == 0)
@@ -4022,6 +4069,7 @@ $("#btnGetOdooInfoDivId").dxButton({
                 //console.log(domainTrimbleConnectMain);
                 var domainProjectMarks = "";
                 var recordsAdded = 0;
+                var cntr = 0;
                 await $.ajax({
                     type: "GET",
                     url: odooURL + "/api/v1/search_read",
@@ -4035,7 +4083,6 @@ $("#btnGetOdooInfoDivId").dxButton({
                     success: function (odooData) {
                         //console.log("trimble.connect.main");
                         //console.log(odooData);
-                        var cntr = 0;
                         for (var record of odooData) {
                             var filterArrStr = '["id", "=", "' + record.mark_id[0] + '"]';
                             if (cntr > 0) {
@@ -4046,6 +4093,7 @@ $("#btnGetOdooInfoDivId").dxButton({
                             }
                             selectedAssemblies.push(
                                 {
+                                    PlanningType: "TrimbleConnect",
                                     OdooTcmId: record.id,
                                     Guid: record.name,
                                     OdooPmmId: record.mark_id[0],
@@ -4068,7 +4116,6 @@ $("#btnGetOdooInfoDivId").dxButton({
                                     Length: 0,
                                     Volume: 0,
                                     Profile: "",
-                                    DrawingsUrls: [],
                                     CableLength: "",
                                     Finish: "",
                                     Material: "",
@@ -4077,11 +4124,111 @@ $("#btnGetOdooInfoDivId").dxButton({
                             cntr++;
                             recordsAdded++;
                         }
-                        //don't think project_id would make this query faster since it's an exact id is given
-                        domainProjectMarks = "[" + domainProjectMarks + "]";
                     }
                 });
+
+                //If there are selected assemblies that weren't found in the planning db
+                if (selectedAssemblies.length < selectedGuids.length) {
+                    //Get GUID's that weren't found in trimble.connect.main
+                    //Get their MERKNUMMER and PREFIX
+                    var unknownSelectedAssemblyPositions = [];
+                    var processedGuids = new Set(selectedAssemblies.map(o => o.Guid));
+                    for (const guidsPerModelId of selectedGuidsPerModelId) {
+                        var unprocessedGuids = guidsPerModelId.Guids.filter(x => !processedGuids.has(x));
+                        if (unprocessedGuids.length == 0) continue;
+                        var unprocessedCompressedIfcIds = unprocessedGuids.map(x => Guid.fromFullToCompressed(x)); //objectIds = compressed ifc ids
+                        var runtimeIds = await API.viewer.convertToObjectRuntimeIds(guidsPerModelId.modelId, unprocessedCompressedIfcIds);
+                        var objPropertiesArr = await API.viewer.getObjectProperties(guidsPerModelId.modelId, runtimeIds);
+                        for (const objproperties of objPropertiesArr) {
+                            var defaultProperties = objproperties.properties.find(p => p.name === "Default");
+                            if (defaultProperties == undefined)
+                                continue;
+                            var prefixProperty = defaultProperties.properties.find(x => x.name === "MERKPREFIX");
+                            var assemblyPosProperty = defaultProperties.properties.find(x => x.name === "MERKNUMMER");
+                            var guidProperty = defaultProperties.properties.find(x => x.name === "GUID");
+                            if (prefixProperty == undefined || assemblyPosProperty == undefined || guidProperty == undefined)
+                                continue;
+                            unknownSelectedAssemblyPositions.push({
+                                Prefix: prefixProperty.value,
+                                AssemblyPos: assemblyPosProperty.value,
+                                Guid: guidProperty.value,
+                            });
+                        }
+                    }
+                    //Check if PREFIX is a steel prefix
+                    var steelPrefixes = prefixDetails.filter(x => x.MaterialType === "staal").map(x => x.name);
+                    var regex = new RegExp(steelPrefixes.join("|"), "i"); //regex instead of includes, includes is case sensitive, this regex is not
+                    var steelAssemblies = unknownSelectedAssemblyPositions.filter(a => regex.test(a.Prefix));
+                    //If GUID is a steel assembly => get info from steel info tables
+
+                    if (steelAssemblies.length > 0) {
+                        for (var steelAssembly of steelAssemblies) {
+                            var selectedAssembly = {};
+                            await $.ajax({
+                                type: "GET",
+                                url: odooURL + "/api/v1/search_read",
+                                headers: { "Authorization": "Bearer " + token },
+                                data: {
+                                    model: "project.master_marks",
+                                    domain: '[["project_id", "=", ' + projectId + '],["mark_ref", "=", "' + steelAssembly.AssemblyPos + '"]]',
+                                    fields: '["id", "name", "create_date"]',
+                                },
+                                success: function (odooData) {
+                                    //console.log("project.master_marks");
+                                    //console.log(odooData);
+                                    if (odooData.length > 0) {
+                                        var record = odooData[0];
+                                        selectedAssembly.OdooPmmId = record.id;
+                                        selectedAssembly.OdooCode = record.name;
+                                        selectedAssembly.Guid = steelAssembly.Guid;
+                                        selectedAssembly.DateDrawn = record.create_date ? getDateShortString(getDateFromString(record.create_date)) : "";
+                                        selectedAssembly.Rank = "x";
+                                        selectedAssembly.PlanningType = "Steel";
+                                        selectedAssembly.SteelPacks = [];
+                                    }
+                                }
+                            });
+
+                            var filterArrStr = '["id", "=", "' + selectedAssembly.OdooPmmId + '"]';
+                            if (cntr > 0) {
+                                domainProjectMarks = '"|", ' + filterArrStr + ',' + domainProjectMarks;
+                            }
+                            else {
+                                domainProjectMarks = filterArrStr;
+                            }
+                            await $.ajax({
+                                type: "GET",
+                                url: odooURL + "/api/v1/search_read",
+                                headers: { "Authorization": "Bearer " + token },
+                                data: {
+                                    model: "project.mark_steel_pack",
+                                    domain: '[["mark_ids.mark_id.id", "=", "' + selectedAssembly.OdooPmmId + '"]]',
+                                    fields: '["id", "mark_ids", "date_ready", "date_done", "location", "name"]', //mark_id = pack item id
+                                },
+                                success: function (odooData) {
+                                    for (var record of odooData) {
+                                        var steelPack = {
+                                            OdooId: record.id,
+                                            Location: record.location ? record.location : "/",
+                                            Name: record.name,
+                                            ShortName: parseInt(record.name.split('/')[1]),
+                                        };
+                                        steelPack.DateReady = record.date_ready ? getDateShortString(getDateFromString(record.date_ready)) : "";//==date available
+                                        steelPack.DateDone = record.date_done ? getDateShortString(getDateFromString(record.date_done)) : "";//==date transported
+                                        selectedAssembly.SteelPacks.push(steelPack);
+                                    }   
+                                }
+                            });
+
+                            selectedAssemblies.push(selectedAssembly);
+                            recordsAdded++;
+                        }  
+                    }
+                }
+
                 if (recordsAdded > 0) {
+                    //don't think project_id would make this query faster since it's an exact id is given
+                    domainProjectMarks = "[" + domainProjectMarks + "]";
                     //console.log("domainProjectMarks");
                     //console.log(domainProjectMarks);
                     await $.ajax({
@@ -4108,6 +4255,7 @@ $("#btnGetOdooInfoDivId").dxButton({
                                     object.Profile = record.mark_profile;
                                     object.Finish = record.mark_comment;
                                     object.Material = record.mark_material;
+                                    object.DrawingsUrls = [];
                                 }
                             }
                         }
@@ -4170,7 +4318,7 @@ $("#btnGetOdooInfoDivId").dxButton({
             }
         }
         catch (e) {
-            DevExpress.ui.notify(e);
+            DevExpress.ui.notify(e, "info", 5000);
         }
         buttonIndicator.option('visible', false);
         data.component.option('text', getTextById("btnGetOdooInfo"));
@@ -4385,14 +4533,24 @@ $("#btnOdooSearchDivId").dxButton({
                 }
             });
             //console.log(assembliesToSelect);
-
+            var steelPrefixes = prefixDetails.filter(x => x.MaterialType === "staal").map(x => x.name);
+            var regex = new RegExp(steelPrefixes.join("|"), "i"); //regex instead of includes, includes is case sensitive, this regex is not
+            var queryGroupsSteel = queryGroups.find(g => regex.test(g.Prefix));
             if (assembliesToSelect.length > 0) {
+                if (queryGroupsSteel != undefined) {
+                    DevExpress.ui.notify(getTextById("errorSearchStringContainsSteel"), "info", 5000);
+                }
+
                 var guidsToSelect = assembliesToSelect.map(a => a.Guid);
                 //console.log(guidsToSelect);
                 await selectGuids(guidsToSelect);
             }
             else {
-                throw "No results found for given searchstring";
+                var text = getTextById("errorNoResultForSearchstring");
+                if (queryGroupsSteel != undefined) {
+                    text += " " + getTextById("errorSearchStringContainsSteel");
+                }
+                throw text;
             }
 
             var selectArrows = checkBoxDirectionArrows.dxCheckBox("instance").option("value");
@@ -4403,7 +4561,7 @@ $("#btnOdooSearchDivId").dxButton({
             //inform if certain elements weren't found
         }
         catch (e) {
-            DevExpress.ui.notify(e);
+            DevExpress.ui.notify(e, "info", 10000);
         }
         buttonIndicator.option('visible', false);
         data.component.option('text', getTextById("btnOdooSearch"));
@@ -4640,7 +4798,7 @@ $("#btnSelectByFilterDivId").dxButton({
             await setSelectionByFilter();
         }
         catch (e) {
-            DevExpress.ui.notify(e);
+            DevExpress.ui.notify(e, "info", 5000);
         }
         buttonIndicator.option('visible', false);
         data.component.option('text', getTextById("btnSelectByFilter"));
@@ -4765,8 +4923,9 @@ $("#btnSetColorFromStatusDivId").dxButton({
                             var guidArr = objectStatuses.find(o => o.Status === status);
                             guidArr.Guids.push(record.name);
                             guidArr.CompressedIfcGuids.push(Guid.fromFullToCompressed(record.name));
-                            if (record.mark_id[0] != undefined)
+                            if (record.mark_id[0] != undefined) {
                                 processedAssemblyIds.push(record.mark_id[0]);
+                            }
                         }
                     }
                 });
@@ -4776,9 +4935,9 @@ $("#btnSetColorFromStatusDivId").dxButton({
             
 
             //--Get steel assembly info
-            //Assume that assemblies, which are not entered into the trimble.connect.main table, are steel assemblies 
+            //Assume that assemblies, which haven't been added to the trimble.connect.main table, are steel assemblies 
             //=> get all assemblies from project.master_marks
-            //and filter out those that are entered into the trimble.connect.main table
+            //and filter out those that have been added to the trimble.connect.main table
             //result: unprocessedAssemblies
             //console.log("Start: Getting unprocessedAssemblies");
             var unprocessedAssemblies = []; //modelled steel assemblies
@@ -4817,6 +4976,7 @@ $("#btnSetColorFromStatusDivId").dxButton({
                     }
                 });
             }
+            //console.log(unprocessedAssemblies);
             //console.log("Finished: Getting unprocessedAssemblies");
 
             //console.log("Start: Getting project.mark_steel_production info");
@@ -4884,7 +5044,7 @@ $("#btnSetColorFromStatusDivId").dxButton({
                                     dateDone = getDateFromString(record.date_done);
                                 var steelPack = {
                                     OdooId: record.id,
-                                    MarkIds: record.mark_ids,
+                                    PackItemIds: record.mark_ids,
                                     DateReady: dateReady,
                                     DateDone: dateDone,
                                 };
@@ -4906,8 +5066,8 @@ $("#btnSetColorFromStatusDivId").dxButton({
                     headers: { "Authorization": "Bearer " + token },
                     data: {
                         model: "project.mark_steel_pack_items",
-                        domain: '[["upper_id", "=", "' + steelPack.OdooId + '"]]',
-                        fields: '["id", "mark_id", "qty"]', //mark_id = pack item id
+                        domain: '[["upper_id.id", "=", "' + steelPack.OdooId + '"]]',
+                        fields: '["id", "mark_id", "qty", "upper_id"]', //mark_id = odoo assembly id
                         order: 'id',
                     },
                     success: function (data) {
@@ -4922,6 +5082,7 @@ $("#btnSetColorFromStatusDivId").dxButton({
                                     OdooId: record.id,
                                     AssemblyId: record.mark_id[0],
                                     Quantity: record.qty,
+                                    PackId: record.upper_id[0],
                                 };
                                 steelPackItems.push(steelPackItem);
                             }
@@ -4933,18 +5094,21 @@ $("#btnSetColorFromStatusDivId").dxButton({
 
             //console.log("Start: Processing steel pack info");
             for (const steelPack of steelPacks) {
-                const itemsInPack = steelPackItems.filter(x => steelPack.MarkIds.includes(x.OdooId));
+                const itemsInPack = steelPackItems.filter(x => x.PackId == steelPack.OdooId);
+                //console.log(itemsInPack);
+                //console.log("itemsInPack");
                 for (const item of itemsInPack) {
+                    //console.log("item");
                     //console.log(item);
                     for (var i = 0; i < item.Quantity; i++) {
-                        var unprocessedAssembly = unprocessedAssemblies.find(x => x.AssemblyId == item.AssemblyId
-                            && x.Status === StatusProductionEnded);
+                        var unprocessedAssembly = unprocessedAssemblies.find(x => x.AssemblyId == item.AssemblyId && x.Status === StatusProductionEnded);
+                        //console.log("unprocessedAssembly");
                         //console.log(unprocessedAssembly);
                         if (unprocessedAssembly != undefined) {
-                            if (steelPack.DateReady <= referenceDate)
-                                unprocessedAssembly.Status = StatusAvailableForTransport;
                             if (steelPack.DateDone <= referenceDate)
                                 unprocessedAssembly.Status = StatusTransported;
+                            else if (steelPack.DateReady <= referenceDate)
+                                unprocessedAssembly.Status = StatusAvailableForTransport;
                         }
                     }
                 }
@@ -5057,7 +5221,7 @@ $("#btnSetColorFromStatusDivId").dxButton({
             modelIsColored = true;
         }
         catch (e) {
-            DevExpress.ui.notify(e);
+            DevExpress.ui.notify(e, "info", 5000);
         }
         buttonIndicator.option('visible', false);
         data.component.option('text', getTextById("btnSetColorFromStatus"));
@@ -5168,11 +5332,11 @@ async function AddOdooInfoLabels(selectedItem) {
             await API.markup.addTextMarkup(JSON.parse(jsonArray));
         }
         else {
-            DevExpress.ui.notify(getTextById("errorMsgNoOdooAssembliesFound"));
+            DevExpress.ui.notify(getTextById("errorMsgNoOdooAssembliesFound"), "info", 5000);
         }
     }
     catch (e) {
-        DevExpress.ui.notify(e);
+        DevExpress.ui.notify(e, "info", 5000);
         console.log(e);
     }
 }
@@ -5210,7 +5374,7 @@ $("#btnShowAllColoredDivId").dxButton({
             modelIsColored = true;
         }
         catch (e) {
-            DevExpress.ui.notify(e);
+            DevExpress.ui.notify(e, "info", 5000);
         }
         buttonIndicator.option('visible', false);
         data.component.option('text', getTextById("btnShowAllColored"));
@@ -5263,7 +5427,7 @@ async function showDirectionArrows() {
         //maybe try with setLayersVisibility
     }
     catch (e) {
-        DevExpress.ui.notify(e);
+        DevExpress.ui.notify(e, "info", 5000);
     }
 }
 
@@ -5297,9 +5461,40 @@ async function selectDirectionArrows() {
         }
     }
     catch (e) {
-        DevExpress.ui.notify(e);
+        DevExpress.ui.notify(e, "info", 5000);
     }
 }
+
+//$("#btnShowBoltsDivId").dxButton({
+//    stylingMode: "outlined",
+//    text: "Show Bolts",
+//    type: "success",
+//    template(data, container) {
+//        $(`<div class='button-indicator'></div><span class='dx-button-text'>${data.text}</span>`).appendTo(container);
+//        buttonIndicator = container.find('.button-indicator').dxLoadIndicator({
+//            visible: false,
+//        }).dxLoadIndicator('instance');
+//    },
+//    onClick: async function (data) {
+//        try {
+//            const mobjectsArrBolts = await API.viewer.getObjects({ parameter: { class: "IFCMECHANICALFASTENER" } });
+//            if (mobjectsArrBolts.length != undefined && mobjectsArrBolts.length > 0) {
+//                for (var mobjects of mobjectsArrBolts) {
+//                    const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+//                    console.log(objectsRuntimeIds);
+//                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true });
+//                    var selector = { modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] };
+//                    await API.viewer.setSelection(selector, "add");
+//                }
+//            }
+//        }
+//        catch (e) {
+//            console.log(e);
+//            DevExpress.ui.notify(e, "info", 5000);
+//        }
+//    },
+//});
+
 
 $("#btnShowKnownPrefixesDivId").dxButton({
     stylingMode: "outlined",
@@ -5420,10 +5615,20 @@ $("#btnShowKnownPrefixesDivId").dxButton({
                     await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true });
                 }
             }
+
+            //Show Bolts - Wether or not bolts are shown depends on the visibility of the parent part.
+            //So if the parent part is hidden, the code below will not make the bolt appear.
+            const mobjectsArrBolts = await API.viewer.getObjects({ parameter: { class: "IFCMECHANICALFASTENER" } });
+            if (mobjectsArrBolts.length != undefined && mobjectsArrBolts.length > 0) {
+                for (var mobjects of mobjectsArrBolts) {
+                    const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true });
+                }
+            }
         }
         catch (e) {
             console.log(e);
-            DevExpress.ui.notify(e);
+            DevExpress.ui.notify(e, "info", 5000);
         }
         buttonIndicator.option('visible', false);
         data.component.option('text', getTextById("btnShowKnownPrefixes"));
@@ -5448,7 +5653,7 @@ $("#btnShowLabelsDivId").dxButton({
             await addTextMarkups();
         }
         catch (e) {
-            DevExpress.ui.notify(e);
+            DevExpress.ui.notify(e, "info", 5000);
         }
         buttonIndicator.option('visible', false);
         data.component.option('text', getTextById("btnShowLabels"));
@@ -5558,7 +5763,7 @@ $("#showGridAndArrows").dxButton({
             console.log("end");
         }
         catch (e) {
-            DevExpress.ui.notify(e);
+            DevExpress.ui.notify(e, "info", 5000);
         }
         buttonIndicator.option('visible', false);
         data.component.option('text', "Toon stramien en montagepijlen");
@@ -5574,7 +5779,7 @@ $("#btnReversePosInFreightDivId").dxButton({
             dataGridProduction.dxDataGrid("refresh");
         }
         catch (e) {
-            DevExpress.ui.notify(e);
+            DevExpress.ui.notify(e, "info", 5000);
         }
     },
 });
@@ -5587,7 +5792,7 @@ $("#btnLabelPosInFreightDivId").dxButton({
             await AddOdooInfoLabels(possibleSelectBoxValues[1]);
         }
         catch (e) {
-            DevExpress.ui.notify(e);
+            DevExpress.ui.notify(e, "info", 5000);
         }
     },
 });

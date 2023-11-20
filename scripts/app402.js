@@ -4213,10 +4213,8 @@ $("#btnGetOdooInfoDivId").dxButton({
                                             Name: record.name,
                                             ShortName: parseInt(record.name.split('/')[1]),
                                         };
-                                        if (record.date_ready != false)
-                                            steelPack.DateReady = record.date_ready ? getDateShortString(getDateFromString(record.date_ready)) : "";//==date available
-                                        if (record.date_done != false)
-                                            steelPack.DateDone = record.date_done ? getDateShortString(getDateFromString(record.date_done)) : "";//==date transported
+                                        steelPack.DateReady = record.date_ready ? getDateShortString(getDateFromString(record.date_ready)) : "";//==date available
+                                        steelPack.DateDone = record.date_done ? getDateShortString(getDateFromString(record.date_done)) : "";//==date transported
                                         selectedAssembly.SteelPacks.push(steelPack);
                                     }   
                                 }
