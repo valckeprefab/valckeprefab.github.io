@@ -5529,7 +5529,6 @@ $("#btnShowKnownPrefixesDivId").dxButton({
         data.component.option('text', getTextById("btnShowKnownPrefixesFiltering"));
         buttonIndicator.option('visible', true);
         try {
-            console.log("1");
             const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
             var sliceLength = 5000;
             for (const mobjects of mobjectsArr) {
@@ -5573,7 +5572,6 @@ $("#btnShowKnownPrefixesDivId").dxButton({
                 idsPerPrefixPerModelId.push({ ModelId: modelId, IdsPerPrefix: idsPerPrefix });
             }
 
-            console.log("2");
             //set all objects invisible
             //for (const mobjects of mobjectsArr) {
             //    var modelId = mobjects.modelId;
@@ -5597,32 +5595,25 @@ $("#btnShowKnownPrefixesDivId").dxButton({
                 }
             }
 
-            console.log((new Date()).toTimeString() + ": " + "3");
             //Hide dummy objects but keep external prestressed beams visible
             var arraysToHide = [];
-            console.log((new Date()).toTimeString() + ": " + "3a");
             await API.viewer
-                .getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "IfcMaterial.Material": "XXX*" } } }, 1e5)
+                .getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "IfcMaterial.Material": "XXX*" } } })
                 .then((value) => {arraysToHide.push(value)});
             //arraysToHide.push(await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "IfcMaterial.Material": "XXX*" } } }));
-            console.log((new Date()).toTimeString() + ": " + "3b");
             await API.viewer
-                .getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.MERKPREFIX": "XXX" } } }, 1e5)
+                .getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.MERKPREFIX": "XXX" } } })
                 .then((value) => {arraysToHide.push(value)});
             //arraysToHide.push(await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.MERKPREFIX": "XXX" } } }));
-            console.log((new Date()).toTimeString() + ": " + "3c");
             await API.viewer
-                .getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.MERKPREFIX": "BEWERKING" } } }, 1e5)
+                .getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.MERKPREFIX": "BEWERKING" } } })
                 .then((value) => {arraysToHide.push(value)});
             //arraysToHide.push(await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.MERKPREFIX": "BEWERKING" } } }));
-            console.log((new Date()).toTimeString() + ": " + "3d");
             await API.viewer
-                .getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.ONDERDEELPREFIX": "W_DRUKLAAG" } } }, 1e5)
+                .getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.ONDERDEELPREFIX": "W_DRUKLAAG" } } })
                 .then((value) => {arraysToHide.push(value)});
             //arraysToHide.push(await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.ONDERDEELPREFIX": "W_DRUKLAAG" } } }));
-            console.log((new Date()).toTimeString() + ": " + "3e");
             for (var arrayToHide of arraysToHide) {
-                console.log((new Date()).toTimeString() + ": " + "3f");
                 for (const mobjects of arrayToHide) {
                     const objectsIds = mobjects.objects.map(o => o.id);
                     //const objectPropertiesArr = await API.viewer.getObjectProperties(mobjects.modelId, objectsIds);
@@ -5638,21 +5629,20 @@ $("#btnShowKnownPrefixesDivId").dxButton({
                             }
                     });
                     if (objectIdsToHide.length > 0) {
-                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectIdsToHide }] }, { visible: false }, 1e5);
+                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectIdsToHide }] }, { visible: false });
                     }
                 }
             }
 
-            console.log((new Date()).toTimeString() + ": " + "4");
             //Show Arrows
             try
             {
-                const mobjectsArrPijlen = await API.viewer.getObjects(getPropSelectorByPropnameAndValue("Default.COMMENT", "MONTAGEPIJL"), 1e5);
+                const mobjectsArrPijlen = await API.viewer.getObjects(getPropSelectorByPropnameAndValue("Default.COMMENT", "MONTAGEPIJL"));
                 //console.log(mobjectsArrPijlen);
                 if (mobjectsArrPijlen.length != undefined && mobjectsArrPijlen.length > 0) {
                     for (var mobjects of mobjectsArrPijlen) {
                         const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true }, 1e5);
+                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true });
                     }
                 }
             }
@@ -5661,16 +5651,15 @@ $("#btnShowKnownPrefixesDivId").dxButton({
                 
             }
 
-            console.log((new Date()).toTimeString() + ": " + "5");
             //Show Bolts - Wether or not bolts are shown depends on the visibility of the parent part.
             //So if the parent part is hidden, the code below will not make the bolt appear.
             try
             {
-                const mobjectsArrBolts = await API.viewer.getObjects({ parameter: { class: "IFCMECHANICALFASTENER" } }, 1e5);
+                const mobjectsArrBolts = await API.viewer.getObjects({ parameter: { class: "IFCMECHANICALFASTENER" } });
                 if (mobjectsArrBolts.length != undefined && mobjectsArrBolts.length > 0) {
                     for (var mobjects of mobjectsArrBolts) {
                         const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true }, 1e5);
+                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true });
                     }
                 }
             }

@@ -15,7 +15,7 @@ window.onload = async function () {
         if (eventName === "onSelectionChanged") {
             await selectionChanged(data.data);
         }
-    });
+    }, 3e4);
 
     fillObjectStatuses();
     getRecentOdooDataTimed();
@@ -1560,21 +1560,21 @@ async function getElementsInFreight(freightnumber) {
 }
 
 async function GetValidFreightNumber(freightnumber) {
-    console.log(freightnumber);
+    //console.log(freightnumber);
     if (freightnumber) { //https://262.ecma-international.org/5.1/#sec-9.2
-        console.log("Freightnumber is truthy");
+        //console.log("Freightnumber is truthy");
         return freightnumber;
     }
     else {
-        console.log("Freightnumber is invalid, getting next available freightnumber");
+        //console.log("Freightnumber is invalid, getting next available freightnumber");
         var freightNumbers = await getFreightNumbers();
-        console.log("Used freightnumbers:");
+        //console.log("Used freightnumbers:");
         for (var i of freightNumbers)
-            console.log(i);
+            //console.log(i);
         var nextFreightNumber = 1;
         if (freightNumbers.length > 0)
             nextFreightNumber = freightNumbers[freightNumbers.length - 1] + 1;
-        console.log(`Found next available freightnumber: ${nextFreightNumber}`);
+        //console.log(`Found next available freightnumber: ${nextFreightNumber}`);
         return nextFreightNumber;
     }
 }
@@ -2788,13 +2788,13 @@ async function getToken() {
 
     if (refresh_token !== "" && access_token_expiretime != undefined && access_token_expiretime.getTime() < Date.now() + 60 * 1000) {
         //refresh_token might be expired aswel => expected to fail
-        console.log("Refreshing token");
-        console.log("Token: ");
-        console.log(access_token);
-        console.log("tokenExpiretime.getTime()");
-        console.log(access_token_expiretime.getTime());
-        console.log("Date.now()");
-        console.log(Date.now());
+        //console.log("Refreshing token");
+        //console.log("Token: ");
+        //console.log(access_token);
+        //console.log("tokenExpiretime.getTime()");
+        //console.log(access_token_expiretime.getTime());
+        //console.log("Date.now()");
+        //console.log(Date.now());
         var refreshSuccesful = false;
         await $.ajax({
             type: "POST",
@@ -2810,21 +2810,21 @@ async function getToken() {
                 refresh_token = odooData.refresh_token;
                 access_token_expiretime = new Date(Date.now() + odooData.expires_in * 1000);
                 refreshSuccesful = true;
-                console.log("odoo data:");
-                console.log(odooData);
-                console.log("refresh success");
+                //console.log("odoo data:");
+                //console.log(odooData);
+                //console.log("refresh success");
             },
         });
         if (!refreshSuccesful) {
-            console.log("refresh failed");
+            //console.log("refresh failed");
             access_token = "";
             refresh_token = "";
             access_token_expiretime = undefined;
         }
-        console.log("End refresh token");
+        //console.log("End refresh token");
     }
     if (access_token === "") {
-        console.log("Fetching new token");
+        //console.log("Fetching new token");
         //console.log("Start db name fetch1");
         //await $.ajax({
         //    type: "GET",
@@ -2849,15 +2849,15 @@ async function getToken() {
                 grant_type: "password"
             },
             success: function (data) {
-                console.log(data);
+                //console.log(data);
                 access_token = data.access_token;
                 refresh_token = data.refresh_token;
                 access_token_expiretime = new Date(Date.now() + data.expires_in * 1000);
-                console.log("tokenExpiretime:");
-                console.log(access_token_expiretime);
+                //console.log("tokenExpiretime:");
+                //console.log(access_token_expiretime);
             }
         });
-        console.log("Token received");
+        //console.log("Token received");
     }
     return access_token;
 }
@@ -3735,7 +3735,7 @@ async function setOdooFreightNumber(ids, freightnumber) {
             ids: `[${ids.join(',')}]`
         },
         success: function (odooData) {
-            console.log(odooData);
+            //console.log(odooData);
         }
     });
 }
@@ -3754,7 +3754,7 @@ async function setOdooFreightNumberAndPosInFreight(ids, freightnumber, posInFrei
             ids: `[${ids.join(',')}]`
         },
         success: function (odooData) {
-            console.log(odooData);
+            //console.log(odooData);
         }
     });
 }
@@ -3767,16 +3767,16 @@ $('#btnSaveFreightDivId').dxButton({
         //-- get alle elements with current freight number
         var freightNumber = newFreightNumberBox.dxNumberBox("instance").option("value");
         freightNumber = await GetValidFreightNumber(freightNumber);
-        console.log(`setting elements with freight ${freightNumber}`);
+        //console.log(`setting elements with freight ${freightNumber}`);
         var elementsToModify = await getElementsInFreight(freightNumber);
-        console.log(`found ${elementsToModify.length} elements to modify`);
+        //console.log(`found ${elementsToModify.length} elements to modify`);
         //-- remove freight info of the elements that are in this freight atm (set as 0)
         for (var ele of elementsToModify) {
             ele.Freight = 0;
             ele.PosInFreight = 0;
         }
         //-- set freight number of selected (= elements that will be put in this freight)
-        console.log(`found ${selectedObjects.length} selected objects to modify`);
+        //console.log(`found ${selectedObjects.length} selected objects to modify`);
         for (var ele of selectedObjects) {
             var existingEle = elementsToModify.find(x => x.Guid === ele.Guid);
             if (existingEle == undefined) {
@@ -4752,7 +4752,7 @@ async function colorNonStandardWidth(prefix, standardWidth, hideRest = true) {
                 objectsRuntimeIdsToColor.push(objproperties.id);
             }
         }
-        console.log(objectsRuntimeIdsToColor);
+        //console.log(objectsRuntimeIdsToColor);
         if (objectsRuntimeIdsToColor.length > 0)
             await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIdsToColor }] }, { color: { r: 255, g: 0, b: 0 }, visible: true });
     }
@@ -5116,17 +5116,17 @@ $("#btnSetColorFromStatusDivId").dxButton({
             //console.log(unprocessedAssemblies);
             //console.log("Finished: Processing steel pack info");
 
-            console.log("Odoo part finished");
+            //console.log("Odoo part finished");
 
-            console.log("Getting IFCELEMENTASSEMBLY start");
+            //console.log("Getting IFCELEMENTASSEMBLY start");
             const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
-            console.log("Getting IFCELEMENTASSEMBLY end");
+            //console.log("Getting IFCELEMENTASSEMBLY end");
 
             //runtimeIds = [17062, 17065, ...] = ids used by viewer
             //objectIds = compressed IFC guids = ['28DCGNPlH98vcQNyNhB4sQ', '0fKOmd_6PFgOiexu4H1vtU', ...] = can be used to map runtimeId to original IFC
 
             //find objects by assemblypos and add to status objects
-            console.log("find objects by assemblypos and add to status objects start");
+            //console.log("find objects by assemblypos and add to status objects start");
             var sliceLength = 5000;
             for (const mobjects of mobjectsArr) {
                 var modelId = mobjects.modelId;
@@ -5171,9 +5171,9 @@ $("#btnSetColorFromStatusDivId").dxButton({
                     }
                 }
             }
-            console.log("find objects by assemblypos and add to status objects end");
+            //console.log("find objects by assemblypos and add to status objects end");
 
-            console.log("set colors start");
+            //console.log("set colors start");
             var objectStatusModelled = objectStatuses.find(o => o.Status === StatusModelled);
             var unplannedIfcIds = [];
             var compressedIfcGuidsWithKnownStatus = [];
@@ -5197,9 +5197,9 @@ $("#btnSetColorFromStatusDivId").dxButton({
                     }
                 }
             }
-            console.log("set colors end");
+            //console.log("set colors end");
 
-            console.log("process prefix BESTAAND start");
+            //console.log("process prefix BESTAAND start");
             //will also include existing assemblies
             objectStatusModelled.CompressedIfcGuids = Array.from(unplannedIfcIds);
             objectStatusModelled.Guids = objectStatusModelled.CompressedIfcGuids.map(c => Guid.fromCompressedToFull(c));
@@ -5222,9 +5222,9 @@ $("#btnSetColorFromStatusDivId").dxButton({
 
                 await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: objectStatusExisting.Color });
             }
-            console.log("process prefix BESTAAND end");
+            //console.log("process prefix BESTAAND end");
 
-            console.log("process modelled assemblies start");
+            //console.log("process modelled assemblies start");
             for (const mobjects of mobjectsArr) {
                 var modelId = mobjects.modelId;
                 const objectsRuntimeIds = mobjects.objects.map(o => o.id);
@@ -5234,7 +5234,7 @@ $("#btnSetColorFromStatusDivId").dxButton({
 
                 await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: filteredRuntimeIds }] }, { color: objectStatusModelled.Color });
             }
-            console.log("process modelled assemblies end");
+            //console.log("process modelled assemblies end");
 
             modelIsColored = true;
         }
@@ -5434,7 +5434,7 @@ async function showDirectionArrows() {
     try {
         //Show Arrows
         const mobjectsArrPijlen = await API.viewer.getObjects(getPropSelectorByPropnameAndValue("Default.COMMENT", "MONTAGEPIJL"));
-        console.log(mobjectsArrPijlen);
+        //console.log(mobjectsArrPijlen);
         if (mobjectsArrPijlen.length && mobjectsArrPijlen.length > 0) {
             for (var mobjects of mobjectsArrPijlen) {
                 const objectsRuntimeIds = mobjects.objects.map(o => o.id);
@@ -5540,11 +5540,8 @@ $("#btnShowKnownPrefixesDivId").dxButton({
                 }
                 var idsPerPrefix = [];
                 for (var i = 0; i < objectsRuntimeIds.length; i += sliceLength) {
-                    //var cntr = 0;
                     var objectsRuntimeIdsSliced = objectsRuntimeIds.slice(i, i + sliceLength);
                     const objectPropertiesArr = await API.viewer.getObjectProperties(modelId, objectsRuntimeIdsSliced);
-                    //console.log("objectPropertiesArr: " + objectPropertiesArr);
-                    //console.log("objectPropertiesArr.length: " + objectPropertiesArr.length);
                     for (const objproperties of objectPropertiesArr) {
                         //objproperties type: ObjectProperties, heeft id van object en array met propertysets
                         //objproperties.properties : PropertySet[]
@@ -5556,12 +5553,10 @@ $("#btnShowKnownPrefixesDivId").dxButton({
                         //var propPrefix = psetDefault.properties.find(p => p.name === "MERKPREFIX");
                         var propPrefix = objproperties.properties.flatMap(p => p.properties).find(p => p.name === "MERKPREFIX");
                         if (propPrefix === undefined) continue;
-                        //console.log("propPrefix: " + propPrefix.name + " " + propPrefix.value);
                         if (!prefixes.includes(propPrefix.value)) continue;
                         var prefixArr = idsPerPrefix.find(p => p.Prefix === propPrefix.value);
                         if (prefixArr !== undefined) {
                             prefixArr.ObjectRuntimeIds.push(objproperties.id);
-                            //cntr++;
                         }
                         else {
                             idsPerPrefix.push(
@@ -5570,10 +5565,8 @@ $("#btnShowKnownPrefixesDivId").dxButton({
                                     ObjectRuntimeIds: [objproperties.id]
                                 }
                             );
-                            //cntr++;
                         }
                     }
-                    //console.log("i: " + i + " - cntr: " + cntr);
                 }
                 //console.log("new ids pushed for model " + modelId + " (#: " + idsPerPrefix.length + " )");
                 idsPerPrefixPerModelId.push({ ModelId: modelId, IdsPerPrefix: idsPerPrefix });
@@ -5604,21 +5597,37 @@ $("#btnShowKnownPrefixesDivId").dxButton({
 
             //Hide dummy objects but keep external prestressed beams visible
             var arraysToHide = [];
-            arraysToHide.push(await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "IfcMaterial.Material": "XXX*" } } }));
-            arraysToHide.push(await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.MERKPREFIX": "XXX" } } }));
-            arraysToHide.push(await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.MERKPREFIX": "BEWERKING" } } }));
-            arraysToHide.push(await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.ONDERDEELPREFIX": "W_DRUKLAAG" } } }));
+            await API.viewer
+                .getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "IfcMaterial.Material": "XXX*" } } })
+                .then((value) => {arraysToHide.push(value)});
+            //arraysToHide.push(await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "IfcMaterial.Material": "XXX*" } } }));
+            await API.viewer
+                .getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.MERKPREFIX": "XXX" } } })
+                .then((value) => {arraysToHide.push(value)});
+            //arraysToHide.push(await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.MERKPREFIX": "XXX" } } }));
+            await API.viewer
+                .getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.MERKPREFIX": "BEWERKING" } } })
+                .then((value) => {arraysToHide.push(value)});
+            //arraysToHide.push(await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.MERKPREFIX": "BEWERKING" } } }));
+            await API.viewer
+                .getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.ONDERDEELPREFIX": "W_DRUKLAAG" } } })
+                .then((value) => {arraysToHide.push(value)});
+            //arraysToHide.push(await API.viewer.getObjects({ class: "IFCBUILDINGELEMENTPART", parameter: { properties: { "Default.ONDERDEELPREFIX": "W_DRUKLAAG" } } }));
             for (var arrayToHide of arraysToHide) {
                 for (const mobjects of arrayToHide) {
                     const objectsIds = mobjects.objects.map(o => o.id);
-                    const objectPropertiesArr = await API.viewer.getObjectProperties(mobjects.modelId, objectsIds);
+                    //const objectPropertiesArr = await API.viewer.getObjectProperties(mobjects.modelId, objectsIds);
                     //console.log(objectPropertiesArr);
                     var objectIdsToHide = [];
-                    for (const objproperties of objectPropertiesArr) {
-                        if (!objproperties.product.description || !objproperties.product.description.startsWith("EX")) {
-                            objectIdsToHide.push(objproperties.id);
-                        }
-                    }
+                    await API.viewer
+                        .getObjectProperties(mobjects.modelId, objectsIds)
+                        .then((objectPropertiesArr) => {
+                            for (const objproperties of objectPropertiesArr) {
+                                if (!objproperties.product.description || !objproperties.product.description.startsWith("EX")) {
+                                    objectIdsToHide.push(objproperties.id);
+                                }
+                            }
+                    });
                     if (objectIdsToHide.length > 0) {
                         await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectIdsToHide }] }, { visible: false });
                     }
@@ -5626,27 +5635,41 @@ $("#btnShowKnownPrefixesDivId").dxButton({
             }
 
             //Show Arrows
-            const mobjectsArrPijlen = await API.viewer.getObjects(getPropSelectorByPropnameAndValue("Default.COMMENT", "MONTAGEPIJL"));
-            //console.log(mobjectsArrPijlen);
-            if (mobjectsArrPijlen.length != undefined && mobjectsArrPijlen.length > 0) {
-                for (var mobjects of mobjectsArrPijlen) {
-                    const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true });
+            try
+            {
+                const mobjectsArrPijlen = await API.viewer.getObjects(getPropSelectorByPropnameAndValue("Default.COMMENT", "MONTAGEPIJL"));
+                //console.log(mobjectsArrPijlen);
+                if (mobjectsArrPijlen.length != undefined && mobjectsArrPijlen.length > 0) {
+                    for (var mobjects of mobjectsArrPijlen) {
+                        const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true });
+                    }
                 }
+            }
+            catch
+            {
+                
             }
 
             //Show Bolts - Wether or not bolts are shown depends on the visibility of the parent part.
             //So if the parent part is hidden, the code below will not make the bolt appear.
-            const mobjectsArrBolts = await API.viewer.getObjects({ parameter: { class: "IFCMECHANICALFASTENER" } });
-            if (mobjectsArrBolts.length != undefined && mobjectsArrBolts.length > 0) {
-                for (var mobjects of mobjectsArrBolts) {
-                    const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true });
+            try
+            {
+                const mobjectsArrBolts = await API.viewer.getObjects({ parameter: { class: "IFCMECHANICALFASTENER" } });
+                if (mobjectsArrBolts.length != undefined && mobjectsArrBolts.length > 0) {
+                    for (var mobjects of mobjectsArrBolts) {
+                        const objectsRuntimeIds = mobjects.objects.map(o => o.id);
+                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true });
+                    }
                 }
+            }
+            catch
+            {
+
             }
         }
         catch (e) {
-            console.log(e);
+            console.log((new Date()).toTimeString() + ": " + e);
             DevExpress.ui.notify(e, "info", 5000);
         }
         buttonIndicator.option('visible', false);
@@ -5758,20 +5781,20 @@ $("#showGridAndArrows").dxButton({
         data.component.option('text', 'Bezig met stramien en montagepijlen te zoeken');
         buttonIndicator.option('visible', true);
         try {
-            console.log("start");
+            //console.log("start");
 
             //Show Grids
             const mobjectsArrGrids = await API.viewer.getObjects(getPropSelectorByPropnameAndValue("Presentation Layers.Layer", "Grid 0.0"));
-            console.log("mobjectsArrGrids.length: " + mobjectsArrGrids.length);
-            console.log("mobjectsArrGrids[0].objects.length: " + mobjectsArrGrids[0].objects.length);
+            //console.log("mobjectsArrGrids.length: " + mobjectsArrGrids.length);
+            //console.log("mobjectsArrGrids[0].objects.length: " + mobjectsArrGrids[0].objects.length);
             if (mobjectsArrGrids.length > 0) {
                 await API.viewer.setObjectState(mobjectsArrGrids, true);
             }
 
             //Show Arrows
             const mobjectsArrPijlen = await API.viewer.getObjects(getPropSelectorByPropnameAndValue("Tekla Common.Finish", "MONTAGE"));
-            console.log("mobjectsArrPijlen.length: " + mobjectsArrPijlen.length);
-            console.log("mobjectsArrPijlen[0].objects.length: " + mobjectsArrPijlen[0].objects.length);
+            //console.log("mobjectsArrPijlen.length: " + mobjectsArrPijlen.length);
+            //console.log("mobjectsArrPijlen[0].objects.length: " + mobjectsArrPijlen[0].objects.length);
             if (mobjectsArrGrids.length > 0) {
                 await API.viewer.setObjectState(mobjectsArrPijlen, true);
             }
@@ -5779,7 +5802,7 @@ $("#showGridAndArrows").dxButton({
             //await API.viewer.setSelection(mobjectsArrGrids, "add");
             //await API.viewer.setSelection(mobjectsArrPijlen, "add");
 
-            console.log("end");
+            //console.log("end");
         }
         catch (e) {
             DevExpress.ui.notify(e, "info", 5000);
