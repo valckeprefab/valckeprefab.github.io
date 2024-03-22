@@ -1198,7 +1198,7 @@ async function setAccesBooleans() {
         }
     }
     catch (ex) {
-
+        console.log("No access to transport data.");
     }
 
     var username = odooUsernameTextbox.dxTextBox("instance").option("value");
