@@ -1011,6 +1011,7 @@ const prefixes = [
     'PV',
     'SK',
     'SL',
+    'SPANSCHROEF',
     'SPr',
     'SS',
     'TRAP',
