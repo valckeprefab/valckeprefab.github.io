@@ -18,13 +18,13 @@ window.onload = async function () {
     }, 3e4);
 
     fillObjectStatuses();
-    getRecentOdooDataTimed();
+    await getRecentOdooDataTimed();
     //setInterval(getRecentOdooData, 5000);
     setTextByLanguage();
 }
 
-function getRecentOdooDataTimed() {
-    getRecentOdooData();
+async function getRecentOdooDataTimed() {
+    await getRecentOdooData();
     setTimeout(function () { getRecentOdooDataTimed(); }, 5000);
 }
 
@@ -112,6 +112,7 @@ const StatusProductionEnded = "ProductionEnded";
 const StatusAvailableForTransport = "AvailableForTransport";
 const StatusPlannedForTransport = "PlannedForTransport";
 const StatusTransported = "Transported";
+const StatusErected = "Erected";
 
 var titlesShown = true;
 
@@ -554,6 +555,18 @@ const textUi = {
         fr: "l'assemblage a été transporté au chantier.",
         en: "assembly has been transported to the site."
     },
+    legendErectedTitle:
+    {
+        nl: "Gemonteerd:",
+        fr: "Assemblé:",
+        en: "Erected:"
+    },
+    legendErectedDescr:
+    {
+        nl: "merk is gemonteerd op de werf.",
+        fr: "l'assemblage a été assemblé au chantier.",
+        en: "assembly has been erected on site."
+    },
     errorMsgNoOdooAssembliesFound:
     {
         nl: "Geen van de geselecteerde merken werd herkend door Odoo.",
@@ -745,6 +758,12 @@ const textUi = {
         nl: "Datum getransporteerd",
         fr: "Date transporté",
         en: "Date transported"
+    },
+    textDateErected:
+    {
+        nl: "Datum gemonteerd",
+        fr: "Date assemblé",
+        en: "Date erected"
     },
     textBin:
     {
@@ -1340,6 +1359,14 @@ function fillObjectStatuses() {
         CompressedIfcGuids: []
     };
     objectStatuses.push(transported);
+
+    var erected = {
+        Status: StatusErected,
+        Color: { r: 255, g: 0, b: 255, a: 255 },
+        Guids: [],
+        CompressedIfcGuids: []
+    };
+    objectStatuses.push(erected);
 }
 
 async function fillPrefixDetails() {
@@ -1778,6 +1805,9 @@ function getStatus(record, referenceDate) {
     if (typeof record.state === 'string' && record.state === 'onhold') {
         return StatusOnHold;
     }
+    else if (typeof record.date_transported === 'string' && getDateFromString(record.date_erected) <= referenceDate) {
+        return StatusErected;
+    }
     else if (typeof record.date_transported === 'string' && getDateFromString(record.date_fab_dem) <= referenceDate) {
         return StatusTransported;
     }
@@ -1855,6 +1885,7 @@ const popupContentTemplate = function () {
                 $(`<p>${getTextById("textDateDemoulded")}: <span>${odooAssemblyData.DateDemoulded}</span></p>`),
                 $(`<p>${getTextById("textDateProductionEnded")}: <span>${odooAssemblyData.DateProductionEnded}</span></p>`),
                 $(`<p>${getTextById("textDateTransported")}: <span>${odooAssemblyData.DateTransported}</span></p>`),
+                $(`<p>${getTextById("textDateErected")}: <span>${odooAssemblyData.DateErected}</span></p>`),
                 $(`<p>${getTextById("textLocation")}: <span>${odooAssemblyData.Location}</span></p>`),
                 $(`<p>${getTextById("textBin")}: <span>${odooAssemblyData.Bin}</span></p>`),
                 $(`<p>${getTextById("textProjectpart")}: <span>${odooAssemblyData.Unit}</span></p>`),
@@ -2912,7 +2943,7 @@ async function getRecentOdooData() {
                     model: "trimble.connect.main",
                     domain: '[["project_id", "=", ' + id + '],["write_date",">=","' + lastUpdate + '"]]',
                     order: 'write_date desc',
-                    fields: '["id", "write_date", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "state", "mark_available"]',
+                    fields: '["id", "write_date", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "date_erected", "state", "mark_available"]',
                 },
                 success: async function (data) {
                     var date = getStringFromDate(new Date());
@@ -3105,7 +3136,7 @@ var checkBoxVisualizeFreightsOnlySelected = $('#checkedVisualizeFreightsOnlySele
 const popup = $('#popup').dxPopup({
     contentTemplate: popupContentTemplate,
     width: 'auto',
-    height: 560,
+    height: 570,
     container: '.dx-viewport',
     showTitle: true,
     title: 'Info',
@@ -4079,7 +4110,7 @@ $("#btnGetOdooInfoDivId").dxButton({
                         model: "trimble.connect.main",
                         domain: domainTrimbleConnectMain,
                         fields: `["id", "name", "mark_id", "rank", "date_drawn", "date_fab_planned", "date_fab_start", "date_fab_end", "date_fab_dem", 
-                            "date_transported", "date_transported", "mark_available", "location_bin", "freight", "unit_id", "mark_location_id"]`,
+                            "date_transported", "date_erected", "mark_available", "location_bin", "freight", "unit_id", "mark_location_id"]`,
                     },
                     success: function (odooData) {
                         //console.log("trimble.connect.main");
@@ -4106,6 +4137,7 @@ $("#btnGetOdooInfoDivId").dxButton({
                                     DateProductionEnded: record.date_fab_end ? getDateShortString(getDateFromString(record.date_fab_end)) : "",
                                     DateDemoulded: record.date_fab_dem ? getDateShortString(getDateFromString(record.date_fab_dem)) : "",
                                     DateTransported: record.date_transported ? getDateShortString(getDateFromString(record.date_transported)) : "",
+                                    DateErected: record.date_erected ? getDateShortString(getDateFromString(record.date_erected)) : "",
                                     AvailableForTransport: record.mark_available,
                                     Bin: record.location_bin ? record.location_bin[1] : "/",
                                     Freight: record.freight == -1 ? '/' : record.freight,
@@ -4313,7 +4345,7 @@ $("#btnGetOdooInfoDivId").dxButton({
 
                 popup.option({
                     contentTemplate: () => popupContentTemplate(),
-                    height: 620
+                    height: 630
                 });
                 popup.show();
             }
@@ -4831,6 +4863,7 @@ $("#btnSetColorFromStatusDivId").dxButton({
         document.getElementById("trLegendAvailableForTransport").style.backgroundColor = getColorString(objectStatuses.find(o => o.Status === StatusAvailableForTransport).Color);
         document.getElementById("trLegendPlannedForTransport").style.backgroundColor = getColorString(objectStatuses.find(o => o.Status === StatusPlannedForTransport).Color);
         document.getElementById("trLegendTransported").style.backgroundColor = getColorString(objectStatuses.find(o => o.Status === StatusTransported).Color);
+        document.getElementById("trLegendErected").style.backgroundColor = getColorString(objectStatuses.find(o => o.Status === StatusErected).Color);
         await setAccesBooleans();
         document.getElementById("transportDiv").style.display = hasAccesToTransportUi ? 'block' : 'none';
         document.getElementById("productionDiv").style.display = hasAccesToProduction ? 'block' : 'none';
@@ -4907,7 +4940,7 @@ $("#btnSetColorFromStatusDivId").dxButton({
                     data: {
                         model: "trimble.connect.main",
                         domain: '[["project_id", "=", ' + id + '],["id", ">", "' + lastId + '"],["state","!=","cancelled"]]',
-                        fields: '["id", "mark_id", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "state", "mark_available"]',
+                        fields: '["id", "mark_id", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "date_erected", "state", "mark_available"]',
                         order: 'id',
                     },
                     success: function (data) {
@@ -6208,6 +6241,37 @@ $("#btnOnlyShowTransported").dxButton({
     hint: "only show these",
     onClick: async function (data) {
         await onlyShowStatus(StatusTransported);
+    },
+});
+
+//Erected
+$("#btnShowErected").dxButton({
+    icon: 'images/eye.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "show these",
+    onClick: async function (data) {
+        await setVisibility(StatusErected, true);
+    },
+});
+
+$("#btnHideErected").dxButton({
+    icon: 'images/eyeCrossed.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "hide these",
+    onClick: async function (data) {
+        await setVisibility(StatusErected, false);
+    },
+});
+
+$("#btnOnlyShowErected").dxButton({
+    icon: 'images/showAll.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "only show these",
+    onClick: async function (data) {
+        await onlyShowStatus(StatusErected);
     },
 });
 //#endregion
