@@ -4345,7 +4345,7 @@ $("#btnGetOdooInfoDivId").dxButton({
 
                 popup.option({
                     contentTemplate: () => popupContentTemplate(),
-                    height: 630
+                    height: 650
                 });
                 popup.show();
             }
@@ -5694,30 +5694,6 @@ $("#btnShowKnownPrefixesDivId").dxButton({
                     for (var mobjects of mobjectsArrBolts) {
                         const objectsRuntimeIds = mobjects.objects.map(o => o.id);
                         await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true });
-                    }
-                }
-            }
-            catch
-            {
-
-            }
-
-            //Show All Rebar
-            try
-            {
-                const mobjectsArrRebar = await API.viewer.getObjects({ parameter: { class: "IFCREINFORCINGBAR" } });
-                console.log(mobjectsArrRebar);
-                if (mobjectsArrRebar.length != undefined && mobjectsArrRebar.length > 0) {
-                    console.log("ok0");
-                    for (var mobjects of mobjectsArrRebar) {
-                        console.log("ok1");
-                        const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true });
-                        console.log("ok2");
-                        var selector = { modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] };
-                        console.log("ok3");
-                        await API.viewer.setSelection(selector, "add");
-                        console.log("ok4");
                     }
                 }
             }
