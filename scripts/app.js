@@ -4345,7 +4345,7 @@ $("#btnGetOdooInfoDivId").dxButton({
 
                 popup.option({
                     contentTemplate: () => popupContentTemplate(),
-                    height: 630
+                    height: 660
                 });
                 popup.show();
             }
