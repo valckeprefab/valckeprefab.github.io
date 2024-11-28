@@ -156,7 +156,12 @@ table.tablePopup, table.tablePopup th, table.tablePopup td {
     display: none;
 }
 
-.v-transportBlock {
+.v-montage {
+    background-color: rgba(255, 0, 234, 0.25);
+    padding: 5px 0 1px 10px;
+}
+
+.v-transportBlock, .v-montageBlock {
     padding: 5px 10px 5px 5px;
 }
 
@@ -170,6 +175,10 @@ bordered{
 }
 
 .v-dataGridTransport {
+    width: 100%;
+}
+
+.v-dataGridMontage {
     width: 100%;
 }
 

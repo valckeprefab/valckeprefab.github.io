@@ -21,6 +21,25 @@ window.onload = async function () {
     await getRecentOdooDataTimed();
     //setInterval(getRecentOdooData, 5000);
     setTextByLanguage();
+
+    var acc = document.getElementsByClassName("accordion");
+    var i;
+
+for (i = 0; i < acc.length; i++) {
+  acc[i].addEventListener("click", function() {
+    /* Toggle between adding and removing the "active" class,
+    to highlight the button that controls the panel */
+    this.classList.toggle("active");
+
+    /* Toggle between hiding and showing the active panel */
+    var panel = this.nextElementSibling;
+    if (panel.style.display === "block") {
+      panel.style.display = "none";
+    } else {
+      panel.style.display = "block";
+    }
+  });
+}
 }
 
 async function getRecentOdooDataTimed() {
@@ -2146,8 +2165,8 @@ async function selectionChanged(data) {
                             selectedObject.OdooCode = record.mark_id[1];
                             selectedObject.DateTransported = record.date_transported ? getDateFromString(record.date_transported) : "";
                             selectedObject.AvailableForTransport = record.mark_available;
-                            selectedObject.Freight = record.freight, //TODO: change , to ;
-                            selectedObject.PosInFreight = record.pos_in_freight_number, //TODO: change , to ;
+                            selectedObject.Freight = record.freight,
+                            selectedObject.PosInFreight = record.pos_in_freight_number,
                             selectedObject.ValidForNewFreight = record.freight == 0;
                         }
                         cntr++;
@@ -2281,7 +2300,7 @@ async function selectionChanged(data) {
         selectedObjects.push(...tempSelectedObjects.filter(o => o.OdooTcmId != -1).sort(function (a, b) { return a.PosInFreight - b.PosInFreight; }));
         setPosInFreight();
         clearDataGridProductionSorting();
-        dataGridMontage.dxDataGrid("refresh");
+        dataGridTransport.dxDataGrid("refresh");
         dataGridProduction.dxDataGrid("refresh");
 
         if (resetSlipDropdown) {
@@ -6278,7 +6297,7 @@ $("#btnOnlyShowErected").dxButton({
 
 //#endregion
 
-var dataGridMontage = $("#dataGridTransport").dxDataGrid({
+var dataGridTransport = $("#dataGridTransport").dxDataGrid({
     dataSource: selectedObjects,
     keyExpr: 'OdooTcmId',
     showBorders: true,
