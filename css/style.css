@@ -159,10 +159,13 @@ table.tablePopup, table.tablePopup th, table.tablePopup td {
 .v-montage {
     background-color: rgba(255, 0, 234, 0.25);
     padding: 5px 0 1px 10px;
+    display: block;
 }
 
 .v-transportBlock, .v-montageBlock {
     padding: 5px 10px 5px 5px;
+    clear: both; 
+    width: 100%;
 }
 
 bordered{
