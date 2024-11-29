@@ -1,0 +1,62 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <Title>Valcke Trimble Connect Plugin</Title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <meta charset="UTF-8">
+
+    <!-- ... -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script>window.jQuery || document.write(decodeURIComponent('%3Cscript src="js/jquery.min.js"%3E%3C/script%3E'))</script>
+
+    <!-- DevExtreme theme -->
+    <link rel="stylesheet" type="text/css" href="https://cdn3.devexpress.com/jslib/21.2.5/css/dx.common.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdn3.devexpress.com/jslib/21.2.5/css/dx.dark.compact.css" />
+    <link rel="stylesheet" type="text/css" href="./css/style.css">
+    <!-- DevExtreme library -->
+    <script type="text/javascript" src="https://cdn3.devexpress.com/jslib/21.2.5/js/dx.all.js"></script>
+    <!-- <script type="text/javascript" src="https://cdn3.devexpress.com/jslib/21.2.4/js/dx.web.js"></script> -->
+    <!-- <script type="text/javascript" src="https://cdn3.devexpress.com/jslib/21.2.4/js/dx.viz.js"></script> -->
+    <!--<script crossorigin src="https://cdn.rawgit.com/caldwell/renderjson/master/renderjson.js"></script>-->
+</head>
+
+<body class="dx-viewport">
+    <script>
+        DevExpress.localization.locale(navigator.language);
+            // ...
+            // DevExtreme UI components are configured here
+            // ...
+    </script>
+    <div class="demo-container">
+        <div class="form">
+            <div style="padding: 10px" class="v-odooData" id="divOdoo">
+                <div class="bordered">
+                    <div>Vul Odoo gebruikersnaam en paswoord in</div>
+                    <form autocomplete="on">
+                        <div class="v-odoo-input">
+                            <div class="v-field-value-full-width" id="placeholderOdooUsername"></div>
+                            <div class="v-field-value-full-width" id="placeholderOdooPassword"></div>
+                        </div>
+                    </form>
+                </div>
+                <div id="btnOdooLogin"></div>
+            </div>
+
+            <div style="padding: 10px" id="montageDiv" class="v-montage">
+                <div>Montagegegevens:</div>
+                <div style="padding: 10px 5px">
+                    <div class="v-field-label2">Datum: </div>
+                    <div class="v-field-value2" id="date"></div>
+                </div>
+                <div class="v-montageBlock">
+                    <div id="btnRefresh"></div>
+                    <div class="v-dataGridmontage" id="dataGridmontage"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+<script src="https://components.connect.trimble.com/trimble-connect-workspace-api/index.js"></script>
+<script src="./scripts/montage16.js"></script>
+</html>
