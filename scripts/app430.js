@@ -1530,7 +1530,6 @@ function getDateAndTimeFromString(s) {
 }
 
 function getDateFromString(s) {
-    console.log(s)
     var date = null;
     var resultDate = s.match(regexDate);
     if (resultDate != null) {

@@ -219,7 +219,7 @@ var objectStatuses = [];
 
 var selectionChangedIds = [];
 
-var selectedObjects = [
+var listObjects = [
     //{
     //    ModelId: "0",
     //    ObjectRuntimeId: 0,
@@ -1805,7 +1805,7 @@ function getStatus(record, referenceDate) {
     if (typeof record.state === 'string' && record.state === 'onhold') {
         return StatusOnHold;
     }
-    else if (typeof record.date_transported === 'string' && getDateFromString(record.date_erected) <= referenceDate) {
+    else if (typeof record.date_erected === 'string' && getDateFromString(record.date_erected) <= referenceDate) {
         return StatusErected;
     }
     else if (typeof record.date_transported === 'string' && getDateFromString(record.date_fab_dem) <= referenceDate) {
@@ -2275,10 +2275,10 @@ async function selectionChanged(data) {
         if (selectionChangedIds[selectionChangedIds.length - 1] != mySelectionId) return;
         //console.log("tempSelectedObjects2");
         //console.log(tempSelectedObjects);
-        selectedObjects.length = 0;
+        listObjects.length = 0;
         //for (var o of tempSelectedObjects)
         //    selectedObjects.push(o);
-        selectedObjects.push(...tempSelectedObjects.filter(o => o.OdooTcmId != -1).sort(function (a, b) { return a.PosInFreight - b.PosInFreight; }));
+        listObjects.push(...tempSelectedObjects.filter(o => o.OdooTcmId != -1).sort(function (a, b) { return a.PosInFreight - b.PosInFreight; }));
         setPosInFreight();
         clearDataGridProductionSorting();
         dataGridMontage.dxDataGrid("refresh");
@@ -2297,8 +2297,8 @@ async function selectionChanged(data) {
 }
 
 function setPosInFreight() {
-    for (var i = 0; i < selectedObjects.length; i++)
-        selectedObjects[i].PosInFreight = i + 1;
+    for (var i = 0; i < listObjects.length; i++)
+        listObjects[i].PosInFreight = i + 1;
 }
 
 async function refreshExistingSlips() {
@@ -3809,7 +3809,7 @@ $('#btnSaveFreightDivId').dxButton({
         }
         //-- set freight number of selected (= elements that will be put in this freight)
         //console.log(`found ${selectedObjects.length} selected objects to modify`);
-        for (var ele of selectedObjects) {
+        for (var ele of listObjects) {
             var existingEle = elementsToModify.find(x => x.Guid === ele.Guid);
             if (existingEle == undefined) {
                 elementsToModify.push({
@@ -3947,7 +3947,7 @@ $("#btnCreateSlipDivId").dxButton({
                 throw "Deliveryslip was not created";
 
             var objStatusPlannedForTransport = objectStatuses.find(x => x.Status === StatusPlannedForTransport);
-            for (var selectedObject of selectedObjects) {
+            for (var selectedObject of listObjects) {
                 if (selectedObject.OdooPmmId == -1 || selectedObject.OdooTcmId == -1 || !selectedObject.ValidForNewSlip)
                     continue;
 
@@ -5850,7 +5850,7 @@ $("#btnReversePosInFreightDivId").dxButton({
     icon: 'sorted',
     onClick: async function (data) {
         try {
-            selectedObjects.reverse();
+            listObjects.reverse();
             setPosInFreight();
             dataGridProduction.dxDataGrid("refresh");
         }
@@ -6279,7 +6279,7 @@ $("#btnOnlyShowErected").dxButton({
 //#endregion
 
 var dataGridMontage = $("#dataGridTransport").dxDataGrid({
-    dataSource: selectedObjects,
+    dataSource: listObjects,
     keyExpr: 'OdooTcmId',
     showBorders: true,
     selection: {
@@ -6344,7 +6344,7 @@ var dataGridMontage = $("#dataGridTransport").dxDataGrid({
     onRowRemoving: async function (e) {
         var instanceDropDown = dropDownExistingSlips.dxDropDownBox("instance");
         instanceDropDown.reset();
-        var objectRemoved = selectedObjects.find(x => x.OdooTcmId == e.key);
+        var objectRemoved = listObjects.find(x => x.OdooTcmId == e.key);
         if (objectRemoved != undefined) {
             var models = await API.viewer.getModels("loaded");
             for (var model of models) {
@@ -6362,7 +6362,7 @@ var dataGridMontage = $("#dataGridTransport").dxDataGrid({
 });
 
 var dataGridProduction = $("#dataGridProduction").dxDataGrid({
-    dataSource: selectedObjects,
+    dataSource: listObjects,
     keyExpr: 'OdooTcmId',
     showBorders: true,
     selection: {
@@ -6443,11 +6443,11 @@ var dataGridProduction = $("#dataGridProduction").dxDataGrid({
             clearDataGridProductionSorting();
 
             const visibleRows = e.component.getVisibleRows();
-            const toIndex = selectedObjects.findIndex((item) => item.OdooTcmId === visibleRows[e.toIndex].data.OdooTcmId);
-            const fromIndex = selectedObjects.findIndex((item) => item.OdooTcmId === e.itemData.OdooTcmId);
+            const toIndex = listObjects.findIndex((item) => item.OdooTcmId === visibleRows[e.toIndex].data.OdooTcmId);
+            const fromIndex = listObjects.findIndex((item) => item.OdooTcmId === e.itemData.OdooTcmId);
 
-            selectedObjects.splice(fromIndex, 1);
-            selectedObjects.splice(toIndex, 0, e.itemData);
+            listObjects.splice(fromIndex, 1);
+            listObjects.splice(toIndex, 0, e.itemData);
 
             setPosInFreight();
 
@@ -6457,7 +6457,7 @@ var dataGridProduction = $("#dataGridProduction").dxDataGrid({
     onRowRemoving: async function (e) {
         var instanceDropDown = dropDownExistingSlips.dxDropDownBox("instance");
         instanceDropDown.reset();
-        var objectRemoved = selectedObjects.find(x => x.OdooTcmId == e.key);
+        var objectRemoved = listObjects.find(x => x.OdooTcmId == e.key);
         if (objectRemoved != undefined) {
             var models = await API.viewer.getModels("loaded");
             for (var model of models) {
