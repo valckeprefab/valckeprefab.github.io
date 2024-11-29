@@ -3161,7 +3161,7 @@ const popup = $('#popup').dxPopup({
     }],
 }).dxPopup('instance');
 
-var referenceDatePicker = $('#date').dxDateBox({
+var datePicker = $('#date').dxDateBox({
     calendarOptions: { firstDayOfWeek: 1 },
     type: 'date',
     label: "dag/maand/jaar",
@@ -4890,7 +4890,7 @@ $("#btnSetColorFromStatusDivId").dxButton({
             var referenceToday = checkBoxToday.dxCheckBox("instance").option("value");
             //console.log("referenceToday: " + referenceToday);
             if (!Boolean(referenceToday)) {
-                referenceDate = new Date(referenceDatePicker.dxDateBox("instance").option("value"));
+                referenceDate = new Date(datePicker.dxDateBox("instance").option("value"));
                 //console.log("referenceDate: " + referenceDate);
             }
             referenceDate.setHours(23);
