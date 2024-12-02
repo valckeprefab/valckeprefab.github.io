@@ -29,7 +29,7 @@
     </script>
     <div class="demo-container">
         <div class="form">
-            <div class="v-odooData">
+            <div style="padding: 10px" class="v-odooData" id="divOdoo">
                 <div class="bordered">
                     <div>Vul Odoo gebruikersnaam en paswoord in</div>
                     <form autocomplete="on">
@@ -39,18 +39,24 @@
                         </div>
                     </form>
                 </div>
-                <div>_</div>
+                <div id="btnOdooLogin"></div>
             </div>
 
-            <div id="montageDiv" class="v-montage">
+            <div style="padding: 10px" id="montageDiv" class="v-montage">
+                <div>Visualisatie:</div>
+                <div id="calendar"></div>
                 <div>Montagegegevens:</div>
-                <div>_</div>
+                <div style="padding: 10px 5px">
+                    <div class="v-field-label2">Datum: </div>
+                    <div class="v-field-value2" id="date"></div>
+                </div>
                 <div class="v-montageBlock">
+                    <div id="btnRefresh"></div>
+                    <!--<div id="btnSort"></div>-->
+                    <div id="btnClearSelection"></div>
                     <div class="v-dataGridmontage" id="dataGridmontage"></div>
                 </div>
-                <div>_</div>
             </div>
-
         </div>
     </div>
 </body>

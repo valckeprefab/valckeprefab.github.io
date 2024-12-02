@@ -32,107 +32,37 @@ var odooPasswordTextbox = $('#placeholderOdooPassword').dxTextBox({
     }
 });
 
-async function getProjectNumber() {
-    //Get project name
-    var regexProjectName = /^[TV]\d+_\w+/;
-    var project = await API.project.getProject();
-    if (!regexProjectName.test(project.name))
-        return undefined;
-    else
-        return project.name.split("_")[0];
-}
-
-var hasAccesToTransport = false;
-var hasAccesToFreights = false;
-var selectionChangedIds = [];
-var selectedObjects = [];
-async function selectionChanged(data) {
-    odooAssemblyData = undefined;
-    popup.hide();
-
-    if (!hasAccesToTransport && !hasAccesToFreights)
-        return;
-
-    try {
-        await checkAssemblySelection();
-    }
-    catch (e) {
-        DevExpress.ui.notify(e, "info", 5000);
-    }
-
-    var mySelectionId = ++lastSelectionId;
-    selectionChangedIds.push(mySelectionId);
-    if (!performSelectionChanged) {
-        return;
-    }
-
-    if (selectionChangedIds[selectionChangedIds.length - 1] != mySelectionId) return;
-    var tempSelectedObjects = [];
-    try {
-        for (const mobjects of data) {
-            var modelId = mobjects.modelId;
-            const objectsRuntimeIds = mobjects.objectRuntimeIds;
-            if (objectsRuntimeIds.length == 0)
-                continue;
-            const objectIds = await API.viewer.convertToObjectIds(modelId, objectsRuntimeIds);
-            for (var i = 0; i < objectsRuntimeIds.length; i++) {
-                tempSelectedObjects.push({
-                    ModelId: modelId,
-                    ObjectRuntimeId: objectsRuntimeIds[i],
-                    ObjectId: objectIds[i],
-                    Guid: Guid.fromCompressedToFull(objectIds[i]),
-                    OdooTcmId: -1,
-                    OdooPmmId: -1,
-                    Prefix: "",
-                    PosNmbr: 0,
-                    Rank: 0,
-                    AssemblyName: "",
-                    AvailableForTransport: false,
-                    DateTransported: "",
-                    SlipName: "",
-                    OdooSlipId: -1,
-                    Freight: -1,
-                    PosInFreight: -1,
-                });
-            }
+$('#btnOdooLogin').dxButton({
+    stylingMode: "outlined",
+    text: "Log in", 
+    type: "success",
+    onClick: async function (data) {
+        if(await tryOdooLogin())
+        {
+            var montageDiv = document.getElementById("montageDiv");
+            montageDiv.style.display = "block";
         }
+    },
+});
 
-        if (selectionChangedIds[selectionChangedIds.length - 1] != mySelectionId) return;
-        //Get project name
-        var projectNumber = await getProjectNumber();
-        if (projectNumber == undefined)
-            return;
+$('#btnRefresh').dxButton({
+    stylingMode: "outlined",
+    text: "Vernieuwen", 
+    type: "success",
+    onClick: async function (data) {
+        try {
+            //Authenticate with MUK API
+            var token = await getToken();
 
-        //Authenticate with MUK API
-        var token = await getToken();
+            //Get project name
+            var projectNumber = await getProjectNumber();
 
-        //Get project ID
-        var projectId = await GetProjectId(projectNumber);
+            //Get project ID
+            var projectId = await GetProjectId(projectNumber);
+            
+            var domainTrimbleConnectMain = `[["project_id", "=", ${projectId}], ["date_erected","=", false], ["date_transported","!=", false]]`;
 
-        var referenceDate = new Date();
-        referenceDate.setHours(23);
-        referenceDate.setMinutes(59);
-        referenceDate.setSeconds(59);
-
-        for (var i = 0; i < tempSelectedObjects.length; i += fetchLimit) { //loop cuz only fetchLimit records get fetched at a time
-            if (selectionChangedIds[selectionChangedIds.length - 1] != mySelectionId) return;
-            var domainTrimbleConnectMain = "";
-
-            for (var j = i; j < tempSelectedObjects.length && j < i + fetchLimit; j++) {
-                var filterArrStr = '["name", "ilike", "' + tempSelectedObjects[j].Guid + '"]';
-                if (j > i) {
-                    domainTrimbleConnectMain = '"|", ' + filterArrStr + ',' + domainTrimbleConnectMain;
-                }
-                else {
-                    domainTrimbleConnectMain = filterArrStr;
-                }
-            }
-            //adding project_id to the query reduces the time it takes to find the records
-            //based on seeing how fast the grid refreshes with and w/o project_id, should properly time the difference to verify.
-            //should also try this with other queries that use ilike
-            domainTrimbleConnectMain = '[["project_id", "=", ' + projectId + '],' + domainTrimbleConnectMain + "]";
-            var domainProjectMarks = "";
-            var recordsAdded = 0;
+            var elementsToAdd = [];
             await $.ajax({
                 type: "GET",
                 url: odooURL + "/api/v1/search_read",
@@ -140,149 +70,173 @@ async function selectionChanged(data) {
                 data: {
                     model: "trimble.connect.main",
                     domain: domainTrimbleConnectMain,
-                    fields: '["id", "mark_id", "name", "rank", "mark_available", "date_transported", "freight", "pos_in_freight_number"]',
+                    fields: '["id", "name"]',
                 },
                 success: function (odooData) {
-                    var cntr = 0;
                     for (var record of odooData) {
-                        var filterArrStr = '["id", "=", "' + record.mark_id[0] + '"]';
-                        if (cntr > 0) {
-                            domainProjectMarks = '"|", ' + filterArrStr + ',' + domainProjectMarks;
-                        }
-                        else {
-                            domainProjectMarks = filterArrStr;
-                        }
-                        var selectedObject = tempSelectedObjects.find(x => x.Guid === record.name);
-                        if (selectedObject != undefined) {
-                            selectedObject.OdooTcmId = record.id;
-                            selectedObject.OdooPmmId = record.mark_id[0];
-                            selectedObject.Rank = record.rank;
-                            selectedObject.OdooCode = record.mark_id[1];
-                            selectedObject.DateTransported = record.date_transported ? getDateFromString(record.date_transported) : "";
-                            selectedObject.AvailableForTransport = record.mark_available;
-                            selectedObject.Freight = record.freight;
-                            selectedObject.PosInFreight = record.pos_in_freight_number;
-                        }
-                        cntr++;
-                        recordsAdded++;
-                    }
-                    //don't think project_id would make this query faster since it's an exact id is given
-                    domainProjectMarks = "[" + domainProjectMarks + "]";
-                }
-            });
-            if (recordsAdded > 0) {
-                await $.ajax({
-                    type: "GET",
-                    url: odooURL + "/api/v1/search_read",
-                    headers: { "Authorization": "Bearer " + token },
-                    data: {
-                        model: "project.master_marks",
-                        domain: domainProjectMarks,
-                        fields: '["id", "mark_mass", "mark_ranking", "mark_prefix", "mark_reinf_type", "mark_profile"]',
-                    },
-                    success: function (odooData) {
-                        for (var record of odooData) {
-                            var objects = tempSelectedObjects.filter(x => x.OdooPmmId == record.id);
-                            for (var object of objects) {
-                                object.Weight = record.mark_mass;
-                                object.PosNmbr = record.mark_ranking;
-                                object.Prefix = record.mark_prefix;
-                                object.AssemblyName = record.mark_prefix + record.mark_ranking + "." + object.Rank;
-                                object.ValidForNewSlip = object.AvailableForTransport && object.DateTransported === "";
-                                object.Profile = record.mark_profile;
-                                object.ReinforcementType = record.mark_reinf_type ? record.mark_reinf_type : "";
-                            }
-                        }
-                    }
-                });
-
-                if (hasAccesToTransport) {
-                    var transportedObjects = tempSelectedObjects;
-                    for (var k = 0; k < transportedObjects.length; k += fetchLimit) { //loop cuz only fetchLimit records get fetched at a time
-                        var domainSliplines = "";
-
-                        for (var l = k; l < transportedObjects.length && l < k + fetchLimit; l++) {
-                            var filterArrStr = `["trimble_connect_id.id", "=", "${transportedObjects[l].OdooTcmId}"]`;
-                            if (l > k) {
-                                domainSliplines = '"|", ' + filterArrStr + ',' + domainSliplines;
-                            }
-                            else {
-                                domainSliplines = filterArrStr;
-                            }
-                        }
-                        domainSliplines = `[["trimble_connect_id.project_id", "=", ${projectId}],["slip_id.state", "!=", "cancel"],${domainSliplines}]`;
-
-                        await $.ajax({
-                            type: "GET",
-                            url: odooURL + "/api/v1/search_read",
-                            headers: { "Authorization": "Bearer " + token },
-                            data: {
-                                model: "vpb.delivery.slip.line",
-                                domain: domainSliplines,
-                                fields: '["id", "slip_id", "trimble_connect_id", "name"]',
-                            },
-                            success: function (odooData) {
-                                for (var record of odooData) {
-                                    var object = tempSelectedObjects.find(x => x.OdooTcmId == record.trimble_connect_id[0]);
-                                    if (object != undefined) {
-                                        object.OdooSlipId = record.slip_id[0];
-                                        object.SlipName = record.slip_id[1];
-                                    }
-                                }
-                            }
+                        elementsToAdd.push({
+                            Guid: record.name,
+                            SelectedInModel: false,
+                            OdooTcmId: -1,
+                            Origin: "odoo",
                         });
                     }
                 }
-            }
-            else {
-                //console.log("no records found in trimble.connect.main");
-            }
-        }
-        if (selectionChangedIds[selectionChangedIds.length - 1] != mySelectionId) return;
-        selectedObjects.length = 0;
-        selectedObjects.push(...tempSelectedObjects.filter(o => o.OdooTcmId != -1).sort(function (a, b) { return a.PosInFreight - b.PosInFreight; }));
-        setPosInFreight();
-        clearDataGridProductionSorting();
-        dataGridMontage.dxDataGrid("refresh");
+            });
 
-        if (resetSlipDropdown) {
-            var instanceDropDown = dropDownExistingSlips.dxDropDownBox("instance");
-            instanceDropDown.reset();
+            await SetModelInfo(elementsToAdd);
+            await SetOdooData(elementsToAdd);
+            
+            var listObjectsFromModel = listObjects.filter(o => o.SelectedInModel && elementsToAdd.find(x => x.Guid === o.Guid) == undefined);
+            listObjects.length = 0;
+            var odooObjToAdd = listObjectsFromModel.filter(o => o.OdooTcmId != -1);
+            odooObjToAdd.sort(compareElements);
+            listObjects.push(...odooObjToAdd);
+            elementsToAdd.sort(compareElements);
+            listObjects.push(...elementsToAdd);
+            //console.log(listObjects);
+            dataGridMontage.dxDataGrid("refresh");
         }
-        resetSlipDropdown = true;
+        catch (e) {
+            DevExpress.ui.notify(e, "info", 5000);
+        }
+    },
+});
+
+/*$('#btnSort').dxButton({
+    stylingMode: "outlined",
+    text: "Sorteren", 
+    type: "success",
+    onClick: async function (data) {
+        //selectedObjects.sort(function (a, b)  { compareElements(a, b) } );
+        console.log(selectedObjects);
+        selectedObjects.sort(compareElements);
+        console.log(selectedObjects);
+        var dataGrid = dataGridMontage.dxDataGrid("instance");
+        dataGrid.refresh();
+    },
+});*/
+
+$('#btnClearSelection').dxButton({
+    stylingMode: "outlined",
+    text: "Selectie legen", 
+    type: "success",
+    onClick: async function (data) {
+        dataGridMontage.dxDataGrid("clearSelection");
+    },
+});
+
+async function WriteErectionDateToOdoo(elements, date)
+{
+    try {
+        //Authenticate with MUK API
+        var token = await getToken();
+
+        var dateString = false;
+        if(date)
+            dateString = getShortStringFromDate(date);
+        var success = false;
+        var valuesStr = "";
+        var elementColor;
+        if(dateString)
+        {
+            valuesStr = '{"date_erected": "' + dateString + '"}';
+            elementColor = { r: 255, g: 0, b: 255, a: 255 };
+        }
+        else
+        {
+            valuesStr = '{"date_erected": false }';
+            elementColor = { r: 34, g: 177, b: 76, a: 255 };
+        }
+
+        await $.ajax({
+            type: "PUT",
+            url: odooURL + "/api/v1/write",
+            headers: { "Authorization": "Bearer " + token },
+            data: {
+                model: "trimble.connect.main",
+                ids: "[" + elements.map(o => o.OdooTcmId).toString() + "]",
+                values: valuesStr,
+            },
+            success: function (odooData) {
+                for(var element of elements)
+                {
+                    element.DateErected = date;
+                    element.Origin = date ? "model" : "odoo";
+                }
+                //console.log("success");
+                //console.log(odooData);
+                success = true;
+            },
+            fail: function(jqXHR, textStatus, errorThrown){
+                //console.log(jqXHR);
+                //console.log(textStatus);
+                console.log(errorThrown);
+            }
+        });
+        
+        if(success)
+        {
+            var modelIds = [...new Set(elements.map(ele => ele.ModelId))];
+            for(var modelId of modelIds)
+            {
+                var objectRuntimeIds = elements.filter(ele => ele.ModelId === modelId).map(ele => ele.ObjectRuntimeId);
+                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectRuntimeIds }] }, { color: elementColor });
+            }
+        }
+    }
+    catch (e) {
+        DevExpress.ui.notify(e, "info", 5000);
+    }
+}
+
+function getShortStringFromDate(d) {
+    //console.log(d);
+    var year = d.getFullYear();
+    var month = pad("00", d.getMonth() + 1);
+    var day = pad("00", d.getDate());
+    var returnstr = year + "-" + month + "-" + day;
+    return returnstr;
+}
+
+function pad(pad, str) {
+    if (typeof str === 'undefined')
+        return pad;
+    return (pad + str).slice(-pad.length);
+}
+
+async function tryOdooLogin()
+{
+    var success = false;
+    access_token = "";
+    refresh_token = "";
+    access_token_expiretime = -1;
+    try
+    {
+        var token = await getToken();
+        if(token !== "")
+        {
+            await setAccesBooleans();
+            if(!hasAccesToTransport)
+            {
+                DevExpress.ui.notify(e, "Deze gebruiker heeft geen toegang tot de transportgegevens.", 5000);
+            }
+            else
+            {
+                success = true;
+            }
+        }
+        else
+        {
+            DevExpress.ui.notify(e, "Kon geen verbinding maken met Odoo.", 5000);
+        }
     }
     catch (e) {
         console.log(e);
+        console.log(e.toString());
+        DevExpress.ui.notify("Kon niet inloggen. Controleer verbinding met Odoo en gebruikersnaam+paswoord", "info", 5000);
     }
-    performSelectionChanged = true;
-}
-
-async function checkAssemblySelection() {
-    const settings = await API.viewer.getSettings();
-    if (!settings.assemblySelection) {
-        throw new Error("Gebruik assembly selectie (zie linksboven, vierkant met kleinere vierkantjes in de hoeken)");
-    }
-}
-
-async function selectGuids(guids) {
-    var validGuids = guids.filter(x => x != undefined && x !== "");
-    if (validGuids.length == 0) {
-        await API.viewer.setSelection(undefined, 'remove');
-    }
-    else {
-        var models = await API.viewer.getModels("loaded");
-        var compressedGuids = validGuids.map(x => Guid.fromFullToCompressed(x));
-        var selectionType = "set";
-        for (var model of models) {
-            var runtimeIds = await API.viewer.convertToObjectRuntimeIds(model.id, compressedGuids);
-            runtimeIds = runtimeIds.filter(x => x != undefined);
-            if (runtimeIds == undefined || runtimeIds.length == 0)
-                continue;
-            var selector = { modelObjectIds: [{ modelId: model.id, objectRuntimeIds: runtimeIds }] };
-            await API.viewer.setSelection(selector, selectionType);
-            selectionType = "add";
-        }
-    }
+    return success;
 }
 
 var access_token = "";
@@ -342,11 +296,22 @@ async function getToken() {
     return access_token;
 }
 
-function getOdooSlipUrl(slipId) {
-    return `${odooURL}/web#id=${slipId}&action=3552&model=vpb.delivery.slip&view_type=form&cids=1&menu_id=2270`;
+function getDateFromString(s) {
+    var date = null;
+    var resultDate = s.match(regexDate);
+    if (resultDate != null) {
+        var splitDate = resultDate[0].split("-");
+        var year = splitDate[0];
+        var month = splitDate[1];
+        var day = splitDate[2];
+        date = new Date(year, month - 1, day);
+    }
+    return date;
 }
 
-var referenceDatePicker = $('#date').dxDateBox({
+var regexDate = /[0-9]{4}-[0-9]{2}-[0-9]{2}/;
+var regexDateAndTime = /[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}/;
+var datePicker = $('#date').dxDateBox({
     calendarOptions: { firstDayOfWeek: 1 },
     type: 'date',
     label: "dag/maand/jaar",
@@ -354,45 +319,558 @@ var referenceDatePicker = $('#date').dxDateBox({
     value: Date.now(),
 });
 
+async function setAccesBooleans() {
+    try {
+        var token = await getToken();
+
+        var canReadSlips = false;
+        await $.ajax({
+            type: "GET",
+            url: odooURL + "/api/v1/search_read",
+            headers: { "Authorization": "Bearer " + token },
+            data: {
+                model: "vpb.delivery.slip",
+                domain: '[["id", ">", "-1"]]',
+                limit: 1,
+                fields: '["id"]'
+            },
+            success: function () {
+                canReadSlips = true;
+            }
+        });
+
+        var canReadSliplines = false;
+        await $.ajax({
+            type: "GET",
+            url: odooURL + "/api/v1/search_read",
+            headers: { "Authorization": "Bearer " + token },
+            data: {
+                model: "vpb.delivery.slip.line",
+                domain: '[["id", ">", "-1"]]',
+                limit: 1,
+                fields: '["id"]'
+            },
+            success: function () {
+                canReadSliplines = true;
+            }
+        });
+
+        if (canReadSlips && canReadSliplines) {
+            hasAccesToTransport = true;
+        }
+    }
+    catch (ex) {
+        console.log("No access to transport data.");
+    }
+}
+
+async function getProjectNumber() {
+    //Get project name
+    var regexProjectName = /^[TV]\d+_\w+/;
+    var project = await API.project.getProject();
+    if (!regexProjectName.test(project.name))
+        return undefined;
+    else
+        return project.name.split("_")[0];
+}
+
+var projectId = -1;
+async function GetProjectId(projectNumber) {
+    if (projectId == -1) {
+        var id = -1;
+        //console.log("Start get project Id");
+        //console.log("Odoo URL: " + odooURL + "/api/v1/search_read");
+        //console.log("using token: " + token);
+
+        //Authenticate with MUK API
+        var token = await getToken();
+
+        await $.ajax({
+            type: "GET",
+            url: odooURL + "/api/v1/search_read",
+            headers: { "Authorization": "Bearer " + token },
+            data: {
+                model: "project.project",
+                domain: '["&", "|", ["active","=",True], ["active","=",False], ["project_identifier", "=", "' + projectNumber + '"]]',
+                fields: '["id", "project_identifier"]',
+            },
+            success: function (data) {
+                //console.log(data);
+                id = data[0].id;
+                projectId = id;
+            }
+        });
+        //console.log("End get project Id");
+    }
+
+    return projectId;
+}
+
+//variable to prevent selection changed event from doing its queries again after selection erection arrows
+var performSelectionChanged = true;
+var hasAccesToTransport = false;
+var listObjects = [];
+async function selectionChanged(data) {
+    //console.log("selectionChanged with performSelectionChanged = " + performSelectionChanged);
+    if (!hasAccesToTransport)
+        return;
+
+    try {
+        await checkAssemblySelection();
+    }
+    catch (e) {
+        DevExpress.ui.notify(e, "info", 5000);
+    }
+
+    if (!performSelectionChanged) {
+        performSelectionChanged = true;
+        return;
+    }
+
+    for(var ele of listObjects)
+    {
+        ele.SelectedInModel = false;
+    }
+
+    var tempSelectedObjects = [];
+    try {
+        //Odoo objecten die nu al in de lijst zitten behouden
+        var listObjectsFromOdoo = listObjects.filter(o => o.Origin === "odoo");
+
+        for (const mobjects of data) {
+            var modelId = mobjects.modelId;
+            const objectsRuntimeIds = mobjects.objectRuntimeIds;
+            if (objectsRuntimeIds.length == 0)
+                continue;
+            const objectIds = await API.viewer.convertToObjectIds(modelId, objectsRuntimeIds);
+            for (var i = 0; i < objectsRuntimeIds.length; i++) {
+                var guid = Guid.fromCompressedToFull(objectIds[i]);
+                var objectFromOdoo = listObjectsFromOdoo.find(o => o.Guid === guid);
+                if(objectFromOdoo != undefined)
+                {
+                    objectFromOdoo.SelectedInModel = true;
+                }
+                else
+                {
+                    tempSelectedObjects.push({
+                        ModelId: modelId,
+                        ObjectRuntimeId: objectsRuntimeIds[i],
+                        ObjectId: objectIds[i],
+                        Guid: guid,
+                        OdooTcmId: -1,
+                        OdooPmmId: -1,
+                        Rank: 0,
+                        OdooCode: "",
+                        DateTransported: false,
+                        DateErected: false,
+                        AvailableForTransport: false,
+                        Prefix: "",
+                        PosNmbr: 0,
+                        AssemblyName: "",
+                        OdooSlipId: -1,
+                        SlipName: "",
+                        SelectedInModel: true,
+                        Origin: "model"
+                    });
+                }
+            }
+        }
+
+        await SetOdooData(tempSelectedObjects);
+        
+        var dataGrid = dataGridMontage.dxDataGrid("instance");
+
+        listObjects.length = 0;
+        var tempSelectedObjectsToAdd = tempSelectedObjects.filter(o => o.OdooTcmId != -1);
+        tempSelectedObjectsToAdd.sort(compareElements);
+        listObjects.push(...tempSelectedObjectsToAdd);
+        listObjectsFromOdoo.sort(compareElements);
+        listObjects.push(...listObjectsFromOdoo);
+        var selectedOdooTcmIds = listObjects.filter(o => o.SelectedInModel).map(o => o.OdooTcmId);
+        dataGrid.refresh();
+        dataGrid.selectRows(selectedOdooTcmIds, false);
+        dataGrid.refresh();
+    }
+    catch (e) {
+        console.log(e);
+    }
+}
+
+async function SetOdooData(tempSelectedObjects)
+{
+    //Get project name
+    var projectNumber = await getProjectNumber();
+    if (projectNumber == undefined)
+        return;
+
+    //Authenticate with MUK API
+    var token = await getToken();
+
+    //Get project ID
+    var projectId = await GetProjectId(projectNumber);
+
+    for (var i = 0; i < tempSelectedObjects.length; i += fetchLimit) { //loop cuz only fetchLimit records get fetched at a time
+        var domainTrimbleConnectMain = "";
+
+        for (var j = i; j < tempSelectedObjects.length && j < i + fetchLimit; j++) {
+            var filterArrStr = '["name", "ilike", "' + tempSelectedObjects[j].Guid + '"]';
+            if (j > i) {
+                domainTrimbleConnectMain = '"|", ' + filterArrStr + ',' + domainTrimbleConnectMain;
+            }
+            else {
+                domainTrimbleConnectMain = filterArrStr;
+            }
+        }
+        //adding project_id to the query reduces the time it takes to find the records
+        //based on seeing how fast the grid refreshes with and w/o project_id, should properly time the difference to verify.
+        //should also try this with other queries that use ilike
+        domainTrimbleConnectMain = '[["project_id", "=", ' + projectId + '],' + domainTrimbleConnectMain + "]";
+        var domainProjectMarks = "";
+        var recordsAdded = 0;
+        await $.ajax({
+            type: "GET",
+            url: odooURL + "/api/v1/search_read",
+            headers: { "Authorization": "Bearer " + token },
+            data: {
+                model: "trimble.connect.main",
+                domain: domainTrimbleConnectMain,
+                fields: '["id", "mark_id", "name", "rank", "date_transported", "date_erected"]',
+            },
+            success: function (odooData) {
+                var cntr = 0;
+                for (var record of odooData) {
+                    var filterArrStr = '["id", "=", "' + record.mark_id[0] + '"]';
+                    if (cntr > 0) {
+                        domainProjectMarks = '"|", ' + filterArrStr + ',' + domainProjectMarks;
+                    }
+                    else {
+                        domainProjectMarks = filterArrStr;
+                    }
+                    var selectedObject = tempSelectedObjects.find(x => x.Guid === record.name);
+                    if (selectedObject != undefined) {
+                        selectedObject.OdooTcmId = record.id;
+                        selectedObject.OdooPmmId = record.mark_id[0];
+                        selectedObject.Rank = record.rank;
+                        selectedObject.OdooCode = record.mark_id[1];
+                        selectedObject.DateTransported = record.date_transported;
+                        selectedObject.DateErected = record.date_erected;
+                    }
+                    cntr++;
+                    recordsAdded++;
+                }
+                //don't think project_id would make this query faster since it's an exact id is given
+                domainProjectMarks = "[" + domainProjectMarks + "]";
+            }
+        });
+        if (recordsAdded > 0) {
+            await $.ajax({
+                type: "GET",
+                url: odooURL + "/api/v1/search_read",
+                headers: { "Authorization": "Bearer " + token },
+                data: {
+                    model: "project.master_marks",
+                    domain: domainProjectMarks,
+                    fields: '["id", "mark_ranking", "mark_prefix"]',
+                },
+                success: function (odooData) {
+                    for (var record of odooData) {
+                        var objects = tempSelectedObjects.filter(x => x.OdooPmmId == record.id);
+                        for (var object of objects) {
+                            object.Prefix = record.mark_prefix;
+                            object.PosNmbr = record.mark_ranking;
+                            object.AssemblyName = record.mark_prefix + record.mark_ranking + "." + object.Rank;
+                        }
+                    }
+                }
+            });
+
+            if (hasAccesToTransport) {
+                var transportedObjects = tempSelectedObjects;
+                for (var k = 0; k < transportedObjects.length; k += fetchLimit) { //loop cuz only fetchLimit records get fetched at a time
+                    var domainSliplines = "";
+
+                    for (var l = k; l < transportedObjects.length && l < k + fetchLimit; l++) {
+                        var filterArrStr = `["trimble_connect_id.id", "=", "${transportedObjects[l].OdooTcmId}"]`;
+                        if (l > k) {
+                            domainSliplines = '"|", ' + filterArrStr + ',' + domainSliplines;
+                        }
+                        else {
+                            domainSliplines = filterArrStr;
+                        }
+                    }
+                    domainSliplines = `[["trimble_connect_id.project_id", "=", ${projectId}],["slip_id.state", "!=", "cancel"],${domainSliplines}]`;
+
+                    await $.ajax({
+                        type: "GET",
+                        url: odooURL + "/api/v1/search_read",
+                        headers: { "Authorization": "Bearer " + token },
+                        data: {
+                            model: "vpb.delivery.slip.line",
+                            domain: domainSliplines,
+                            fields: '["id", "slip_id", "trimble_connect_id", "name"]',
+                        },
+                        success: function (odooData) {
+                            for (var record of odooData) {
+                                var object = tempSelectedObjects.find(x => x.OdooTcmId == record.trimble_connect_id[0]);
+                                if (object != undefined) {
+                                    object.OdooSlipId = record.slip_id[0];
+                                    object.SlipName = record.slip_id[1];
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        }
+        else {
+            //console.log("no records found in trimble.connect.main");
+        }
+    }
+}
+
+async function ColorErectedElementsByDate(date) {
+    if(!date)
+        return;
+
+    try {
+        //Authenticate with MUK API
+        var token = await getToken();
+
+        //Get project name
+        var projectNumber = await getProjectNumber();
+        if (projectNumber == undefined)
+            return;
+
+        //Get project ID
+        var id = await GetProjectId(projectNumber);
+
+        await $.ajax({
+            type: "GET",
+            url: odooURL + "/api/v1/search_read",
+            headers: { "Authorization": "Bearer " + token },
+            data: {
+                model: "trimble.connect.main",
+                domain: '[["project_id", "=", ' + id + '],["date_erected","=","' + getShortStringFromDate(date) + '"]]',
+                fields: '["id", "name"]'
+            },
+            success: async function (odooData) {
+                var guids = [];
+                for (var record of odooData) {
+                    guids.push(record.name);
+                }
+                //Color elements
+                var validGuids = guids.filter(x => x != undefined && x !== "");
+                if (validGuids.length > 0) {
+                    var models = await API.viewer.getModels("loaded");
+                    var compressedGuids = validGuids.map(x => Guid.fromFullToCompressed(x));
+                    for (var model of models) {
+                        var runtimeIds = await API.viewer.convertToObjectRuntimeIds(model.id, compressedGuids);
+                        if (runtimeIds.length == 0)
+                            continue;
+                        //console.log(selector);
+                        //await API.viewer.setSelection(selector, "set");
+                        var children = await API.viewer.getHierarchyChildren(model.id, runtimeIds, 4, false);
+                        var childredIds = children.map(x => x.id);
+                        var selector = { modelObjectIds: [{ modelId: model.id, objectRuntimeIds: childredIds }] };
+                        await API.viewer.setObjectState(selector, { color: { r: 255, g: 0, b: 255, a: 255 } });
+                        //console.log(children);
+                        //console.log("done");
+                    }
+                }
+            }
+        });
+    }
+    catch (e) {
+        console.log(e);
+    }
+}
+
+function getShortStringFromDate(d) {
+    var year = d.getFullYear();
+    var month = pad("00", d.getMonth() + 1);
+    var day = pad("00", d.getDate());
+    var returnstr = year + "-" + month + "-" + day;
+    return returnstr;
+}
+
+async function SetModelInfo(elements) {
+    var models = await API.viewer.getModels("loaded");
+    for (var element of elements) {
+        var guid = element.Guid;
+        if(guid == undefined && guid === "")
+            continue;
+        var compressedGuid = Guid.fromFullToCompressed(guid);
+
+        for (var model of models) {
+            var runtimeIds = await API.viewer.convertToObjectRuntimeIds(model.id, [compressedGuid]);
+            if (runtimeIds == undefined || runtimeIds.length == 0)
+                continue;
+            element.ModelId = model.id;
+            element.ObjectRuntimeId = runtimeIds[0];
+            element.ObjectId = compressedGuid;
+        }
+    }
+}
+
+function compareStrings(a, b)
+{
+    if (a < b)
+        return -1;
+    else if (a > b)
+        return 1;
+    else
+        return 0;
+}
+
+function compareNumbers(a, b)
+{
+    return a - b;
+}
+
+function compareElements(elementA, elementB)
+{
+    const slipNameA = elementA.SlipName;
+    const slipNameB = elementB.SlipName;
+    var slipNameComparison = compareStrings(slipNameA, slipNameB);
+    if(slipNameComparison != 0)
+        return slipNameComparison;
+
+    const prefixA = elementA.Prefix;
+    const prefixB = elementB.Prefix;
+    var prefixComparison = compareStrings(prefixA, prefixB);
+    if(prefixComparison != 0)
+        return prefixComparison;
+
+    const posNmbrA = elementA.PosNmbr;
+    const posNmbrB = elementB.PosNmbr;
+    var posNmbrComparison = compareNumbers(posNmbrA, posNmbrB);
+    if(posNmbrComparison != 0)
+        return posNmbrComparison;
+
+    const rankA = elementA.Rank;
+    const rankB = elementB.Rank;
+    var rankComparison = compareNumbers(rankA, rankB);
+    return rankComparison;
+}
+
+async function checkAssemblySelection() {
+    const settings = await API.viewer.getSettings();
+    if (!settings.assemblySelection) {
+        throw new Error("Gebruik assembly selectie (zie linksboven, vierkant met kleinere vierkantjes in de hoeken)");
+    }
+}
+
+function getOdooSlipUrl(slipId) {
+    return `${odooURL}/web#id=${slipId}&action=3552&model=vpb.delivery.slip&view_type=form&cids=1&menu_id=2270`;
+}
+
 function checkUsernameAndPassword() {
     var username = odooUsernameTextbox.dxTextBox("instance").option("value");
     var password = odooPasswordTextbox.dxTextBox("instance").option("value");
     if (typeof username !== 'string' || typeof password !== 'string' || username === "" || password === "") {
-        console.log("no username and/or password found");
-        throw getTextById("errorMsgUsernamePassword");
+        throw new Error("Ongeldig gebruikersnaam of paswoord.");
     }
 }
 
+const calendar = $('#calendar').dxCalendar({
+    value: new Date(),
+    disabled: false,
+    firstDayOfWeek: 1,
+    showWeekNumbers: true,
+    weekNumberRule: 'auto',
+    zoomLevel: 'month',
+    onValueChanged: async function(data) {
+        await API.viewer.setObjectState(undefined, {color: { r: 255, g: 255, b: 255, a: 25 }});
+        await ColorErectedElementsByDate(data.value);
+    },
+  }).dxCalendar('instance');
+
+/*var selectedObjects = [{
+    ModelId: 1234,
+    ObjectRuntimeId: 1234,
+    ObjectId: 1234,
+    Guid: "123",
+    OdooTcmId: 1,
+    OdooPmmId: 1,
+    Rank: 1,
+    OdooCode: "V1234.00000A.0001",
+    DateTransported: Date.now(),
+    DateErected: false,
+    Prefix: "A",
+    PosNmbr: 1,
+    AssemblyName: "A1.1",
+    OdooSlipId: 1,
+    SlipName: "BON1",
+},{
+    ModelId: 1234,
+    ObjectRuntimeId: 1234,
+    ObjectId: 1234,
+    Guid: "123",
+    OdooTcmId: 4,
+    OdooPmmId: 4,
+    Rank: 1,
+    OdooCode: "V1234.00TEST.0002",
+    DateTransported: Date.now(),
+    DateErected: Date.now(),
+    Prefix: "TEST",
+    PosNmbr: 2,
+    AssemblyName: "TEST2.1",
+    OdooSlipId: 2,
+    SlipName: "BON2",
+},{
+    ModelId: 1234,
+    ObjectRuntimeId: 1234,
+    ObjectId: 1234,
+    Guid: "123",
+    OdooTcmId: 3,
+    OdooPmmId: 3,
+    Rank: 1,
+    OdooCode: "V1234.00000B.0001",
+    DateTransported: Date.now(),
+    DateErected: false,
+    Prefix: "B",
+    PosNmbr: 1,
+    AssemblyName: "B.1",
+    OdooSlipId: 1,
+    SlipName: "BON1",
+},{
+    ModelId: 1234,
+    ObjectRuntimeId: 1234,
+    ObjectId: 1234,
+    Guid: "123",
+    OdooTcmId: 2,
+    OdooPmmId: 2,
+    Rank: 2,
+    OdooCode: "V1234.00000A.0001",
+    DateTransported: Date.now(),
+    DateErected: false,
+    Prefix: "A",
+    PosNmbr: 1,
+    AssemblyName: "A1.2",
+    OdooSlipId: 1,
+    SlipName: "BON1",
+}];*/
+var onSelectionChangedId = 0;
 var dataGridMontage = $("#dataGridmontage").dxDataGrid({
-    dataSource: selectedObjects,
+    //dataSource: selectedObjects,
+    dataSource: listObjects,
     keyExpr: 'OdooTcmId',
     showBorders: true,
     selection: {
-        mode: 'single',
+        mode: 'multiple',
+    },
+    sorting:
+    {
+        mode: 'none',
     },
     editing: {
         mode: 'row',
-        allowDeleting: true,
-        confirmDelete: false,
         useIcons: true,
     },
     columns: [{
         dataField: 'AssemblyName',
         caption: "Merk",
-        sortOrder: 'asc',
         width: 120,
-        calculateSortValue: function (rowData) {
-            return rowData.Prefix.toString().padStart(12, "0") + rowData.PosNmbr.toString().padStart(6, "0") + "." + rowData.Rank.toString().padStart(4, "0");
-        },
-    }, {
-        dataField: 'Weight',
-        caption: "Massa [kg]",
-        dataType: 'number',
-        width: 120,
-        format: {
-            type: "fixedPoint",
-            precision: 0
-        },
     }, {
         dataField: 'SlipName',
         caption: 'Bon',
@@ -402,26 +880,100 @@ var dataGridMontage = $("#dataGridmontage").dxDataGrid({
                 .appendTo(container);
         },
     },
+    {
+        name: "buttons1",
+        type: 'buttons',
+        width: 100,
+        buttons: [{
+            hint: 'Gemonteerd',
+            icon: 'check',
+            visible(e) {
+                return !e.row.data.DateErected;
+            },
+            onClick: async function(e) {
+                var selectedRowsData = e.component.getSelectedRowsData();
+                var dateErected = new Date(datePicker.dxDateBox("instance").option("value"));
+                if(selectedRowsData.length > 1)
+                {
+                    await WriteErectionDateToOdoo(selectedRowsData, dateErected);
+                }
+                else
+                {
+                    await WriteErectionDateToOdoo([e.row.data], dateErected);
+                }
+                e.component.refresh();
+            },
+        }],
+    },
+    {
+        name: "buttons2",
+        type: 'buttons',
+        width: 100,
+        buttons: [{
+            hint: 'Getransporteerd',
+            icon: 'revert',
+            visible(e) {
+                return e.row.data.DateErected;
+            },
+            onClick: async function(e) {
+                var selectedRowsData = e.component.getSelectedRowsData();
+                if(selectedRowsData.length > 1)
+                {
+                    await WriteErectionDateToOdoo(selectedRowsData, false);
+                }
+                else
+                {
+                    await WriteErectionDateToOdoo([e.row.data], false);
+                }
+                e.component.refresh();
+            },
+        }],
+    },
     ],
-    onRowRemoving: async function (e) {
-        var instanceDropDown = dropDownExistingSlips.dxDropDownBox("instance");
-        instanceDropDown.reset();
-        var objectRemoved = selectedObjects.find(x => x.OdooTcmId == e.key);
-        if (objectRemoved != undefined) {
-            var models = await API.viewer.getModels("loaded");
-            for (var model of models) {
-                var selector = { modelObjectIds: [{ modelId: model.id, objectRuntimeIds: [objectRemoved.ObjectRuntimeId] }] };
-                await API.viewer.setSelection(selector, 'remove');
-            }
-            e.cancel = true;
+    onCellPrepared: function (e) {
+        if (e.rowType === "data" && e.column.dataField === "AssemblyName") {
+            e.cellElement.css("background-color", e.data.DateErected ? "purple" : "darkgreen");
         }
     },
-    onCellPrepared: function (e) {
-        if (e.rowType === "data" /*&& e.column.dataField === "ProductName"*/) {
-            e.cellElement.css("color", e.data.ValidForNewSlip ? "white" : "red");
-        }
+    onSelectionChanged: async function (e)
+    {
+        //console.log("onSelectionChanged fired with id: " + ++onSelectionChangedId);
+        var selectedRowsData = e.component.getSelectedRowsData();
+        if(selectedRowsData.length == 0)
+            await selectGuids([], "");
+        var guidsToSelect = selectedRowsData.map(x => x.Guid);
+        await selectGuids(guidsToSelect, "add", onSelectionChangedId);
     },
 });
+
+async function selectGuids(guids, selectionType, id) {
+    //console.log("selectGuids, origin onSelectionChangedId: " + id);
+    var validGuids = guids.filter(x => x != undefined && x !== "");
+    if (validGuids.length == 0) {
+        await API.viewer.setSelection(undefined, 'remove');
+    }
+    else {
+        var models = await API.viewer.getModels("loaded");
+        var compressedGuids = validGuids.map(x => Guid.fromFullToCompressed(x));
+        //console.log('compressedGuids');
+        //console.log(compressedGuids);
+        //var selectionType = "set";
+        for (var model of models) {
+            var runtimeIds = await API.viewer.convertToObjectRuntimeIds(model.id, compressedGuids);
+            runtimeIds = runtimeIds.filter(x => x != undefined);
+            //console.log('runtimeIds');
+            //console.log(runtimeIds);
+            if (runtimeIds == undefined || runtimeIds.length == 0)
+                continue;
+            var selector = { modelObjectIds: [{ modelId: model.id, objectRuntimeIds: runtimeIds }] };
+            performSelectionChanged = false;
+            await API.viewer.setSelection(selector, selectionType);
+            //selectionType = "add";
+            //console.log("out of for");
+        }
+        //console.log("end");
+    }
+}
 
 // https://github.com/jsdbroughton/ifc-guid/blob/master/Guid.js
 // IfcGuid
