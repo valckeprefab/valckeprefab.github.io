@@ -363,6 +363,11 @@ const textUi = {
         fr: "En cours de places les étiquettes",
         en: "Showing labels"
     },
+    textLabelsOnlyVisible: {
+        nl: "Enkel bij zichtbare elementen",
+        fr: "Uniquement sur les éléments visibles",
+        en: "Only on visible elements"
+    },
     titleVisualizeOdooData:
     {
         nl: "Odoo gegevens visualiseren",
@@ -1089,7 +1094,7 @@ function addASecond(s) {
     return getStringFromDate(dateS);
 }
 
-async function addTextMarkups() {
+async function addTextMarkups(onlyOnVisibleItems) {
     try {
         var possibleSelectBoxValues = getLabelContentTypes();
         var selectedItem = labelContentSelectBox.dxSelectBox("instance").option("selectedItem");
@@ -1103,7 +1108,35 @@ async function addTextMarkups() {
         const selector = {
             modelObjectIds: selection
         };
-        var mobjectsArr = await API.viewer.getObjects(selector);
+        var mobjectsArr = [];
+        if(onlyOnVisibleItems)
+        {
+            var mobjectsArrSelected = await API.viewer.getObjects(selector);
+            //console.log("mobjectsArrSelected");
+            //console.log(mobjectsArrSelected);
+            var mobjectsArrVisible = await API.viewer.getObjects(undefined, {visible: true});
+            //console.log("mobjectsArrVisible");
+            //console.log(mobjectsArrVisible);
+            for(var arr of mobjectsArrSelected)
+            {
+                var visibleArr = mobjectsArrVisible.find(a => a.modelId === arr.modelId);
+                //console.log("visibleArr");
+                //console.log(visibleArr);
+                if(visibleArr == undefined)
+                    continue;
+                arr.objects = arr.objects.filter(o => visibleArr.objects.find(vo => vo.id == o.id));
+                if(arr.objects.length > 0)
+                    mobjectsArr.push(arr);
+            }
+            //console.log("mobjectsArr");
+            //console.log(mobjectsArr);
+        }
+        else
+        {
+            mobjectsArr = await API.viewer.getObjects(selector);
+            //console.log("mobjectsArr");
+            //console.log(mobjectsArr);
+        }
         const modelspecs = await API.viewer.getModels("loaded");
 
         //if (selectedItem === possibleSelectBoxValues[2]) {
@@ -1113,6 +1146,7 @@ async function addTextMarkups() {
         //}
         //mobjectsArr type: ModelObjects[]
         //haalt enkel gemeenschappelijk hebben property sets op
+
         for (const mobjects of mobjectsArr) {
             const modelspec = modelspecs.find(s => s.id === mobjects.modelId);
             const modelPos = modelspec.placement.position;
@@ -1120,6 +1154,8 @@ async function addTextMarkups() {
             const objectsIds = mobjects.objects.map(o => o.id);
             //const objectsRuntimeIds = await API.viewer.convertToObjectRuntimeIds(mobjects.modelId, objectsIds);
             const objPropertiesArr = await API.viewer.getObjectProperties(mobjects.modelId, objectsIds);
+            console.log("objPropertiesArr");
+            console.log(objPropertiesArr);
             for (const objproperties of objPropertiesArr) {
                 //objproperties type: ObjectProperties
                 var defaultProperties = objproperties.properties.find(p => p.name === "Default");
@@ -3122,6 +3158,14 @@ var checkBoxToday = $('#checked').dxCheckBox({
             dateDiv.style.display = "block";
         }
     },
+});
+
+var checkBoxBasicLabelsOnlyVisible = $('#checkedBasicLabelsOnlyVisible').dxCheckBox({
+    value: true,
+});
+
+var checkBoxOdooLabelsOnlyVisible = $('#checkedOdooLabelsOnlyVisible').dxCheckBox({
+    value: true,
 });
 
 var checkBoxDirectionArrows = $('#checkedAddDirectionArrows').dxCheckBox({
@@ -5297,7 +5341,8 @@ $("#btnSetOdooLabelsDivId").dxButton({
 
         var selectedItem = labelContentOdooSelectBox.dxSelectBox("instance").option("selectedItem");
 
-        await AddOdooInfoLabels(selectedItem);
+        var onlyOnVisibleItems = checkBoxOdooLabelsOnlyVisible.dxCheckBox("instance").option("value");
+        await AddOdooInfoLabels(selectedItem, onlyOnVisibleItems);
 
         buttonIndicator.option('visible', false);
         data.component.option('text', getTextById("btnSetOdooLabels"));
@@ -5313,7 +5358,7 @@ function checkUsernameAndPassword() {
     }
 }
 
-async function AddOdooInfoLabels(selectedItem) {
+async function AddOdooInfoLabels(selectedItem, onlyOnVisibleItems) {
     try {
         await checkAssemblySelection();
 
@@ -5325,7 +5370,25 @@ async function AddOdooInfoLabels(selectedItem) {
             modelObjectIds: selection
         };
         const modelspecs = await API.viewer.getModels("loaded");
-        const mobjectsArr = await API.viewer.getObjects(selector);
+        var mobjectsArr = [];
+        if(onlyOnVisibleItems)
+        {
+            var mobjectsArrSelected = await API.viewer.getObjects(selector);
+            var mobjectsArrVisible = await API.viewer.getObjects(undefined, {visible: true});
+            for(var arr of mobjectsArrSelected)
+            {
+                var visibleArr = mobjectsArrVisible.find(a => a.modelId === arr.modelId);
+                if(visibleArr == undefined)
+                    continue;
+                arr.objects = arr.objects.filter(o => visibleArr.objects.find(vo => vo.id == o.id));
+                if(arr.objects.length > 0)
+                    mobjectsArr.push(arr);
+            }
+        }
+        else
+        {
+            mobjectsArr = await API.viewer.getObjects(selector);
+        }
         var nmbrOfAssembliesFound = 0;
         for (const mobjects of mobjectsArr) {
             //console.log(modelspecs);
@@ -5726,7 +5789,8 @@ $("#btnShowLabelsDivId").dxButton({
         buttonIndicator.option('visible', true);
         try {
             await checkAssemblySelection();
-            await addTextMarkups();
+            var onlyOnVisibleItems = checkBoxBasicLabelsOnlyVisible.dxCheckBox("instance").option("value");
+            await addTextMarkups(onlyOnVisibleItems);
         }
         catch (e) {
             DevExpress.ui.notify(e, "info", 5000);
