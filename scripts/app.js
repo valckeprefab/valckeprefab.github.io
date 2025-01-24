@@ -1907,8 +1907,17 @@ const popupContentTemplate = function () {
     if (odooAssemblyData != null && odooAssemblyData != undefined) {
         var odooContent = $(`<p><a href="${getOdooAssemblyUrl(odooAssemblyData.OdooPmmId)}" target="_blank" rel="noopener noreferrer">Odoo</a>`);
         odooContent.append(' - Tekeningen: ');
-        for (var url of odooAssemblyData.DrawingsUrls) {
-            odooContent.append($(`<a href="${url}" target="_blank" rel="noopener noreferrer"><img src="images/Drawing.png" width="16" height="16"></a>`));
+        for (var drawing of odooAssemblyData.Drawings) {
+            var imgSrc = "images/Drawing.png";
+            if(drawing.Type === "B")
+            {
+                imgSrc = "images/DrawingB.png";
+            }
+            else if (drawing.Type === "W")
+            {
+                imgSrc = "images/DrawingW.png";
+            }
+            odooContent.append($(`<a href="${drawing.Url}" target="_blank" rel="noopener noreferrer"><img src="${imgSrc}" width="16" height="16"></a>`));
         }
         odooContent.append(`</p>`);
         if (odooAssemblyData.PlanningType === "TrimbleConnect") {
@@ -4332,7 +4341,7 @@ $("#btnGetOdooInfoDivId").dxButton({
                                     object.Profile = record.mark_profile;
                                     object.Finish = record.mark_comment;
                                     object.Material = record.mark_material;
-                                    object.DrawingsUrls = [];
+                                    object.Drawings = [];
                                 }
                             }
                         }
@@ -4352,9 +4361,7 @@ $("#btnGetOdooInfoDivId").dxButton({
                             for (var record of odooData) {
                                 var objects = selectedAssemblies.filter(x => x.OdooPmmId == record.mark_id[0]);
                                 for (var object of objects) {
-                                    if (record.description === "B") {
-                                        object.DrawingsUrls.push(getOdooDrawingUrl(projectNumber, record.name_system));
-                                    }
+                                    object.Drawings.push({ Type: record.description, Url: getOdooDrawingUrl(projectNumber, record.name_system)});
                                 }
                             }
                         }
