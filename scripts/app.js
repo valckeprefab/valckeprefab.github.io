@@ -329,9 +329,9 @@ const textUi = {
         en: "Enter assemblyname, eg K10 ..."
     },
     phPropertyname: {
-        nl: "Geef een property name op, bvb. Default.MERKENPREFIX ...",
-        fr: "Entrez nom du propriété, p ex Default.MERKENPREFIX ...",
-        en: "Enter property name, eg Default.MERKENPREFIX ..."
+        nl: "Geef een property name op, bvb. Default.MERKPREFIX ...",
+        fr: "Entrez nom du propriété, p ex Default.MERKPREFIX ...",
+        en: "Enter property name, eg Default.MERKPREFIX ..."
     },
     phPropertyvalue: {
         nl: "Geef een property value op, bvb PS",
