@@ -5035,7 +5035,7 @@ $("#btnSetColorFromStatusDivId").dxButton({
                     headers: { "Authorization": "Bearer " + token },
                     data: {
                         model: "project.master_marks",
-                        domain: '[["project_id", "=", ' + id + '],["id", ">", "' + lastId + '"]]',
+                        domain: '[["project_id", "=", ' + id + '],["id", ">", "' + lastId + '"],["mark_prefix", "not like", "Pi"]]',
                         fields: '["id", "mark_prefix", "mark_ref", "create_date", "mark_qty"]',
                         order: 'id',
                     },
@@ -5278,6 +5278,12 @@ $("#btnSetColorFromStatusDivId").dxButton({
                     var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, objStatus.CompressedIfcGuids);
                     for (var i = 0; i < runtimeIds.length; i += sliceLength) {
                         var runtimeIdsSliced = runtimeIds.slice(i, i + sliceLength);
+                        
+                        //Add children so entire assembly is colored instead of just main parts
+                        var children = await API.viewer.getHierarchyChildren(modelId, runtimeIdsSliced, 4, true);
+                        var childrenRuntimeIds = children.map(c => c.id);
+                        runtimeIdsSliced.push(...childrenRuntimeIds);
+
                         await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsSliced }] }, { color: objStatus.Color });
                     }
                 }

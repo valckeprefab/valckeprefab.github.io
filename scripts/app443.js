@@ -5279,15 +5279,11 @@ $("#btnSetColorFromStatusDivId").dxButton({
                     for (var i = 0; i < runtimeIds.length; i += sliceLength) {
                         var runtimeIdsSliced = runtimeIds.slice(i, i + sliceLength);
                         
+                        //Add children so entire assembly is colored instead of just main parts
                         var children = await API.viewer.getHierarchyChildren(modelId, runtimeIdsSliced, 4, true);
-                        console.log("children");
-                        console.log(children);
                         var childrenRuntimeIds = children.map(c => c.id);
-                        console.log("childrenRuntimeIds");
-                        console.log(childrenRuntimeIds);
-                        var runtimeIdsSlicedInclChildren = runtimeIdsSliced.push(...childrenRuntimeIds);
-                        console.log("runtimeIdsSlicedInclChildren");
-                        console.log(runtimeIdsSlicedInclChildren);
+                        runtimeIdsSliced.push(...childrenRuntimeIds);
+
                         await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsSliced }] }, { color: objStatus.Color });
                     }
                 }
