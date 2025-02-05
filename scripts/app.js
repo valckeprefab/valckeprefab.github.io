@@ -113,6 +113,7 @@ const StatusAvailableForTransport = "AvailableForTransport";
 const StatusPlannedForTransport = "PlannedForTransport";
 const StatusTransported = "Transported";
 const StatusErected = "Erected";
+const StatusCancelled = "Cancelled";
 
 var titlesShown = true;
 
@@ -1324,6 +1325,14 @@ function fillObjectStatuses() {
     };
     objectStatuses.push(modelled);
 
+    var cancelled = {
+        Status: StatusCancelled,
+        Color: { r: 211, g: 211, b: 211, a: 255 },
+        Guids: [],
+        CompressedIfcGuids: []
+    };
+    objectStatuses.push(cancelled);
+
     var existing = {
         Status: StatusExisting,
         Color: { r: 130, g: 92, b: 79, a: 255 },
@@ -1840,6 +1849,9 @@ function getQueryGroupItemByPrefix(prefix) {
 function getStatus(record, referenceDate) {
     if (typeof record.state === 'string' && record.state === 'onhold') {
         return StatusOnHold;
+    }
+    else if (typeof record.state === 'string' && record.state === 'cancelled') {
+        return StatusCancelled;
     }
     else if (typeof record.date_erected === 'string' && getDateFromString(record.date_erected) <= referenceDate) {
         return StatusErected;
@@ -4990,7 +5002,7 @@ $("#btnSetColorFromStatusDivId").dxButton({
                     headers: { "Authorization": "Bearer " + token },
                     data: {
                         model: "trimble.connect.main",
-                        domain: '[["project_id", "=", ' + id + '],["id", ">", "' + lastId + '"],["state","!=","cancelled"]]',
+                        domain: '[["project_id", "=", ' + id + '],["id", ">", "' + lastId + '"]]',
                         fields: '["id", "mark_id", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "date_erected", "state", "mark_available"]',
                         order: 'id',
                     },
@@ -5035,7 +5047,7 @@ $("#btnSetColorFromStatusDivId").dxButton({
                     headers: { "Authorization": "Bearer " + token },
                     data: {
                         model: "project.master_marks",
-                        domain: '[["project_id", "=", ' + id + '],["id", ">", "' + lastId + '"],["mark_prefix", "not like", "Pi"]]',
+                        domain: '[["project_id", "=", ' + id + '],["id", ">", "' + lastId + '"],["mark_subpart", "=", false]]',
                         fields: '["id", "mark_prefix", "mark_ref", "create_date", "mark_qty"]',
                         order: 'id',
                     },

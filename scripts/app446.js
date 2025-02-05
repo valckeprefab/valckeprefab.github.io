@@ -5047,7 +5047,7 @@ $("#btnSetColorFromStatusDivId").dxButton({
                     headers: { "Authorization": "Bearer " + token },
                     data: {
                         model: "project.master_marks",
-                        domain: '[["project_id", "=", ' + id + '],["id", ">", "' + lastId + '"],["mark_submark", "=", false]]',
+                        domain: '[["project_id", "=", ' + id + '],["id", ">", "' + lastId + '"],["mark_subpart", "=", false]]',
                         fields: '["id", "mark_prefix", "mark_ref", "create_date", "mark_qty"]',
                         order: 'id',
                     },
