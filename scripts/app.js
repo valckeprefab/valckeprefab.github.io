@@ -639,6 +639,12 @@ const textUi = {
         fr: "Sélectionner",
         en: "Select"
     },
+    btnOdooSearching:
+    {
+        nl: "Bezig met selecteren",
+        fr: "En cours de sélectionner",
+        en: "Selecting"
+    },
     titleExistingSlips:
     {
         nl: "Bestaande transportbonnen:",
@@ -1155,8 +1161,8 @@ async function addTextMarkups(onlyOnVisibleItems) {
             const objectsIds = mobjects.objects.map(o => o.id);
             //const objectsRuntimeIds = await API.viewer.convertToObjectRuntimeIds(mobjects.modelId, objectsIds);
             const objPropertiesArr = await API.viewer.getObjectProperties(mobjects.modelId, objectsIds);
-            console.log("objPropertiesArr");
-            console.log(objPropertiesArr);
+            //console.log("objPropertiesArr");
+            //console.log(objPropertiesArr);
             for (const objproperties of objPropertiesArr) {
                 //objproperties type: ObjectProperties
                 var defaultProperties = objproperties.properties.find(p => p.name === "Default");
@@ -1437,6 +1443,30 @@ async function fillPrefixDetails() {
         }
     });
     //console.log(prefixDetails);
+}
+
+async function SetAssemblyState(modelId, assemblyObjectsRuntimeIds, objectState)
+{
+    //console.log("modelId");
+    //console.log(modelId);
+    //console.log("assemblyObjectsRuntimeIds");
+    //console.log(assemblyObjectsRuntimeIds);
+    //console.log("objectState");
+    //console.log(objectState);
+    //Add children so entire assembly is colored instead of just main parts
+    var children = await API.viewer.getHierarchyChildren(modelId, assemblyObjectsRuntimeIds, 4, true);
+    var childrenRuntimeIds = children.map(c => c.id);
+    var allRuntimeIds = assemblyObjectsRuntimeIds.concat(...childrenRuntimeIds);
+
+    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: allRuntimeIds }] }, objectState);
+    return allRuntimeIds;
+}
+
+async function SetAssemblyStateBySelector(selector, objectState)
+{
+    var modelId = selector.modelObjectIds.modelId;
+    var assemblyObjectsRuntimeIds = selector.modelObjectIds.objectRuntimeIds;
+    await SetAssemblyState(modelId, assemblyObjectsRuntimeIds, objectState);
 }
 
 function getAssemblyPosNmbrFromSteelname(steelName) {
@@ -1897,11 +1927,13 @@ async function onlyShowStatus(status) {
         const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
         for (const mobjects of mobjectsArr) {
             var modelId = mobjects.modelId;
-            const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
+            const runtimeIdsToHide = mobjects.objects.map(o => o.id);
+            await SetAssemblyState(modelId, runtimeIdsToHide, { visible: false });
+            //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
 
-            var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, objectStatuses.find(o => o.Status === status).CompressedIfcGuids);
-            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { visible: true });
+            var runtimeIdsToShow = await API.viewer.convertToObjectRuntimeIds(modelId, objectStatuses.find(o => o.Status === status).CompressedIfcGuids);
+            await SetAssemblyState(modelId, runtimeIdsToShow, { visible: true });
+            //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { visible: true });
         }
     }
     catch (e) {
@@ -2051,7 +2083,8 @@ async function setVisibility(status, visibility) {
         for (const mobjects of mobjectsArr) {
             var modelId = mobjects.modelId;
             var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, objectStatuses.find(o => o.Status === status).CompressedIfcGuids);
-            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { visible: visibility });
+            await SetAssemblyState(modelId, runtimeIds, { visible: visibility });
+            //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { visible: visibility });
         }
     }
     catch (e) {
@@ -2551,7 +2584,8 @@ async function visualizeConcreteFinishes() {
         for (const mobjects of allObjects) {
             var modelId = mobjects.modelId;
             const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: defaultConcreteColor });
+            await SetAssemblyState(modelId, objectsRuntimeIds, { color: defaultConcreteColor });
+            //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: defaultConcreteColor });
         }
 
         for (var finish of finishes) {
@@ -2610,8 +2644,9 @@ async function visualizeConcreteFinishes() {
                     var runtimeIds = await API.viewer.convertToObjectRuntimeIds(model.id, compressedGuids);
                     if (runtimeIds.length == 0)
                         continue;
-                    var selector = { modelObjectIds: [{ modelId: model.id, objectRuntimeIds: runtimeIds }] };
-                    await API.viewer.setObjectState(selector, { color: colorToUse });
+                    await SetAssemblyState(model.id, runtimeIds, { color: colorToUse });
+                    //var selector = { modelObjectIds: [{ modelId: model.id, objectRuntimeIds: runtimeIds }] };
+                    //await API.viewer.setObjectState(selector, { color: colorToUse });
                     if (colorToUse != defaultConcreteColor) {
                         legendItems.push({ Text: finishToSearchFor, Color: colorToUse });
                     }
@@ -2776,9 +2811,11 @@ async function visualizeFreights() {
 
                 //Set element color per freight
                 colorToUse.a = 255;
-                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsAvailable }] }, { color: colorToUse });
+                await SetAssemblyState(modelId, runtimeIdsAvailable, { color: colorToUse });
+                //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsAvailable }] }, { color: colorToUse });
                 colorToUse.a = 128;
-                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsUnavailable }] }, { color: colorToUse });
+                await SetAssemblyState(modelId, runtimeIdsUnavailable, { color: colorToUse });
+                //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsUnavailable }] }, { color: colorToUse });
 
                 //Don't insert a label for freight number 0, clutters the 3D model
                 if (freight.FreightNumber == 0)
@@ -3049,8 +3086,9 @@ async function getRecentOdooData() {
                                 var modelId = model.id;
                                 var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, statusWithRecords.ModifiedCompressedIfcGuids);
                                 if (runtimeIds != undefined && runtimeIds.length > 0) {
-                                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: colorToUse, visible: true });
-                                    elementsColored = true;
+                                    await SetAssemblyState(modelId, runtimeIds, { color: colorToUse, visible: true });
+                                    //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: colorToUse, visible: true });
+                                    //elementsColored = true;
                                 }
                             }
                         }
@@ -3303,7 +3341,8 @@ async function colorPanelsByPrefix() {
     for (const mobjects of allObjects) {
         var modelId = mobjects.modelId;
         const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: { r: 185, g: 122, b: 87, a: 255 }, visible: false });
+        await SetAssemblyState(modelId, objectsRuntimeIds, { color: { r: 185, g: 122, b: 87, a: 255 }, visible: false });
+        //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: { r: 185, g: 122, b: 87, a: 255 }, visible: false });
     }
 
     var colorPerPrefix = [
@@ -3334,7 +3373,8 @@ async function colorPanelsByPrefix() {
             const objectsRuntimeIds = mobjects.objects.map(o => o.id);
             if (objectsRuntimeIds.length == 0)
                 continue;
-            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: colorPrefix.Color, visible: true });
+            await SetAssemblyState(modelId, objectsRuntimeIds, { color: colorPrefix.Color, visible: true });
+            //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: colorPrefix.Color, visible: true });
             elementsColored = true;
         }
 
@@ -3405,7 +3445,8 @@ async function colorPanelsByFinish() {
     for (const mobjects of allObjects) {
         var modelId = mobjects.modelId;
         const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: { r: 185, g: 122, b: 87, a: 255 }, visible: false });
+        await SetAssemblyState(modelId, objectsRuntimeIds, { color: { r: 185, g: 122, b: 87, a: 255 }, visible: false });
+        //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: { r: 185, g: 122, b: 87, a: 255 }, visible: false });
     }
 
     var legendItems = [];
@@ -3421,7 +3462,8 @@ async function colorPanelsByFinish() {
             var modelId = model.id;
             var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedGuids);
             if (runtimeIds != undefined && runtimeIds.length > 0) {
-                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: colorToUse, visible: true });
+                await SetAssemblyState(modelId, runtimeIds, { color: colorToUse, visible: true });
+                //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: colorToUse, visible: true });
                 elementsColored = true;
             }
         }
@@ -3493,7 +3535,8 @@ async function colorPanelsByMaterial(){
     for (const mobjects of allObjects) {
         var modelId = mobjects.modelId;
         const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: { r: 185, g: 122, b: 87, a: 255 }, visible: false });
+        await SetAssemblyState(modelId, objectsRuntimeIds, { color: { r: 185, g: 122, b: 87, a: 255 }, visible: false });
+        //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: { r: 185, g: 122, b: 87, a: 255 }, visible: false });
     }
 
     var legendItems = [];
@@ -3509,7 +3552,8 @@ async function colorPanelsByMaterial(){
             var modelId = model.id;
             var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedGuids);
             if (runtimeIds != undefined && runtimeIds.length > 0) {
-                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: colorToUse, visible: true });
+                await SetAssemblyState(modelId, runtimeIds, { color: colorToUse, visible: true });
+                //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: colorToUse, visible: true });
                 elementsColored = true;
             }
         }
@@ -3580,7 +3624,8 @@ async function colorWByReinforcement() {
     for (const mobjects of allObjects) {
         var modelId = mobjects.modelId;
         const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: { r: 185, g: 122, b: 87, a: 255 }, visible: false });
+        await SetAssemblyState(modelId, objectsRuntimeIds, { color: { r: 185, g: 122, b: 87, a: 255 }, visible: false });
+        //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: { r: 185, g: 122, b: 87, a: 255 }, visible: false });
     }
 
     var legendItems = [];
@@ -3596,7 +3641,8 @@ async function colorWByReinforcement() {
             var modelId = model.id;
             var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedGuids);
             if (runtimeIds != undefined && runtimeIds.length > 0) {
-                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: colorToUse, visible: true });
+                await SetAssemblyState(modelId, runtimeIds, { color: colorToUse, visible: true });
+                //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: colorToUse, visible: true });
                 elementsColored = true;
             }
         }
@@ -3667,7 +3713,8 @@ async function colorWByProfile() {
     for (const mobjects of allObjects) {
         var modelId = mobjects.modelId;
         const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: { r: 185, g: 122, b: 87, a: 255 }, visible: false });
+        await SetAssemblyState(modelId, objectsRuntimeIds, { color: { r: 185, g: 122, b: 87, a: 255 }, visible: false });
+        //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: { r: 185, g: 122, b: 87, a: 255 }, visible: false });
     }
 
     var legendItems = [];
@@ -3686,7 +3733,8 @@ async function colorWByProfile() {
             var modelId = model.id;
             var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedGuids);
             if (runtimeIds != undefined && runtimeIds.length > 0) {
-                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: colorToUse, visible: true });
+                await SetAssemblyState(modelId, runtimeIds, { color: colorToUse, visible: true });
+                //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: colorToUse, visible: true });
                 elementsColored = true;
             }
         }
@@ -4071,7 +4119,8 @@ $("#btnCreateSlipDivId").dxButton({
                         for (const mobjects of mobjectsArr) {
                             var modelId = mobjects.modelId;
                             var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, compressedIfcGuids);
-                            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: objStatus.Color });
+                            await SetAssemblyState(modelId, runtimeIds, { color: objStatus.Color });
+                            //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { color: objStatus.Color });
                         }
 
                         //console.log("deliverySlipLineId:");
@@ -4089,6 +4138,7 @@ $("#btnCreateSlipDivId").dxButton({
         }
         catch (e) {
             DevExpress.ui.notify(e, "info", 5000);
+            //console.log(e);
         }
 
         buttonIndicator.option('visible', false);
@@ -4432,7 +4482,7 @@ $("#btnOdooSearchDivId").dxButton({
         }).dxLoadIndicator('instance');
     },
     onClick: async function (data) {
-        data.component.option('text', getTextById("btnOdooSearch"));
+        data.component.option('text', getTextById("btnOdooSearching"));
         buttonIndicator.option('visible', true);
         try {
             //decode string
@@ -4629,7 +4679,7 @@ $("#btnOdooSearchDivId").dxButton({
                 }
             });
             //console.log(assembliesToSelect);
-            var steelPrefixes = prefixDetails.filter(x => x.MaterialType === "staal").map(x => x.name);
+            var steelPrefixes = prefixDetails.filter(x => x.MaterialType === "staal").map(x => x.Prefix);
             var regex = new RegExp(steelPrefixes.join("|"), "i"); //regex instead of includes, includes is case sensitive, this regex is not
             var queryGroupsSteel = queryGroups.find(g => regex.test(g.Prefix));
             if (assembliesToSelect.length > 0) {
@@ -4713,14 +4763,14 @@ $("#btnVisualizeTTDivId").dxButton({
         var standardTTWidth = 2400;
         await colorNonStandardWidth('TT', standardTTWidth);
         var legendItems = [
-            { Text: `${getTextById(TTWidth)} = ${standardTTWidth}`, Color: { r: 0, g: 255, b: 0 } },
-            { Text: `${getTextById(TTWidth)} < ${standardTTWidth}`, Color: { r: 255, g: 0, b: 0 } },
+            { Text: `${getTextById("TTWidth")} = ${standardTTWidth}`, Color: { r: 0, g: 255, b: 0 } },
+            { Text: `${getTextById("TTWidth")} < ${standardTTWidth}`, Color: { r: 255, g: 0, b: 0 } },
         ];
 
         var standardTTTWidth = 1800;
         await colorNonStandardWidth('TTT', 1800, false);
-        legendItems.push({ Text: `${getTextById(TTTWidth)} = ${standardTTTWidth}`, Color: { r: 0, g: 255, b: 0 } });
-        legendItems.push({ Text: `${getTextById(TTTWidth)} < ${standardTTTWidth}`, Color: { r: 255, g: 0, b: 0 } });
+        legendItems.push({ Text: `${getTextById("TTTWidth")} = ${standardTTTWidth}`, Color: { r: 0, g: 255, b: 0 } });
+        legendItems.push({ Text: `${getTextById("TTTWidth")} < ${standardTTTWidth}`, Color: { r: 255, g: 0, b: 0 } });
 
         await showDirectionArrows();
 
@@ -4752,8 +4802,8 @@ $("#btnVisualizeWWidthDivId").dxButton({
         var standardWWidth = 1200;
         await colorNonStandardWidth('W', standardWWidth);
         var legendItems = [
-            { Text: `${getTextById(WWidth)} = ${standardWWidth}`, Color: { r: 0, g: 255, b: 0 } },
-            { Text: `${getTextById(WWidth)} < ${standardWWidth}`, Color: { r: 255, g: 0, b: 0 } },
+            { Text: `${getTextById("WWidth")} = ${standardWWidth}`, Color: { r: 0, g: 255, b: 0 } },
+            { Text: `${getTextById("WWidth")} < ${standardWWidth}`, Color: { r: 255, g: 0, b: 0 } },
         ];
 
         await showDirectionArrows();
@@ -4821,7 +4871,8 @@ async function colorNonStandardWidth(prefix, standardWidth, hideRest = true) {
         for (const mobjects of allObjects) {
             var modelId = mobjects.modelId;
             const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
+            await SetAssemblyState(modelId, objectsRuntimeIds, { visible: false });
+            //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false });
         }
     }
 
@@ -4831,7 +4882,8 @@ async function colorNonStandardWidth(prefix, standardWidth, hideRest = true) {
         const objectsRuntimeIds = mobjects.objects.map(o => o.id);
         if (objectsRuntimeIds.length == 0)
             continue;
-        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: { r: 0, g: 255, b: 0 }, visible: true });
+        await SetAssemblyState(modelId, objectsRuntimeIds, { color: { r: 0, g: 255, b: 0 }, visible: true });
+        //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: { r: 0, g: 255, b: 0 }, visible: true });
     }
 
     const objectsWStandard = await API.viewer.getObjects({ parameter: { properties: { 'Default.MERKPREFIX': prefix, 'Default.WIDTH': standardWidth } } });
@@ -4850,7 +4902,10 @@ async function colorNonStandardWidth(prefix, standardWidth, hideRest = true) {
         }
         //console.log(objectsRuntimeIdsToColor);
         if (objectsRuntimeIdsToColor.length > 0)
-            await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIdsToColor }] }, { color: { r: 255, g: 0, b: 0 }, visible: true });
+        {
+            await SetAssemblyState(modelId, objectsRuntimeIdsToColor, { color: { r: 255, g: 0, b: 0 }, visible: true });
+            //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIdsToColor }] }, { color: { r: 255, g: 0, b: 0 }, visible: true });
+        }
     }
 }
 
@@ -5290,13 +5345,11 @@ $("#btnSetColorFromStatusDivId").dxButton({
                     var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, objStatus.CompressedIfcGuids);
                     for (var i = 0; i < runtimeIds.length; i += sliceLength) {
                         var runtimeIdsSliced = runtimeIds.slice(i, i + sliceLength);
-                        
-                        //Add children so entire assembly is colored instead of just main parts
-                        var children = await API.viewer.getHierarchyChildren(modelId, runtimeIdsSliced, 4, true);
-                        var childrenRuntimeIds = children.map(c => c.id);
-                        runtimeIdsSliced.push(...childrenRuntimeIds);
-
-                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsSliced }] }, { color: objStatus.Color });
+                        var coloredRuntimeIds = await SetAssemblyState(modelId, runtimeIdsSliced, { color: objStatus.Color });
+                        var coloredIfcIdsArr = await API.viewer.convertToObjectIds(modelId, coloredRuntimeIds);
+                        var coloredIfcIdsSet = new Set(coloredIfcIdsArr);
+                        unplannedIfcIds = unplannedIfcIds.filter(x => !coloredIfcIdsSet.has(x));
+                        //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsSliced }] }, { color: objStatus.Color });
                     }
                 }
             }
@@ -5323,7 +5376,8 @@ $("#btnSetColorFromStatusDivId").dxButton({
                 var guidsWithStatusExistingSet = new Set(objectStatusExisting.Guids);
                 objectStatusModelled.Guids = Array.from(objectStatusModelled.Guids.filter(x => !guidsWithStatusExistingSet.has(x)));
 
-                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: objectStatusExisting.Color });
+                await SetAssemblyState(modelId, objectsRuntimeIds, { color: objectStatusExisting.Color });
+                //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { color: objectStatusExisting.Color });
             }
             //console.log("process prefix BESTAAND end");
 
@@ -5333,9 +5387,11 @@ $("#btnSetColorFromStatusDivId").dxButton({
                 const objectsRuntimeIds = mobjects.objects.map(o => o.id);
                 //get overlapping runtimeIds of both collections
                 var runtimeIdsModelled = await API.viewer.convertToObjectRuntimeIds(modelId, objectStatusModelled.CompressedIfcGuids);
+                //filter runtimeIds for this model
                 const filteredRuntimeIds = objectsRuntimeIds.filter(i => runtimeIdsModelled.includes(i));
 
-                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: filteredRuntimeIds }] }, { color: objectStatusModelled.Color });
+                await SetAssemblyState(modelId, filteredRuntimeIds, { color: objectStatusModelled.Color });
+                //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: filteredRuntimeIds }] }, { color: objectStatusModelled.Color });
             }
             //console.log("process modelled assemblies end");
 
@@ -5508,7 +5564,8 @@ $("#btnShowAllColoredDivId").dxButton({
                 for (const objStatus of objectStatuses) {
                     var statusCompressedIfcGuidsInModel = Array.from(objStatus.CompressedIfcGuids.filter(x => modelCompressedIfcGuidsSet.has(x)));
                     var runtimeIds = await API.viewer.convertToObjectRuntimeIds(modelId, statusCompressedIfcGuidsInModel);
-                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { visible: true });
+                    await SetAssemblyState(modelId, runtimeIds, { visible: true });
+                    //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIds }] }, { visible: true });
                 }
             }
 
@@ -5560,7 +5617,8 @@ async function showDirectionArrows() {
         if (mobjectsArrPijlen.length && mobjectsArrPijlen.length > 0) {
             for (var mobjects of mobjectsArrPijlen) {
                 const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-                await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true });
+                await SetAssemblyState(mobjects.modelId, objectsRuntimeIds, { visible: true });
+                //await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true });
             }
         }
 
@@ -5656,7 +5714,8 @@ $("#btnShowKnownPrefixesDivId").dxButton({
             for (const mobjects of mobjectsArr) {
                 var modelId = mobjects.modelId;
                 const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-                await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false, color: { a: 255 } });
+                await SetAssemblyState(modelId, objectsRuntimeIds, { visible: false, color: { a: 255 } });
+                //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: false, color: { a: 255 } });
                 if (idsPerPrefixPerModelId.find(o => o.ModelId === modelId) !== undefined) {
                     continue;
                 }
@@ -5713,7 +5772,8 @@ $("#btnShowKnownPrefixesDivId").dxButton({
                 if (runtimeIdsToShow.length > 0) {
                     //console.log("change to visible");
                     //console.log("runtimeIdsToShow[0]" + runtimeIdsToShow[0]);
-                    await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsToShow }] }, { visible: true });
+                    await SetAssemblyState(modelId, runtimeIdsToShow, { visible: true });
+                    //await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: runtimeIdsToShow }] }, { visible: true });
                 }
             }
 
@@ -5751,7 +5811,8 @@ $("#btnShowKnownPrefixesDivId").dxButton({
                             }
                     });
                     if (objectIdsToHide.length > 0) {
-                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectIdsToHide }] }, { visible: false });
+                        await SetAssemblyState(mobjects.modelId, objectIdsToHide, { visible: false });
+                        //await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectIdsToHide }] }, { visible: false });
                     }
                 }
             }
@@ -5764,7 +5825,8 @@ $("#btnShowKnownPrefixesDivId").dxButton({
                 if (mobjectsArrPijlen.length != undefined && mobjectsArrPijlen.length > 0) {
                     for (var mobjects of mobjectsArrPijlen) {
                         const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true });
+                        await SetAssemblyState(mobjects.modelId, objectsRuntimeIds, { visible: true });
+                        //await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true });
                     }
                 }
             }
@@ -5781,7 +5843,8 @@ $("#btnShowKnownPrefixesDivId").dxButton({
                 if (mobjectsArrBolts.length != undefined && mobjectsArrBolts.length > 0) {
                     for (var mobjects of mobjectsArrBolts) {
                         const objectsRuntimeIds = mobjects.objects.map(o => o.id);
-                        await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true });
+                        await SetAssemblyState(mobjects.modelId, objectsRuntimeIds, { visible: true });
+                        //await API.viewer.setObjectState({ modelObjectIds: [{ modelId: mobjects.modelId, objectRuntimeIds: objectsRuntimeIds }] }, { visible: true });
                     }
                 }
             }
@@ -5911,7 +5974,8 @@ $("#showGridAndArrows").dxButton({
             //console.log("mobjectsArrGrids.length: " + mobjectsArrGrids.length);
             //console.log("mobjectsArrGrids[0].objects.length: " + mobjectsArrGrids[0].objects.length);
             if (mobjectsArrGrids.length > 0) {
-                await API.viewer.setObjectState(mobjectsArrGrids, true);
+                await SetAssemblyStateBySelector(mobjectsArrGrids, {visible: true})
+                //await API.viewer.setObjectState(mobjectsArrGrids, true);
             }
 
             //Show Arrows
@@ -5919,7 +5983,8 @@ $("#showGridAndArrows").dxButton({
             //console.log("mobjectsArrPijlen.length: " + mobjectsArrPijlen.length);
             //console.log("mobjectsArrPijlen[0].objects.length: " + mobjectsArrPijlen[0].objects.length);
             if (mobjectsArrGrids.length > 0) {
-                await API.viewer.setObjectState(mobjectsArrPijlen, true);
+                await SetAssemblyStateBySelector(mobjectsArrPijlen, {visible: true})
+                //await API.viewer.setObjectState(mobjectsArrPijlen, true);
             }
 
             //await API.viewer.setSelection(mobjectsArrGrids, "add");
