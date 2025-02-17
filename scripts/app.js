@@ -1456,8 +1456,8 @@ async function SetAssemblyState(modelId, assemblyObjectsRuntimeIds, objectState)
     //Add children so entire assembly is colored instead of just main parts
     var children = await API.viewer.getHierarchyChildren(modelId, assemblyObjectsRuntimeIds, 4, true);
     var childrenRuntimeIds = children.map(c => c.id);
-    var allRuntimeIds = assemblyObjectsRuntimeIds.concat(...childrenRuntimeIds);
-
+    var allRuntimeIds = assemblyObjectsRuntimeIds.concat(childrenRuntimeIds);
+    
     await API.viewer.setObjectState({ modelObjectIds: [{ modelId, objectRuntimeIds: allRuntimeIds }] }, objectState);
     return allRuntimeIds;
 }
