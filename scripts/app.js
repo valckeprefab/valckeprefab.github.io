@@ -1922,6 +1922,17 @@ function getStringFromDate(d) {
     return returnstr;
 }
 
+function getUTCStringFromDate(d) {
+    var year = d.getUTCFullYear();
+    var month = pad("00", d.getUTCMonth() + 1);
+    var day = pad("00", d.getUTCDate());
+    var hours = pad("00", d.getUTCHours());
+    var minutes = pad("00", d.getUTCMinutes());
+    var seconds = pad("00", d.getUTCSeconds());
+    var returnstr = year + "-" + month + "-" + day + " " + hours + ":" + minutes + ":" + seconds;
+    return returnstr;
+}
+
 async function onlyShowStatus(status) {
     try {
         const mobjectsArr = await API.viewer.getObjects({ parameter: { class: "IFCELEMENTASSEMBLY" } });
@@ -3022,7 +3033,7 @@ async function getRecentOdooData() {
                 success: function (data) {
                     if (data.length > 0) {
                         lastUpdate = data[0].write_date;
-                        lastUpdate = addASecond(lastUpdate);
+                        //lastUpdate = addASecond(lastUpdate);
                         //console.log("Last update: " + lastUpdate);
                     }
                 }
@@ -3035,16 +3046,22 @@ async function getRecentOdooData() {
                 headers: { "Authorization": "Bearer " + token },
                 data: {
                     model: "trimble.connect.main",
-                    domain: '[["project_id", "=", ' + id + '],["write_date",">=","' + lastUpdate + '"]]',
+                    domain: '[["project_id", "=", ' + id + '],["write_date", ">=", "' + lastUpdate + '"]]',
                     order: 'write_date desc',
                     fields: '["id", "write_date", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "date_erected", "state", "mark_available"]',
                 },
                 success: async function (data) {
-                    var date = getStringFromDate(new Date());
+                    var date = getUTCStringFromDate(new Date());
                     if (data.length > 0) {
                         console.log(date + ": " + data.length + " updated records found.");
-                        lastUpdate = data[0].write_date;
-                        lastUpdate = addASecond(lastUpdate);
+                        console.log("lastUpdate");
+                        console.log(lastUpdate);
+                        console.log("data");
+                        console.log(data);
+                        if(data[0].write_date === lastUpdate)
+                            lastUpdate = addASecond(lastUpdate);
+                        else
+                            lastUpdate = data[0].write_date;
 
                         var referenceDate = new Date();
                         referenceDate.setHours(23);
@@ -5050,6 +5067,8 @@ $("#btnSetColorFromStatusDivId").dxButton({
             var processedAssemblyIds = [];
             ended = 0;
             lastId = -1;
+            var queryDateTime = getUTCStringFromDate(new Date()); //new Date(): in local timezone => needed in UTC
+            lastUpdate = queryDateTime;
             while (ended != 1) { //loop cuz only fetchLimit records get fetched at a time
                 await $.ajax({
                     type: "GET",
