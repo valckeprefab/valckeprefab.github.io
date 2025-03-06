@@ -1,0 +1,104 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <Title>TestRechtenTraconord</Title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <meta charset="UTF-8">
+
+    <!-- ... -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script>window.jQuery || document.write(decodeURIComponent('%3Cscript src="js/jquery.min.js"%3E%3C/script%3E'))</script>
+
+    <!-- DevExtreme theme -->
+    <link rel="stylesheet" type="text/css" href="https://cdn3.devexpress.com/jslib/21.2.5/css/dx.common.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdn3.devexpress.com/jslib/21.2.5/css/dx.dark.compact.css" />
+    <link rel="stylesheet" type="text/css" href="./css/style.css">
+    <!-- DevExtreme library -->
+    <script type="text/javascript" src="https://cdn3.devexpress.com/jslib/21.2.5/js/dx.all.js"></script>
+</head>
+
+<body class="dx-viewport">
+    <script>
+        DevExpress.localization.locale(navigator.language);
+            // ...
+            // DevExtreme UI components are configured here
+            // ...
+    </script>
+    <div class="demo-container">
+        <div class="form">
+            <div>Entrez votre nom d'utilisateur et votre mot de passe et appuyer sur le bouton "Test"</div>
+            <form autocomplete="on">
+                <div class="v-odoo-input">
+                    <div class="v-field-value-full-width" id="placeholderOdooUsername"></div>
+                    <div class="v-field-value-full-width" id="placeholderOdooPassword"></div>
+                </div>
+            </form>
+            <div id="btnTest"></div>
+            <table id="tblLegend">
+                <tr>
+                    <td><div>table</div></td>
+                    <td><div>Valcke</div></td>
+                    <td><div>Traconord</div></td>
+                </tr>
+                <tr>
+                    <td><div>cust.prefix_to_ce</div></td>
+                    <td><div id="divPrefixToCeValcke"></div></td>
+                    <td><div id="divPrefixToCeTraconord"></div></td>
+                </tr>
+                <tr>
+                    <td><div>cust.silex_data</div></td>
+                    <td><div id="divSilexDataValcke"></div></td>
+                    <td><div id="divSilexDataTraconord"></div></td>
+                </tr>
+                <tr>
+                    <td><div>project.project</div></td>
+                    <td><div id="divProjectValcke"></div></td>
+                    <td><div id="divProjectTraconord"></div></td>
+                </tr>
+                <tr>
+                    <td><div>project.mark_drawings</div></td>
+                    <td><div id="divMarkDrawingsValcke"></div></td>
+                    <td><div id="divMarkDrawingsTraconord"></div></td>
+                </tr>
+                <tr>
+                    <td><div>project.mark_steel_pack</div></td>
+                    <td><div id="divMarkSteelPacksValcke"></div></td>
+                    <td><div id="divMarkSteelPacksTraconord"></div></td>
+                </tr>
+                <tr>
+                    <td><div>project.mark_steel_production</div></td>
+                    <td><div id="divMarkSteelProductionValcke"></div></td>
+                    <td><div id="divMarkSteelProductionTraconord"></div></td>
+                </tr>
+                <tr>
+                    <td><div>project.mark_steel_pack_items</div></td>
+                    <td><div id="divMarkSteelPackItemsValcke"></div></td>
+                    <td><div id="divMarkSteelPackItemsTraconord"></div></td>
+                </tr>
+                <tr>
+                    <td><div>project.master_marks</div></td>
+                    <td><div id="divMasterMarkValcke"></div></td>
+                    <td><div id="divMasterMarkTraconord"></div></td>
+                </tr>
+                <tr>
+                    <td><div>project.trimble.connect.main</div></td>
+                    <td><div id="divTcMainValcke"></div></td>
+                    <td><div id="divTcMainTraconord"></div></td>
+                </tr>
+                <tr>
+                    <td><div>vpb.delivery.slip</div></td>
+                    <td><div id="divDeliverySlipValcke"></div></td>
+                    <td><div id="divTDeliverySlipTraconord"></div></td>
+                </tr>
+                <tr>
+                    <td><div>vpb.delivery.slip.line</div></td>
+                    <td><div id="divDeliverySlipLineValcke"></div></td>
+                    <td><div id="divDeliverySlipLineTraconord"></div></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</body>
+
+<script src="./scripts/testRechtenTraconord.js"></script>
+</html>
