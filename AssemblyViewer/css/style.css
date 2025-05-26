@@ -1,0 +1,71 @@
+/*https://stackoverflow.com/questions/5867985/full-screen-iframe-with-a-height-of-100*/
+body {
+    margin: 0;            /* Reset default margin */
+}
+iframe {
+    display: inline-block;       /* iframes are inline by default */
+    background: #fff;
+    border: none;         /* Reset default border */
+    height: 100%;        /* Viewport-relative units */
+    width: 100%;
+    min-width: 100%;
+}
+.mainDiv {
+    display: flex;
+    border: none;
+    height: 100vh;
+    width: 100vw;
+    /*background: #000;*/
+    padding: 0;
+}
+.div-buttons{
+    display: table;
+    height: 10vh;
+    width: 100%;
+}
+.button{
+    width: 50px;
+    height: 33%;
+}
+.sidePanel{
+    height: 100vh;
+    max-height: 100vh;
+}
+.listContainerSidepanel{
+    height: 90%;
+}
+.div-lists-general{
+    height: 45vh;
+    max-height: 45h;
+}
+.div-lists-specific{
+    height: 90vh;
+    max-height: 90h;
+}
+.toggleButton{
+    height: 30px;
+}
+.visible{
+    display: none;
+}
+.div-view-buttons{
+    display: inline-block;
+}
+.table{
+    display: table;
+}
+.table-row{
+    display: table-row;
+}
+.table-row-group{
+    display: table-row-group;
+}
+.table-column{
+    display: table-column;
+}
+.table-cell{
+    display: table-cell;
+}
+.div-roles{
+    float: right;
+}
