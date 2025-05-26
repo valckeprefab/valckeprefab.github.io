@@ -1,6 +1,7 @@
 //parameters
 //HTML parameters: modelId, projectId, accessToken
 
+
 let odooParts = [];
 let odooRebar = [];
 
