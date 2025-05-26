@@ -774,7 +774,7 @@ const textUi = {
     textDateErected:
     {
         nl: "Datum gemonteerd",
-        fr: "Date assemblé",
+        fr: "Date posé",
         en: "Date erected"
     },
     textBin:
