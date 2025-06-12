@@ -4250,8 +4250,8 @@ $("#btnGetOdooInfoDivId").dxButton({
                             "date_transported", "date_erected", "mark_available", "location_bin", "freight", "unit_id", "mark_location_id"]`,
                     },
                     success: function (odooData) {
-                        //console.log("trimble.connect.main");
-                        //console.log(odooData);
+                        console.log("trimble.connect.main");
+                        console.log(odooData);
                         for (var record of odooData) {
                             var filterArrStr = '["id", "=", "' + record.mark_id[0] + '"]';
                             if (cntr > 0) {

@@ -1886,7 +1886,7 @@ function getStatus(record, referenceDate) {
     else if (typeof record.date_erected === 'string' && getDateFromString(record.date_erected) <= referenceDate) {
         return StatusErected;
     }
-    else if (typeof record.date_transported === 'string' && getDateFromString(record.date_fab_dem) <= referenceDate) {
+    else if (typeof record.date_transported === 'string' && getDateFromString(record.date_transported) <= referenceDate) {
         return StatusTransported;
     }
     else if (typeof record.date_fab_end === 'string' && getDateFromString(record.date_fab_end) <= referenceDate) {
