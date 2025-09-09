@@ -153,9 +153,9 @@ const labelContentTypes = {
 };
 
 const labelContentTypesOdoo = {
-    nl: ["Merk.Serienummer", "Vracht.PositieInVracht"],
-    fr: ["Assemblage.NuméroDeSérie", "Charge.PlaceDansCharge"],
-    en: ["Assembly.Serialnumber", "Freight.PositionInFreight"]
+    nl: ["Merk.Serienummer", "Vracht.PositieInVracht", "Massa"],
+    fr: ["Assemblage.NuméroDeSérie", "Charge.PlaceDansCharge", "Masse"],
+    en: ["Assembly.Serialnumber", "Freight.PositionInFreight", "Mass"]
 };
 
 var freightColors = [
@@ -1558,13 +1558,14 @@ async function getAssemblyInfoByCompressedGuids(compressedGuids) {
             data: {
                 model: "project.master_marks",
                 domain: domainMasterMarks,
-                fields: '["id", "mark_qty"]',
+                fields: '["id", "mark_qty", "mark_mass"]',
             },
             success: function (odooData) {
                 for (var record of odooData) {
                     var assembliesWithMarkId = assemblies.filter(x => x.AssemblyId == record.id);
                     for (var assembly of assembliesWithMarkId) {
                         assembly.AssemblyQuantity = record.mark_qty;
+                        assembly.Mass = Math.ceil(record.mark_mass);
                     }
                 }
             }
@@ -5529,6 +5530,13 @@ async function AddOdooInfoLabels(selectedItem, onlyOnVisibleItems) {
                 else if (selectedItem === possibleSelectBoxValues[1]) {
                     if (assemblyInfoObj != undefined) {
                         labelText = `${assemblyInfoObj.AssemblyName}_${assemblyInfoObj.FreightInfo}`;
+                    }
+                    else
+                        continue;
+                }
+                else if (selectedItem === possibleSelectBoxValues[2]) {
+                    if (assemblyInfoObj != undefined) {
+                        labelText = `${assemblyInfoObj.Mass}`;
                     }
                     else
                         continue;
