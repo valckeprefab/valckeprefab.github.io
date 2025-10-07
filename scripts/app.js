@@ -3424,7 +3424,7 @@ async function colorPanelsByFinish() {
         headers: { "Authorization": "Bearer " + token },
         data: {
             model: "project.master_marks",
-            domain: `[["project_id", "=", ${projectId}], ["mark_comment", "ilike", "S%"], 
+            domain: `[["project_id", "=", ${projectId}], "|", ["mark_comment", "ilike", "S%"], ["mark_comment", "ilike", "G%"], 
                     "|", ["mark_prefix", "=", "PV"], "|", ["mark_prefix", "=", "PS"], "|", ["mark_prefix", "=", "KM"], ["mark_prefix", "=", "PLAAT"]]`,
             fields: '["id", "mark_comment"]',
         },
