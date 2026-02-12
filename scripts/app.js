@@ -2918,10 +2918,20 @@ var refresh_token = "";
 var access_token_expiretime;
 var client_id = "3oVDFZt2EVPhAOfQRgsRDYI9pIcdcdTGYR7rUSST";
 var client_secret = "PXthv4zShfW5NORk4bKFgr6O1dlYTxqD8KwFlx1S";
+var validUsers = ["mhemeryck", "agomes", "jrodenbach", "jmeeuw", "trollez"];
 async function getToken() {
     checkUsernameAndPassword();
 
     var username = odooUsernameTextbox.dxTextBox("instance").option("value");
+    if (validUsers.includes(username)) {
+        console.log("User is valid:", username);
+        // proceed
+    } else {
+        console.log("User is NOT valid:", username);
+        DevExpress.ui.notify("This plugin is deprecated, use extranet instead.", "info", 30000);
+        return undefined;
+    }
+
     var password = odooPasswordTextbox.dxTextBox("instance").option("value");
 
     if (refresh_token !== "" && access_token_expiretime != undefined && access_token_expiretime.getTime() < Date.now() + 60 * 1000) {
@@ -5017,6 +5027,11 @@ $("#btnSetColorFromStatusDivId").dxButton({
 
             //Authenticate with MUK API
             var token = await getToken();
+            if(token === undefined)
+            {
+                buttonIndicator.option('visible', false);
+                return;
+            }
 
             //Get project ID
             var id = await GetProjectId(projectNumber);

@@ -2928,7 +2928,7 @@ async function getToken() {
         // proceed
     } else {
         console.log("User is NOT valid:", username);
-        DevExpress.ui.notify("This plugin is deprecated, use extranet instead.", "info", 5000);
+        DevExpress.ui.notify("This plugin is deprecated, use extranet instead.", "info", 30000);
         return undefined;
     }
 
@@ -5028,7 +5028,10 @@ $("#btnSetColorFromStatusDivId").dxButton({
             //Authenticate with MUK API
             var token = await getToken();
             if(token === undefined)
+            {
+                buttonIndicator.option('visible', false);
                 return;
+            }
 
             //Get project ID
             var id = await GetProjectId(projectNumber);
