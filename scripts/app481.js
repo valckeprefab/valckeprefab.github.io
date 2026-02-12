@@ -2920,6 +2920,8 @@ var client_id = "3oVDFZt2EVPhAOfQRgsRDYI9pIcdcdTGYR7rUSST";
 var client_secret = "PXthv4zShfW5NORk4bKFgr6O1dlYTxqD8KwFlx1S";
 var validUsers = ["mhemeryck", "agomes", "jrodenbach", "jmeeuw", "trollez"];
 async function getToken() {
+    console.log("getToken");
+    
     checkUsernameAndPassword();
 
     var username = odooUsernameTextbox.dxTextBox("instance").option("value");
