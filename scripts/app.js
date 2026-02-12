@@ -2918,7 +2918,7 @@ var refresh_token = "";
 var access_token_expiretime;
 var client_id = "3oVDFZt2EVPhAOfQRgsRDYI9pIcdcdTGYR7rUSST";
 var client_secret = "PXthv4zShfW5NORk4bKFgr6O1dlYTxqD8KwFlx1S";
-var validUsers = ["mhemeryck", "agomes", "jrodenbach", "jmeeuw", "trollez"];
+var validUsers = ["mhemeryck", "agomes", "jrodenbach", "jmeeuw", "trollez", "kvangheluwe", "sdeclercq", "ddevos"];
 async function getToken() {
     checkUsernameAndPassword();
 
