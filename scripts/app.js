@@ -1007,7 +1007,7 @@ const prefixes = [
     'DEURKADER',
     'DG',
     'DORPEL',
-    'DORPELBA',
+    'DORPELBALK',
     'DRUKLAAG',
     'FCITERNE',
     'FLIFT',
