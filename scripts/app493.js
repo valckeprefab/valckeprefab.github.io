@@ -5040,6 +5040,8 @@ $("#btnSetColorFromStatusDivId").dxButton({
         document.getElementById("trLegendTransported").style.backgroundColor = getColorString(objectStatuses.find(o => o.Status === StatusTransported).Color);
         document.getElementById("trLegendErected").style.backgroundColor = getColorString(objectStatuses.find(o => o.Status === StatusErected).Color);
         document.getElementById("trLegendExternal").style.backgroundColor = getColorString(objectStatuses.find(o => o.Status === StatusExternal).Color);
+        document.getElementById("legendExternalTitle").style.color = getColorString({ r: 255, g: 255, b: 255, a: 255 });
+        document.getElementById("legendExternalDescr").style.color = getColorString({ r: 255, g: 255, b: 255, a: 255 });
         await setAccesBooleans();
         document.getElementById("transportDiv").style.display = hasAccesToTransportUi ? 'block' : 'none';
         document.getElementById("productionDiv").style.display = hasAccesToProduction ? 'block' : 'none';

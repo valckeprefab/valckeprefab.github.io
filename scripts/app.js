@@ -113,6 +113,7 @@ const StatusAvailableForTransport = "AvailableForTransport";
 const StatusPlannedForTransport = "PlannedForTransport";
 const StatusTransported = "Transported";
 const StatusErected = "Erected";
+const StatusExternal = "External";
 const StatusCancelled = "Cancelled";
 
 var titlesShown = true;
@@ -572,6 +573,18 @@ const textUi = {
         nl: "merk is gemonteerd op de werf.",
         fr: "l'assemblage a été assemblé au chantier.",
         en: "assembly has been erected on site."
+    },
+    legendExternalTitle:
+    {
+        nl: "Extern:",
+        fr: "Externe:",
+        en: "External:"
+    },
+    legendExternalDescr:
+    {
+        nl: "merk wordt extern geproduceerd.",
+        fr: "production de l'assemblage est assurée par un sous-traitant.",
+        en: "assembly production is done by 3rd party."
     },
     errorMsgNoOdooAssembliesFound:
     {
@@ -1418,6 +1431,14 @@ function fillObjectStatuses() {
         CompressedIfcGuids: []
     };
     objectStatuses.push(erected);
+
+    var external = {
+        Status: StatusExternal,
+        Color: { r: 50, g: 50, b: 50, a: 255 },
+        Guids: [],
+        CompressedIfcGuids: []
+    };
+    objectStatuses.push(external);
 }
 
 async function fillPrefixDetails() {
@@ -2169,6 +2190,7 @@ async function selectionChanged(data) {
                     OdooSlipId: -1,
                     Freight: -1,
                     PosInFreight: -1,
+                    IsExternal: false,
                 });
             }
         }
@@ -3051,15 +3073,17 @@ async function getRecentOdooData() {
             });
         }
         else {
-            await $.ajax({
+            var booleanValues = [true, false];
+            for(var bv of booleanValues){
+                await $.ajax({
                 type: "GET",
                 url: odooURL + "/api/v1/search_read",
                 headers: { "Authorization": "Bearer " + token },
                 data: {
                     model: "trimble.connect.main",
-                    domain: '[["project_id", "=", ' + id + '],["write_date", ">=", "' + lastUpdate + '"]]',
+                    domain: '[["project_id", "=", ' + id + '],["write_date", ">=", "' + lastUpdate + '"],["mark_id.mark_supplier", "=", ' + bv + ']]',
                     order: 'write_date desc',
-                    fields: '["id", "write_date", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "date_erected", "state", "mark_available"]',
+                    fields: '["id", "write_date", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "date_erected", "state", "mark_available", "mark_id"]',
                 },
                 success: async function (data) {
                     var date = getUTCStringFromDate(new Date());
@@ -3085,7 +3109,11 @@ async function getRecentOdooData() {
                         }
 
                         for (const record of data) {
-                            var statusWithRecords = recordsPerStatus.find(s => s.Status === getStatus(record, referenceDate));
+                            var statusToLookFor = getStatus(record, referenceDate);
+                            if(bv === true) {
+                                statusToLookFor = StatusExternal;
+                            }
+                            var statusWithRecords = recordsPerStatus.find(s => s.Status === statusToLookFor);
                             statusWithRecords.Records.push(record);
                         }
 
@@ -3126,6 +3154,7 @@ async function getRecentOdooData() {
                     }
                 }
             });
+            }
         }
     }
     catch (e) {
@@ -5010,6 +5039,9 @@ $("#btnSetColorFromStatusDivId").dxButton({
         document.getElementById("trLegendPlannedForTransport").style.backgroundColor = getColorString(objectStatuses.find(o => o.Status === StatusPlannedForTransport).Color);
         document.getElementById("trLegendTransported").style.backgroundColor = getColorString(objectStatuses.find(o => o.Status === StatusTransported).Color);
         document.getElementById("trLegendErected").style.backgroundColor = getColorString(objectStatuses.find(o => o.Status === StatusErected).Color);
+        document.getElementById("trLegendExternal").style.backgroundColor = getColorString(objectStatuses.find(o => o.Status === StatusExternal).Color);
+        document.getElementById("legendExternalTitle").style.color = getColorString({ r: 255, g: 255, b: 255, a: 255 });
+        document.getElementById("legendExternalDescr").style.color = getColorString({ r: 255, g: 255, b: 255, a: 255 });
         await setAccesBooleans();
         document.getElementById("transportDiv").style.display = hasAccesToTransportUi ? 'block' : 'none';
         document.getElementById("productionDiv").style.display = hasAccesToProduction ? 'block' : 'none';
@@ -5085,37 +5117,43 @@ $("#btnSetColorFromStatusDivId").dxButton({
             lastId = -1;
             var queryDateTime = getUTCStringFromDate(new Date()); //new Date(): in local timezone => needed in UTC
             lastUpdate = queryDateTime;
-            while (ended != 1) { //loop cuz only fetchLimit records get fetched at a time
-                await $.ajax({
-                    type: "GET",
-                    url: odooURL + "/api/v1/search_read",
-                    headers: { "Authorization": "Bearer " + token },
-                    data: {
-                        model: "trimble.connect.main",
-                        domain: '[["project_id", "=", ' + id + '],["id", ">", "' + lastId + '"]]',
-                        fields: '["id", "mark_id", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "date_erected", "state", "mark_available"]',
-                        order: 'id',
-                    },
-                    success: function (data) {
-                        if (data.length == 0) { //no more records
-                            ended = 1;
-                            return;
-                        }
-                        for (const record of data) {
-                            lastId = record.id;
-                            var status = getStatus(record, referenceDate);
-                            if (status === StatusAvailableForTransport && guidsOnSlipsDraft.indexOf(record.name) > -1) {
-                                status = StatusPlannedForTransport;
+            var booleanValues = [true, false];
+            for(var bv of booleanValues) {
+                while (ended != 1) { //loop cuz only fetchLimit records get fetched at a time
+                    await $.ajax({
+                        type: "GET",
+                        url: odooURL + "/api/v1/search_read",
+                        headers: { "Authorization": "Bearer " + token },
+                        data: {
+                            model: "trimble.connect.main",
+                            domain: '[["project_id", "=", ' + id + '],["id", ">", "' + lastId + '"],["mark_id.mark_supplier", "=", ' + bv + ']]',
+                            fields: '["id", "mark_id", "name", "date_drawn", "date_fab_planned", "date_fab_dem", "date_fab_end", "date_transported", "date_erected", "state", "mark_available"]',
+                            order: 'id',
+                        },
+                        success: function (data) {
+                            if (data.length == 0) { //no more records
+                                ended = 1;
+                                return;
                             }
-                            var guidArr = objectStatuses.find(o => o.Status === status);
-                            guidArr.Guids.push(record.name);
-                            guidArr.CompressedIfcGuids.push(Guid.fromFullToCompressed(record.name));
-                            if (record.mark_id[0] != undefined) {
-                                processedAssemblyIds.push(record.mark_id[0]);
+                            for (const record of data) {
+                                lastId = record.id;
+                                var status = getStatus(record, referenceDate);
+                                if (status === StatusAvailableForTransport && guidsOnSlipsDraft.indexOf(record.name) > -1) {
+                                    status = StatusPlannedForTransport;
+                                }
+                                if(bv === true) {
+                                    status = StatusExternal;
+                                }
+                                var guidArr = objectStatuses.find(o => o.Status === status);
+                                guidArr.Guids.push(record.name);
+                                guidArr.CompressedIfcGuids.push(Guid.fromFullToCompressed(record.name));
+                                if (record.mark_id[0] != undefined) {
+                                    processedAssemblyIds.push(record.mark_id[0]);
+                                }
                             }
                         }
-                    }
-                });
+                    });
+                }
             }
             //console.log("Finished: Getting concrete assembly info");
 
@@ -6468,6 +6506,38 @@ $("#btnOnlyShowErected").dxButton({
     hint: "only show these",
     onClick: async function (data) {
         await onlyShowStatus(StatusErected);
+    },
+});
+//#endregion
+
+//External
+$("#btnShowExternal").dxButton({
+    icon: 'images/eye.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "show these",
+    onClick: async function (data) {
+        await setVisibility(StatusExternal, true);
+    },
+});
+
+$("#btnHideExternal").dxButton({
+    icon: 'images/eyeCrossed.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "hide these",
+    onClick: async function (data) {
+        await setVisibility(StatusExternal, false);
+    },
+});
+
+$("#btnOnlyShowExternal").dxButton({
+    icon: 'images/showAll.png',
+    stylingMode: "text",
+    type: "back",
+    hint: "only show these",
+    onClick: async function (data) {
+        await onlyShowStatus(StatusExternal);
     },
 });
 //#endregion
