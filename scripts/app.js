@@ -5113,12 +5113,12 @@ $("#btnSetColorFromStatusDivId").dxButton({
 
             //console.log("Start: Getting concrete assembly info");
             var processedAssemblyIds = [];
-            ended = 0;
-            lastId = -1;
             var queryDateTime = getUTCStringFromDate(new Date()); //new Date(): in local timezone => needed in UTC
             lastUpdate = queryDateTime;
             var booleanValues = [true, false];
             for(var bv of booleanValues) {
+                ended = 0;
+                lastId = -1;
                 while (ended != 1) { //loop cuz only fetchLimit records get fetched at a time
                     await $.ajax({
                         type: "GET",
